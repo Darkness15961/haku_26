@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1150">
+  <defs>
+    <filter id="woodShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2.5" dy="4" stdDeviation="3" flood-color="#110B07" flood-opacity="0.6"/>
+    </filter>
+    <linearGradient id="maderaNogal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5E3C"/><stop offset="100%" stop-color="#54331B"/>
+    </linearGradient>
+    <linearGradient id="maderaCedro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D49B6A"/><stop offset="100%" stop-color="#9C6233"/>
+    </linearGradient>
+    <linearGradient id="maderaRoble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C39E"/><stop offset="100%" stop-color="#B28251"/>
+    </linearGradient>
+    <linearGradient id="maderaCaoba" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A6593B"/><stop offset="100%" stop-color="#70331A"/>
+    </linearGradient>
+    <linearGradient id="maderaPino" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EED5B7"/><stop offset="100%" stop-color="#C8A882"/>
+    </linearGradient>
+    <linearGradient id="maderaCuscoDorado" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5CD6D"/><stop offset="100%" stop-color="#C28929"/>
+    </linearGradient>
+  </defs>
+  <path d="M 549.6,606.6 L 535.9,618.7 L 533.2,628.7 L 522.0,635.4 L 506.3,634.2 L 505.4,649.4 L 514.1,658.1 L 504.5,660.8 L 488.1,677.8 L 474.9,669.9 L 469.0,675.2 L 441.3,663.4 L 441.8,658.7 L 436.0,649.3 L 397.8,634.9 L 377.8,632.5 L 372.5,624.9 L 348.5,616.9 L 341.1,607.9 L 354.8,596.3 L 383.4,590.3 L 402.2,577.3 L 405.8,587.9 L 430.0,580.4 L 450.1,584.2 L 445.6,569.8 L 477.7,576.6 L 490.5,575.6 L 493.1,586.3 L 518.6,594.5 L 523.2,603.2 L 536.1,609.2 L 549.6,606.6 Z" fill="url(#maderaNogal)" stroke="#26150B" stroke-width="3" filter="url(#woodShadow)"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Chakana (Cruz Andina) - símbolo sagrado inca -->
+  <!-- Forma escalonada de la chakana -->
+  <path d="M28 4h8v8h8v8h8v8h-8v8h-8v8h-8v-8h-8v-8h-8v-8h8v-8h8V4z" 
+        fill="#C9A84C" opacity="0.2" stroke="#8B5E3C" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Círculo central (hueco sagrado) -->
+  <circle cx="32" cy="28" r="4" fill="none" stroke="#C9A84C" stroke-width="2"/>
+  <circle cx="32" cy="28" r="1.5" fill="#C9A84C" opacity="0.5"/>
+  <!-- Detalles escalonados internos -->
+  <path d="M30 12v4h-4v4h-4v4" stroke="#D49B6A" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M34 12v4h4v4h4v4" stroke="#D49B6A" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M30 44v-4h-4v-4h-4v-4" stroke="#D49B6A" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M34 44v-4h4v-4h4v-4" stroke="#D49B6A" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+</svg>

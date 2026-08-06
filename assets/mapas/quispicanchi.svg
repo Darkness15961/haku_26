@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1150">
+  <defs>
+    <filter id="woodShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2.5" dy="4" stdDeviation="3" flood-color="#110B07" flood-opacity="0.6"/>
+    </filter>
+    <linearGradient id="maderaNogal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5E3C"/><stop offset="100%" stop-color="#54331B"/>
+    </linearGradient>
+    <linearGradient id="maderaCedro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D49B6A"/><stop offset="100%" stop-color="#9C6233"/>
+    </linearGradient>
+    <linearGradient id="maderaRoble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C39E"/><stop offset="100%" stop-color="#B28251"/>
+    </linearGradient>
+    <linearGradient id="maderaCaoba" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A6593B"/><stop offset="100%" stop-color="#70331A"/>
+    </linearGradient>
+    <linearGradient id="maderaPino" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EED5B7"/><stop offset="100%" stop-color="#C8A882"/>
+    </linearGradient>
+    <linearGradient id="maderaCuscoDorado" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5CD6D"/><stop offset="100%" stop-color="#C28929"/>
+    </linearGradient>
+  </defs>
+  <path d="M 857.0,700.5 L 831.6,701.7 L 822.1,690.2 L 798.0,680.8 L 791.9,690.0 L 775.6,685.4 L 767.7,698.6 L 741.7,707.7 L 736.7,724.1 L 719.0,732.1 L 690.6,734.6 L 680.3,744.5 L 668.0,735.9 L 667.8,728.3 L 652.4,726.0 L 645.0,706.6 L 630.4,705.6 L 629.9,689.8 L 606.6,673.6 L 592.2,655.8 L 598.5,649.8 L 598.2,627.1 L 602.6,623.5 L 620.7,639.8 L 625.6,635.2 L 636.0,655.5 L 651.7,648.8 L 650.6,638.8 L 678.5,644.7 L 685.1,610.3 L 693.3,619.9 L 707.5,625.8 L 719.2,607.2 L 740.4,609.6 L 761.2,626.3 L 781.2,615.2 L 776.2,595.9 L 781.1,583.9 L 802.5,557.3 L 816.1,560.0 L 826.7,534.0 L 835.5,530.9 L 841.1,518.8 L 862.3,507.3 L 885.1,518.1 L 898.2,518.5 L 911.7,512.9 L 931.2,516.8 L 941.4,529.9 L 964.5,531.7 L 985.0,540.3 L 976.4,557.8 L 983.8,572.4 L 981.9,587.6 L 970.4,593.3 L 967.7,607.6 L 945.7,628.0 L 943.6,641.0 L 923.5,650.1 L 913.3,662.5 L 896.8,664.1 L 891.5,684.3 L 901.2,701.3 L 895.1,708.1 L 882.4,704.2 L 866.7,707.6 L 857.0,700.5 Z" fill="url(#maderaNogal)" stroke="#26150B" stroke-width="3" filter="url(#woodShadow)"/>
+</svg>

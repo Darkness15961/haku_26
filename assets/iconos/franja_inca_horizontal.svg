@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 24" fill="none">
+  <!-- Franja horizontal inca - Greca escalonada -->
+  <defs>
+    <pattern id="grecaH" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 0h6v6h6v6h6v6h6v6H18v-6H12v-6H6V6H0V0z" fill="#8B5E3C" opacity="0.2"/>
+      <path d="M2 0h4v6h6v6h6v6h6v4H20v-6H14v-6H8V4H2V0z" fill="#C9A84C" opacity="0.12"/>
+    </pattern>
+  </defs>
+  <rect width="480" height="24" fill="url(#grecaH)"/>
+  <line x1="0" y1="1" x2="480" y2="1" stroke="#8B5E3C" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="23" x2="480" y2="23" stroke="#8B5E3C" stroke-width="1" opacity="0.3"/>
+</svg>

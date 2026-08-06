@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Vasija principal -->
+  <path d="M20 22c-2 12-4 24 0 34h24c4-10 2-22 0-34H20z" 
+        fill="#D49B6A" opacity="0.2" stroke="#8B5E3C" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Cuello de la vasija -->
+  <path d="M22 22v-6h20v6" stroke="#8B5E3C" stroke-width="2" stroke-linejoin="round" fill="none"/>
+  <!-- Borde superior -->
+  <path d="M20 16h24" stroke="#8B5E3C" stroke-width="2" stroke-linecap="round"/>
+  <!-- Asas laterales -->
+  <path d="M20 28c-4 0-6 4-6 8s2 8 6 8" stroke="#8B5E3C" stroke-width="1.5" fill="none"/>
+  <path d="M44 28c4 0 6 4 6 8s-2 8-6 8" stroke="#8B5E3C" stroke-width="1.5" fill="none"/>
+  <!-- Decoración geométrica inca -->
+  <path d="M24 30h16" stroke="#C9A84C" stroke-width="1" stroke-dasharray="3 2"/>
+  <path d="M24 36h16" stroke="#C9A84C" stroke-width="1" stroke-dasharray="3 2"/>
+  <path d="M24 42h16" stroke="#C9A84C" stroke-width="1" stroke-dasharray="3 2"/>
+  <!-- Patrón escalonado inca -->
+  <path d="M28 32l2-2 2 2 2-2 2 2" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M28 38l2-2 2 2 2-2 2 2" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Base -->
+  <path d="M22 56h20" stroke="#54331B" stroke-width="2" stroke-linecap="round"/>
+</svg>

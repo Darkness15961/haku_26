@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 800" fill="none">
+  <defs>
+    <pattern id="grecaIncaVert" x="0" y="0" width="32" height="64" patternUnits="userSpaceOnUse">
+      <!-- Backing strip -->
+      <rect width="32" height="64" fill="#3D2314" opacity="0.08"/>
+      
+      <!-- Outer framing lines -->
+      <line x1="2" y1="0" x2="2" y2="64" stroke="#5C3A1E" stroke-width="1.5" opacity="0.6"/>
+      <line x1="30" y1="0" x2="30" y2="64" stroke="#5C3A1E" stroke-width="1.5" opacity="0.6"/>
+      <line x1="5" y1="0" x2="5" y2="64" stroke="#C9A84C" stroke-width="0.8" opacity="0.4"/>
+      <line x1="27" y1="0" x2="27" y2="64" stroke="#C9A84C" stroke-width="0.8" opacity="0.4"/>
+      
+      <!-- Stepped Inca Meander Key Pattern (Chakana/Tokapu motif) -->
+      <path d="M8 8h16v12h-10v8h10v16H8V32h10v-8H8V8z" 
+            stroke="#4A2E18" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M8 8h16v12h-10v8h10v16H8V32h10v-8H8V8z" 
+            stroke="#C9A84C" stroke-width="1" fill="none" opacity="0.6"/>
+            
+      <!-- Accent dots -->
+      <circle cx="16" cy="4" r="1.5" fill="#8B5E3C" opacity="0.7"/>
+      <circle cx="16" cy="60" r="1.5" fill="#8B5E3C" opacity="0.7"/>
+    </pattern>
+  </defs>
+  <rect width="32" height="800" fill="url(#grecaIncaVert)"/>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1150">
+  <defs>
+    <filter id="woodShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2.5" dy="4" stdDeviation="3" flood-color="#110B07" flood-opacity="0.6"/>
+    </filter>
+    <linearGradient id="maderaNogal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5E3C"/><stop offset="100%" stop-color="#54331B"/>
+    </linearGradient>
+    <linearGradient id="maderaCedro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D49B6A"/><stop offset="100%" stop-color="#9C6233"/>
+    </linearGradient>
+    <linearGradient id="maderaRoble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C39E"/><stop offset="100%" stop-color="#B28251"/>
+    </linearGradient>
+    <linearGradient id="maderaCaoba" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A6593B"/><stop offset="100%" stop-color="#70331A"/>
+    </linearGradient>
+    <linearGradient id="maderaPino" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EED5B7"/><stop offset="100%" stop-color="#C8A882"/>
+    </linearGradient>
+    <linearGradient id="maderaCuscoDorado" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5CD6D"/><stop offset="100%" stop-color="#C28929"/>
+    </linearGradient>
+  </defs>
+  <path d="M 55.4,365.9 L 40.3,332.9 L 18.9,314.8 L 15.0,290.0 L 30.3,285.3 L 52.1,289.2 L 63.2,284.2 L 80.8,296.4 L 88.6,296.7 L 107.7,325.8 L 120.3,325.4 L 124.7,299.1 L 152.9,284.1 L 159.3,268.4 L 182.0,261.9 L 169.7,243.5 L 172.3,231.6 L 161.6,223.4 L 160.6,211.4 L 147.3,194.0 L 123.8,183.0 L 124.6,156.1 L 115.5,136.6 L 128.6,118.6 L 158.3,102.8 L 150.2,86.8 L 166.4,63.8 L 190.3,44.6 L 210.2,45.0 L 224.9,39.0 L 242.7,40.0 L 272.6,32.2 L 282.6,15.0 L 288.3,32.2 L 296.2,36.9 L 292.8,49.7 L 307.6,56.9 L 335.3,63.9 L 350.5,54.2 L 359.0,63.1 L 379.1,69.7 L 385.1,75.5 L 405.3,77.3 L 420.2,64.7 L 435.0,59.7 L 447.5,50.3 L 466.7,43.5 L 485.2,53.5 L 482.9,64.1 L 470.8,76.8 L 464.6,119.6 L 455.0,126.5 L 434.0,149.4 L 435.0,155.8 L 449.7,169.5 L 444.1,180.4 L 460.1,188.0 L 456.0,197.5 L 458.7,217.7 L 473.0,219.9 L 479.8,227.8 L 477.2,240.4 L 502.9,241.9 L 524.3,248.6 L 526.2,263.7 L 521.3,288.8 L 540.7,296.0 L 557.1,310.6 L 556.3,331.2 L 533.2,342.2 L 530.6,360.9 L 516.2,370.6 L 513.3,388.7 L 499.6,399.3 L 488.6,401.3 L 464.4,397.1 L 451.8,415.5 L 452.0,443.3 L 465.6,469.5 L 488.7,477.3 L 491.5,487.3 L 504.1,496.0 L 498.3,515.0 L 487.2,522.9 L 473.8,518.0 L 461.2,532.9 L 444.6,535.5 L 432.0,529.6 L 417.4,515.9 L 403.4,511.3 L 387.8,517.9 L 400.1,550.2 L 402.2,577.3 L 383.4,590.3 L 354.8,596.3 L 341.1,607.9 L 335.6,601.9 L 310.5,599.2 L 308.4,592.4 L 287.5,592.4 L 275.7,602.0 L 251.8,607.8 L 236.5,606.4 L 222.5,600.1 L 202.2,587.6 L 185.7,568.2 L 165.8,524.5 L 158.6,518.0 L 150.7,498.1 L 138.9,487.2 L 138.4,463.1 L 120.2,448.6 L 110.8,427.7 L 83.9,394.9 L 77.7,399.4 L 63.4,387.6 L 55.4,365.9 Z" fill="url(#maderaCaoba)" stroke="#26150B" stroke-width="3" filter="url(#woodShadow)"/>
+</svg>

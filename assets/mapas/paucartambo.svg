@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1150">
+  <defs>
+    <filter id="woodShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2.5" dy="4" stdDeviation="3" flood-color="#110B07" flood-opacity="0.6"/>
+    </filter>
+    <linearGradient id="maderaNogal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5E3C"/><stop offset="100%" stop-color="#54331B"/>
+    </linearGradient>
+    <linearGradient id="maderaCedro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D49B6A"/><stop offset="100%" stop-color="#9C6233"/>
+    </linearGradient>
+    <linearGradient id="maderaRoble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C39E"/><stop offset="100%" stop-color="#B28251"/>
+    </linearGradient>
+    <linearGradient id="maderaCaoba" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A6593B"/><stop offset="100%" stop-color="#70331A"/>
+    </linearGradient>
+    <linearGradient id="maderaPino" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EED5B7"/><stop offset="100%" stop-color="#C8A882"/>
+    </linearGradient>
+    <linearGradient id="maderaCuscoDorado" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5CD6D"/><stop offset="100%" stop-color="#C28929"/>
+    </linearGradient>
+  </defs>
+  <path d="M 802.5,557.3 L 781.1,583.9 L 776.2,595.9 L 781.2,615.2 L 761.2,626.3 L 740.4,609.6 L 719.2,607.2 L 707.5,625.8 L 693.3,619.9 L 685.1,610.3 L 678.5,644.7 L 650.6,638.8 L 651.7,648.8 L 636.0,655.5 L 625.6,635.2 L 618.3,600.5 L 620.1,591.2 L 598.1,573.8 L 586.6,549.6 L 579.8,503.7 L 575.1,495.1 L 596.1,477.6 L 579.1,445.7 L 576.7,419.4 L 601.0,422.4 L 618.1,435.9 L 632.2,420.8 L 657.8,410.6 L 670.8,413.0 L 698.1,443.5 L 698.6,453.6 L 707.7,461.8 L 724.0,459.0 L 738.6,474.0 L 755.4,482.2 L 773.1,485.2 L 774.4,514.4 L 786.9,551.2 L 802.5,557.3 Z" fill="url(#maderaCedro)" stroke="#26150B" stroke-width="3" filter="url(#woodShadow)"/>
+</svg>

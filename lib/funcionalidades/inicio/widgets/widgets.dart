@@ -1,2 +1,10 @@
 export 'contenido_inicio.dart';
 export 'widget_inicio.dart';
+export 'encabezado_explora_cusco.dart';
+export 'mapa_cusco_interactivo.dart';
+export 'pieza_provincia.dart';
+export 'tarjeta_provincia.dart';
+export 'ranking_destinos.dart';
+export 'indicador_tendencia.dart';
+export 'panel_provincia_movil.dart';
+export 'panel_provincia_lateral.dart';
