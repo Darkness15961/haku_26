@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/destino_destacado.dart';
 import '../dominio/modelos/provincia.dart';
 import 'ranking_destinos.dart';
@@ -114,28 +114,21 @@ class _ContenidoTarjeta extends StatelessWidget {
                   children: [
                     Text(
                       provincia.nombre,
-                      style: GoogleFonts.cinzel(
+                      style: TipografiaHaku.titulo(
                         fontSize: 23,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: 1.0,
-                        shadows: [
-                          Shadow(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                            offset: const Offset(0, 1),
-                            blurRadius: 3,
-                          ),
-                        ],
+                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 1),
                     Text(
                       'Destino principal: ${provincia.destinoPrincipal}',
-                      style: GoogleFonts.crimsonText(
+                      style: TipografiaHaku.titulo(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         fontStyle: FontStyle.italic,
-                        color: const Color(0xFFF3C677),
+                        color: const Color(0xFFF6F0E2),
                       ),
                     ),
                   ],
@@ -154,17 +147,17 @@ class _ContenidoTarjeta extends StatelessWidget {
                       bottomLeft: Radius.circular(3),
                     ),
                     side: BorderSide(
-                      color: Color(0xFFD4AF37),
+                      color: Color(0xFF2D432B),
                       width: 1,
                     ),
                   ),
                 ),
                 child: Text(
                   '${provincia.altitudMedia} msnm',
-                  style: GoogleFonts.cinzel(
+                  style: TipografiaHaku.interfaz(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFFF3C677),
+                    color: const Color(0xFFF6F0E2),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -176,8 +169,8 @@ class _ContenidoTarjeta extends StatelessWidget {
           // Descripción Breve
           Text(
             provincia.descripcion,
-            style: GoogleFonts.crimsonText(
-              fontSize: 15,
+            style: TipografiaHaku.interfaz(
+              fontSize: 14,
               fontWeight: FontWeight.w400,
               color: Colors.white.withValues(alpha: 0.85),
               height: 1.4,
@@ -193,7 +186,7 @@ class _ContenidoTarjeta extends StatelessWidget {
             ),
           const SizedBox(height: 18),
 
-          // Botón Explorar Provincia — Lintel de Piedra Megalítica Inca
+          // Botón Explorar Provincia — estilo cuero
           SizedBox(
             width: double.infinity,
             child: Material(
@@ -211,14 +204,7 @@ class _ContenidoTarjeta extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: ShapeDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF3B281B),
-                        Color(0xFF21140B),
-                      ],
-                    ),
+                    color: const Color(0xFF3F5E3B),
                     shape: const BeveledRectangleBorder(
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(12),
@@ -227,14 +213,14 @@ class _ContenidoTarjeta extends StatelessWidget {
                         bottomLeft: Radius.circular(4),
                       ),
                       side: BorderSide(
-                        color: Color(0xFFD4AF37),
-                        width: 1.5,
+                        color: Color(0xFF2D432B),
+                        width: 1,
                       ),
                     ),
                     shadows: [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.25),
-                        blurRadius: 15,
+                        color: const Color(0xFF3B2E22).withValues(alpha: 0.28),
+                        blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -244,17 +230,17 @@ class _ContenidoTarjeta extends StatelessWidget {
                     children: [
                       Text(
                         'EXPLORAR ${provincia.nombreCorto.toUpperCase()}',
-                        style: GoogleFonts.cinzel(
+                        style: TipografiaHaku.interfaz(
                           fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFFF3C677),
-                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFF6F0E2),
+                          letterSpacing: 1.2,
                         ),
                       ),
                       const SizedBox(width: 8),
                       const Icon(
                         Icons.arrow_forward_rounded,
-                        color: Color(0xFFF3C677),
+                        color: Color(0xFFF6F0E2),
                         size: 16,
                       ),
                     ],

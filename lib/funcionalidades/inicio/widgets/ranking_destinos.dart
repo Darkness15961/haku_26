@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/destino_destacado.dart';
 import 'indicador_tendencia.dart';
 
-/// Panel de ranking de destinos estilizado como Nichos de Piedra Inca (Megalitos de Cantería).
+/// Panel de ranking de destinos estilizado como Nichos de Piedra Inca.
 class RankingDestinos extends StatelessWidget {
   final List<DestinoDestacado> destinos;
   final String titulo;
@@ -25,7 +25,6 @@ class RankingDestinos extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Título del ranking
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: Row(
@@ -35,22 +34,16 @@ class RankingDestinos extends StatelessWidget {
                 height: 6,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFF3C677),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFFF3C677),
-                      blurRadius: 4,
-                    ),
-                  ],
+                  color: Color(0xFFF6F0E2),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 titulo,
-                style: GoogleFonts.cinzel(
+                style: TipografiaHaku.interfaz(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFFF3C677),
+                  color: const Color(0xFFF6F0E2),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -58,7 +51,6 @@ class RankingDestinos extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // Lista de destinos estilizada como Nichos de Piedra
         ...List.generate(destinos.length, (index) {
           return _ItemRanking(
             destino: destinos[index],
@@ -82,9 +74,9 @@ class _ItemRanking extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorBadge = switch (destino.posicion) {
-      1 => const Color(0xFFF3C677),
-      2 => const Color(0xFFD4AF37),
-      3 => const Color(0xFFCD7F32),
+      1 => const Color(0xFFF6F0E2),
+      2 => const Color(0xFFD8C29A),
+      3 => const Color(0xFFB45E3B),
       _ => Colors.white54,
     };
 
@@ -108,7 +100,7 @@ class _ItemRanking extends StatelessWidget {
             bottomLeft: Radius.circular(4),
           ),
           side: BorderSide(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+            color: const Color(0xFF2D432B).withValues(alpha: 0.8),
             width: 1,
           ),
         ),
@@ -122,7 +114,6 @@ class _ItemRanking extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Medallón de Piedra de Posición (#1, #2, #3)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: ShapeDecoration(
@@ -137,7 +128,7 @@ class _ItemRanking extends StatelessWidget {
             ),
             child: Text(
               '#${destino.posicion}',
-              style: GoogleFonts.cinzel(
+              style: TipografiaHaku.interfaz(
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
                 color: colorBadge,
@@ -145,18 +136,16 @@ class _ItemRanking extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Nombre + Descripción
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   destino.nombre,
-                  style: GoogleFonts.cinzel(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    letterSpacing: 0.3,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -164,7 +153,7 @@ class _ItemRanking extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   destino.descripcion,
-                  style: GoogleFonts.crimsonText(
+                  style: TipografiaHaku.interfaz(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     color: Colors.white.withValues(alpha: 0.75),
@@ -176,7 +165,6 @@ class _ItemRanking extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // Indicador de Tendencia en Bloque de Piedra
           IndicadorTendencia(
             porcentaje: destino.crecimientoMensual,
             fontSize: 10,

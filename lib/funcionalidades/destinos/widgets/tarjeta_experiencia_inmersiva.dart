@@ -3,8 +3,8 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/destino_experiencia.dart';
 
 /// Componente visual inmersivo a pantalla completa con animaciones de entrada
@@ -38,7 +38,6 @@ class _EstadoTarjetaExperienciaInmersiva
   void initState() {
     super.initState();
 
-    // Animación de entrada del contenido inferior
     _controladorEntrada = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -75,13 +74,11 @@ class _EstadoTarjetaExperienciaInmersiva
       ),
     );
 
-    // Animación flotante sutil continua (breathing effect)
     _controladorFlotante = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     )..repeat(reverse: true);
 
-    // Iniciar animación de entrada
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _controladorEntrada.forward();
     });
@@ -102,103 +99,53 @@ class _EstadoTarjetaExperienciaInmersiva
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Imagen de Fondo Inmersiva — Pantalla Completa
-        CachedNetworkImage(
-          imageUrl: destino.rutaImagen,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: const Color(0xFFF0DFC0),
-            child: const Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  color: Color(0xFFF3C677),
-                  strokeWidth: 2,
-                ),
-              ),
-            ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: const Color(0xFFF0DFC0),
-            child: Icon(
-              Icons.landscape_rounded,
-              color: const Color(0xFF8B5E3C).withValues(alpha: 0.4),
-              size: 64,
-            ),
-          ),
-        ),
-
-        // 2. Degradado Inferior Mejorado
-        DecoratedBox(
+        _ImagenDestinoFondo(ruta: destino.rutaImagen),
+        // Solo un velo inferior minimo para leer el texto (foto tal cual arriba).
+        const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              stops: const [0.0, 0.35, 0.65, 0.85, 1.0],
+              stops: [0.0, 0.55, 1.0],
               colors: [
-                Colors.black.withValues(alpha: 0.15),
                 Colors.transparent,
-                Colors.black.withValues(alpha: 0.4),
-                Colors.black.withValues(alpha: 0.78),
-                Colors.black.withValues(alpha: 0.95),
+                Colors.transparent,
+                Color(0xB3000000),
               ],
             ),
           ),
         ),
-
-        // 3. Badge de Ubicación con animación de escala
         Positioned(
           top: 14,
           left: 20,
           child: SafeArea(
             child: ScaleTransition(
               scale: _animacionEscalaBadge,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
+              child: _PildoraGlass(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: Colors.white,
+                      size: 15,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1B4332).withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFC9A84C).withValues(alpha: 0.3),
-                        width: 1,
+                    const SizedBox(width: 8),
+                    Text(
+                      destino.ubicacionBadge,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: Color(0xFFF3C677),
-                          size: 15,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          destino.ubicacionBadge,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
-
-        // 4. Contenido Inferior con animaciones de entrada
         Positioned(
           left: 20,
           right: 20,
@@ -211,132 +158,56 @@ class _EstadoTarjetaExperienciaInmersiva
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Etiqueta de Categoría con punto animado
-                  Row(
-                    children: [
-                      AnimatedBuilder(
-                        animation: _controladorFlotante,
-                        builder: (context, child) {
-                          return Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color.lerp(
-                                const Color(0xFFC9A84C),
-                                const Color(0xFFF3C677),
-                                _controladorFlotante.value,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFF3C677).withValues(
-                                    alpha: 0.4 + _controladorFlotante.value * 0.3,
-                                  ),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        destino.categoriaEtiqueta.toUpperCase(),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFFF3C677),
-                          letterSpacing: 3.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Título Principal Serif
                   Text(
-                    destino.tituloPrincipal,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 46,
+                    destino.categoriaEtiqueta.toUpperCase(),
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFB8D4A8),
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    destino.subtituloResaltado.isEmpty
+                        ? destino.tituloPrincipal
+                        : '${destino.tituloPrincipal}\n${destino.subtituloResaltado}',
+                    style: TipografiaHaku.titulo(
+                      fontSize: 36,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      height: 1.0,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-
-                  // Subtítulo Resaltado en Color Acento
-                  Text(
-                    destino.subtituloResaltado,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w700,
-                      fontStyle: FontStyle.italic,
-                      color: destino.colorAccento,
-                      height: 1.15,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Descripción
-                  Text(
-                    destino.descripcionDetallada,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withValues(alpha: 0.85),
-                      height: 1.45,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Tags en Píldoras
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: destino.tags.map((tag) {
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFC9A84C).withValues(alpha: 0.25),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              tag,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.95),
-                              ),
-                            ),
-                          ),
+                      height: 1.05,
+                    ).copyWith(
+                      shadows: const [
+                        Shadow(
+                          color: Color(0x99000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 3),
                         ),
-                      );
-                    }).toList(),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Botón CTA con animación
+                  if (destino.descripcionDetallada.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      destino.descripcionDetallada,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 18),
                   ScaleTransition(
                     scale: _animacionBoton,
                     child: AnimatedBuilder(
                       animation: _controladorFlotante,
                       builder: (context, child) {
-                        final floatY = math.sin(_controladorFlotante.value * math.pi) * 2;
+                        final floatY =
+                            math.sin(_controladorFlotante.value * math.pi) * 2;
                         return Transform.translate(
                           offset: Offset(0, -floatY),
                           child: child,
@@ -348,38 +219,28 @@ class _EstadoTarjetaExperienciaInmersiva
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: widget.onComenzarAventura,
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(28),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFC9A84C),
-                                    Color(0xFF8B5E3C),
-                                  ],
+                                color: Colors.black.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(28),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.22),
                                 ),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFC9A84C).withValues(alpha: 0.35),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     destino.textoAccion,
-                                    style: GoogleFonts.inter(
+                                    style: TipografiaHaku.interfaz(
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
                                       color: Colors.white,
-                                      letterSpacing: 0.3,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   const Icon(
                                     Icons.chevron_right_rounded,
                                     color: Colors.white,
@@ -393,25 +254,105 @@ class _EstadoTarjetaExperienciaInmersiva
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // Sub-leyenda
-                  Center(
-                    child: Text(
-                      destino.subtextoAccion,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Soporta URL (http) o asset local (`assets/...`).
+class _ImagenDestinoFondo extends StatelessWidget {
+  final String ruta;
+
+  const _ImagenDestinoFondo({required this.ruta});
+
+  @override
+  Widget build(BuildContext context) {
+    final esRed = ruta.startsWith('http');
+    if (esRed) {
+      return CachedNetworkImage(
+        imageUrl: ruta,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (context, url) => const ColoredBox(
+          color: PaletaRutas.arena,
+          child: Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                color: PaletaRutas.crema,
+                strokeWidth: 2,
+              ),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => ColoredBox(
+          color: PaletaRutas.arena,
+          child: Icon(
+            Icons.landscape_rounded,
+            color: PaletaRutas.marronCuero.withValues(alpha: 0.4),
+            size: 64,
+          ),
+        ),
+      );
+    }
+
+    return Image.asset(
+      ruta,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, __, ___) => ColoredBox(
+        color: PaletaRutas.arena,
+        child: Icon(
+          Icons.landscape_rounded,
+          color: PaletaRutas.marronCuero.withValues(alpha: 0.4),
+          size: 64,
+        ),
+      ),
+    );
+  }
+}
+
+/// Vidrio vintage: blanco translúcido + borde blanco + blur.
+class _PildoraGlass extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+  final double opacidadFondo;
+
+  const _PildoraGlass({
+    required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+    this.borderRadius = 20,
+    this.opacidadFondo = 0.16,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: opacidadFondo),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.30),
+              width: 1,
+            ),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }

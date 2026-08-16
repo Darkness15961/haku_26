@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../../rutas/widgets/estilos_rutas.dart';
 
 /// Indicador de tendencia en bloque de piedra pulida inca.
 class IndicadorTendencia extends StatelessWidget {
@@ -16,12 +17,12 @@ class IndicadorTendencia extends StatelessWidget {
   Widget build(BuildContext context) {
     final esPositivo = porcentaje > 0;
     final color = esPositivo
-        ? const Color(0xFF2D6A4F)
-        : const Color(0xFFA63A3A);
+        ? const Color(0xFF6E8B4A)
+        : const Color(0xFFB45E3B);
 
     final colorTexto = esPositivo
-        ? const Color(0xFF40916C)
-        : const Color(0xFFE55B5B);
+        ? const Color(0xFF6E8B4A)
+        : const Color(0xFFB45E3B);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -49,7 +50,7 @@ class IndicadorTendencia extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             '${esPositivo ? '+' : ''}${porcentaje.toStringAsFixed(1)}%',
-            style: GoogleFonts.cinzel(
+            style: TipografiaHaku.interfaz(
               fontSize: fontSize,
               fontWeight: FontWeight.w800,
               color: colorTexto,

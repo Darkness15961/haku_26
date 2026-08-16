@@ -39,6 +39,8 @@ dependencies:
   flutter_svg: ^2.0.16
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
+  image_picker: ^1.1.2
+  sensors_plus: ^6.1.1
 
 dev_dependencies:
   flutter_test:
@@ -66,8 +68,21 @@ flutter:
     - assets/videos/
     - assets/mapas/
     - assets/provincias/
+    - assets/destinos/
     - assets/iconos/
     - public/image/fondoHaku.png
+    - public/image/FONDO_HAKU2.png
+    - public/image/FONDO HAKU 3.png
+    - public/image/FONDO HAKU 4.png
+    - public/image/detalle_ruta_b.jpg
+    - public/image/encabezado_rutas.jpg
+    - public/image/adorno_detalle_ruta.jpg
+    - public/image/adorno_rutas.jpg
+    - public/image/fondo_explora.jpg
+    - public/image/fondo_rutas.jpg
+    - public/image/fondo_publicaciones.jpg
+    - public/image/logo_haku_encabezado.jpeg
+    - public/image/laberinto_explora.webp
 
   # To add assets to your application, add an assets section, like this:
   # assets:

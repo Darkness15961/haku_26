@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../proveedores/proveedor_mapa_cusco.dart';
 
 /// Encabezado basado en la arquitectura Inca de Megalitos y Piedras de Ángulos Definidos.
@@ -52,14 +52,7 @@ class EncabezadoExploraCusco extends ConsumerWidget {
                         vertical: 7,
                       ),
                       decoration: ShapeDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF2C2420),
-                            Color(0xFF161210),
-                          ],
-                        ),
+                        color: const Color(0xFF3F5E3B),
                         shape: const BeveledRectangleBorder(
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(10),
@@ -68,13 +61,13 @@ class EncabezadoExploraCusco extends ConsumerWidget {
                             bottomLeft: Radius.circular(4),
                           ),
                           side: BorderSide(
-                            color: Color(0xFFD4AF37),
-                            width: 1.5,
+                            color: Color(0xFF2D432B),
+                            width: 1,
                           ),
                         ),
                         shadows: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: const Color(0xFF3B2E22).withValues(alpha: 0.28),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -83,24 +76,22 @@ class EncabezadoExploraCusco extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Ícono de Chacana Inca en Dorado
                           SvgPicture.asset(
                             'assets/iconos/chacana.svg',
                             width: 16,
                             height: 16,
                             colorFilter: const ColorFilter.mode(
-                              Color(0xFFF3C677),
+                              Color(0xFFF6F0E2),
                               BlendMode.srcIn,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'HAKU',
-                            style: GoogleFonts.cinzel(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              color: const Color(0xFFF3C677),
-                              letterSpacing: 3.5,
+                            style: TipografiaHaku.logo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFF6F0E2),
                             ),
                           ),
                         ],
@@ -151,31 +142,19 @@ class EncabezadoExploraCusco extends ConsumerWidget {
                 children: [
                   Text(
                     'Explora Cusco',
-                    style: GoogleFonts.cinzel(
-                      fontSize: 27,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF23140A),
-                      letterSpacing: 1.5,
-                      height: 1.1,
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                          offset: const Offset(0, 1),
-                          blurRadius: 2,
-                        ),
-                      ],
+                    style: TipografiaHaku.titulo(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF3B2E22),
                     ),
                   ),
                   const SizedBox(height: 3),
-                  // Subtítulo en Tipografía Manuscrita
                   Text(
                     'Toca una provincia para descubrir destinos',
-                    style: GoogleFonts.crimsonText(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF5C3A1E).withValues(alpha: 0.85),
-                      fontStyle: FontStyle.italic,
-                      letterSpacing: 0.2,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF8A5A3C),
                     ),
                   ),
                 ],
@@ -216,14 +195,7 @@ class _BotonAccionPiedraInca extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: ShapeDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF2C2420),
-                Color(0xFF161210),
-              ],
-            ),
+            color: const Color(0xFF3F5E3B),
             shape: const BeveledRectangleBorder(
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8),
@@ -232,13 +204,13 @@ class _BotonAccionPiedraInca extends StatelessWidget {
                 bottomLeft: Radius.circular(3),
               ),
               side: BorderSide(
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF2D432B),
                 width: 1,
               ),
             ),
             shadows: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
+                color: const Color(0xFF3B2E22).withValues(alpha: 0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
@@ -246,7 +218,7 @@ class _BotonAccionPiedraInca extends StatelessWidget {
           ),
           child: Icon(
             icono,
-            color: const Color(0xFFF3C677),
+            color: const Color(0xFFF6F0E2),
             size: 18,
           ),
         ),

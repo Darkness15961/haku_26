@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'funcionalidades/carga_inicial/indice.dart';
 import 'funcionalidades/inicio/indice.dart';
+import 'funcionalidades/rutas/widgets/estilos_rutas.dart';
 
 void main() {
   runApp(const ProviderScope(child: AplicacionHaku()));
@@ -17,35 +18,29 @@ class AplicacionHaku extends StatelessWidget {
       title: 'HAKU',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8B5E3C)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: PaletaRutas.verdeBosque,
+          primary: PaletaRutas.verdeBosque,
+          secondary: PaletaRutas.verdeOliva,
+          surface: Colors.white,
+          brightness: Brightness.light,
+        ),
         scaffoldBackgroundColor: Colors.transparent,
         useMaterial3: true,
+        iconTheme: const IconThemeData(color: PaletaRutas.verdeBosque),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          backgroundColor: Colors.black,
+          contentTextStyle: TextStyle(color: Colors.white),
+        ),
       ),
       builder: (context, contenido) {
-        return DecoratedBox(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('public/image/fondoHaku.png'),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Color(0x30C9A84C),
-                BlendMode.srcOver,
-              ),
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.2,
-                colors: [
-                  const Color(0xFFEAD8B1).withValues(alpha: 0.25),
-                  const Color(0xFF2D1810).withValues(alpha: 0.15),
-                ],
-              ),
-            ),
-            child: contenido ?? const SizedBox.shrink(),
-          ),
+        return ColoredBox(
+          color: Colors.white,
+          child: contenido ?? const SizedBox.shrink(),
         );
       },
       home: const PantallaCargaInicial(siguientePantalla: PantallaInicio()),
