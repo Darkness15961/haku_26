@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../autenticacion/navegacion_auth.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../widgets/boton_primario_ruta.dart';
 import '../widgets/decoracion_detalle_fondo.dart';
 import '../widgets/estilos_rutas.dart';
 import '../widgets/imagen_parallax_ruta.dart';
 import '../widgets/linea_encabezado_inca.dart';
+import 'pantalla_mapa_ruta.dart';
 
-/// Detalle de una ruta: hero circular + ficha blanca + adorno inferior.
-class PantallaDetalleRuta extends StatefulWidget {
+/// Detalle de una ruta: hero + ficha + aporte a la comunidad.
+class PantallaDetalleRuta extends ConsumerStatefulWidget {
   final ModeloRuta ruta;
 
   const PantallaDetalleRuta({super.key, required this.ruta});
 
   @override
-  State<PantallaDetalleRuta> createState() => _EstadoPantallaDetalleRuta();
+  ConsumerState<PantallaDetalleRuta> createState() =>
+      _EstadoPantallaDetalleRuta();
 }
 
-class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
+class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
   static const _alturaHero = 300.0;
   static const _adorno = 'public/image/adorno_detalle_ruta.jpg';
 
   final ScrollController _scroll = ScrollController();
-  bool _favorito = false;
 
   @override
   void dispose() {
@@ -33,11 +38,55 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
 
   double get _offset => _scroll.hasClients ? _scroll.offset : 0.0;
 
+  Future<void> _publicarEnRuta() async {
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaPublicaciones(
+          rutaId: widget.ruta.id,
+          rutaTitulo: widget.ruta.titulo,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirMapa() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaMapaRuta(ruta: widget.ruta),
+      ),
+    );
+  }
+
+  Future<void> _toggleFavorito() async {
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+    await ref
+        .read(almacenFeedProvider.notifier)
+        .toggleFavoritoRuta(widget.ruta.id);
+  }
+
+  void _avisar(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          mensaje,
+          style: TipografiaHaku.interfaz(color: Colors.white),
+        ),
+        backgroundColor: PaletaRutas.marronOscuro,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ruta = widget.ruta;
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final favorito =
+        ref.watch(almacenFeedProvider).favoritosRutaIds.contains(ruta.id);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -74,7 +123,6 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                       color: Colors.white,
                       child: Stack(
                         children: [
-                          // Fondo decorativo con transparencia.
                           Positioned.fill(
                             child: Opacity(
                               opacity: 0.16,
@@ -115,6 +163,7 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                     textAlign: TextAlign.center,
                                     style: TipografiaHaku.interfaz(
                                       fontSize: 14,
+                                      fontWeight: FontWeight.w600,
                                       color: PaletaRutas.marronCuero,
                                     ),
                                   ),
@@ -204,13 +253,65 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                   ),
                                 ],
                                 const SizedBox(height: 22),
+                                if (ruta.comoLlegar.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.88),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.16),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Acceso',
+                                          style: TipografiaHaku.titulo(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          ruta.comoLlegar,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TipografiaHaku.interfaz(
+                                            fontSize: 13,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                        if (ruta.puntos.isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            '${ruta.puntos.length} paradas en el mapa',
+                                            style: TipografiaHaku.interfaz(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                                // Descripción en pergamino (más legible, mismo estilo).
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.78),
+                                    color: PaletaRutas.crema
+                                        .withValues(alpha: 0.94),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: PaletaRutas.beigeEnvejecido,
                                     ),
                                   ),
                                   child: Column(
@@ -218,11 +319,10 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Descripcion',
+                                        'Descripción',
                                         style: TipografiaHaku.titulo(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w700,
-                                          color: Colors.white,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -231,8 +331,7 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                         style: TipografiaHaku.interfaz(
                                           fontSize: 14,
                                           height: 1.45,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
+                                          color: PaletaRutas.marronOscuro,
                                         ),
                                       ),
                                       if (ruta.distancia.isNotEmpty) ...[
@@ -242,7 +341,7 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                           style: TipografiaHaku.interfaz(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.white,
+                                            color: PaletaRutas.verdeBosque,
                                           ),
                                         ),
                                       ],
@@ -251,7 +350,7 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                 ),
                                 const SizedBox(height: 22),
                                 Text(
-                                  'Informacion util',
+                                  'Información útil',
                                   style: TipografiaHaku.titulo(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -259,24 +358,17 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                                 ),
                                 const SizedBox(height: 12),
                                 _GrillaInfo(ruta: ruta),
-                                const SizedBox(height: 28),
+                                const SizedBox(height: 24),
+                                BotonSecundarioRuta(
+                                  texto: 'Publicar en esta ruta',
+                                  icono: Icons.add_a_photo_outlined,
+                                  onPressed: _publicarEnRuta,
+                                ),
+                                const SizedBox(height: 12),
                                 BotonPrimarioRuta(
                                   texto: ruta.textoBoton,
                                   icono: Icons.map_outlined,
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${ruta.textoBoton}: ${ruta.titulo}',
-                                          style: TipografiaHaku.interfaz(
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.black,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  },
+                                  onPressed: _abrirMapa,
                                 ),
                               ],
                             ),
@@ -297,37 +389,31 @@ class _EstadoPantallaDetalleRuta extends State<PantallaDetalleRuta> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _BotonCircular(
+                    tooltip: 'Volver',
                     icono: Icons.arrow_back_ios_new_rounded,
                     onTap: () => Navigator.of(context).maybePop(),
                   ),
                   Row(
                     children: [
                       _BotonCircular(
-                        icono: _favorito
+                        tooltip: favorito
+                            ? 'Quitar de guardados'
+                            : 'Guardar ruta',
+                        icono: favorito
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
-                        colorIcono: _favorito
+                        colorIcono: favorito
                             ? PaletaRutas.terracota
                             : PaletaRutas.marronOscuro,
-                        onTap: () => setState(() => _favorito = !_favorito),
+                        onTap: _toggleFavorito,
                       ),
                       const SizedBox(width: 8),
                       _BotonCircular(
+                        tooltip: 'Compartir',
                         icono: Icons.ios_share_rounded,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Compartir ${ruta.titulo}',
-                                style: TipografiaHaku.interfaz(
-                                  color: PaletaRutas.crema,
-                                ),
-                              ),
-                              backgroundColor: PaletaRutas.verdeBosque,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
+                        onTap: () => _avisar(
+                          'Compartir: ${ruta.titulo} (simulado)',
+                        ),
                       ),
                     ],
                   ),
@@ -427,19 +513,20 @@ class _InfoItemCard extends StatelessWidget {
             child: Image.asset(
               FondosDetalleHaku.porIndice(indice),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+              errorBuilder: (_, __, ___) =>
+                  const ColoredBox(color: Colors.black),
             ),
           ),
           Positioned.fill(
             child: ColoredBox(
-              color: Colors.black.withValues(alpha: 0.62),
+              color: Colors.black.withValues(alpha: 0.68),
             ),
           ),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +541,7 @@ class _InfoItemCard extends StatelessWidget {
                         item.etiqueta,
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.75),
+                          color: Colors.white.withValues(alpha: 0.82),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -482,45 +569,50 @@ class _BotonCircular extends StatelessWidget {
   final IconData icono;
   final VoidCallback onTap;
   final Color colorIcono;
+  final String tooltip;
 
   const _BotonCircular({
     required this.icono,
     required this.onTap,
+    required this.tooltip,
     this.colorIcono = PaletaRutas.marronOscuro,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.35),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Ink(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: const DecorationImage(
-              image: AssetImage(FondosDetalleHaku.fondoA),
-              fit: BoxFit.cover,
-            ),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.35)),
-          ),
-          child: DecoratedBox(
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.35),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Ink(
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black.withValues(alpha: 0.55),
+              image: const DecorationImage(
+                image: AssetImage(FondosDetalleHaku.fondoA),
+                fit: BoxFit.cover,
+              ),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.35)),
             ),
-            child: Icon(
-              icono,
-              size: 18,
-              color: colorIcono == PaletaRutas.terracota
-                  ? PaletaRutas.terracota
-                  : Colors.white,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.55),
+              ),
+              child: Icon(
+                icono,
+                size: 18,
+                color: colorIcono == PaletaRutas.terracota
+                    ? PaletaRutas.terracota
+                    : Colors.white,
+              ),
             ),
           ),
         ),

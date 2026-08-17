@@ -1,20 +1,24 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../pantallas/pantalla_exploradores_deslizables.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
-/// Carrusel de perfiles sugeridos para seguir.
+/// Exploradores en recuadros redondeados, con botón Seguir (estilo Instagram).
 class CarruselSugerenciasSeguimiento extends ConsumerStatefulWidget {
   final List<SugerenciaSeguimiento> sugerencias;
+  final String titulo;
 
   const CarruselSugerenciasSeguimiento({
     super.key,
     required this.sugerencias,
+    this.titulo = 'Sugerencias de seguimiento',
   });
 
   @override
@@ -24,7 +28,22 @@ class CarruselSugerenciasSeguimiento extends ConsumerStatefulWidget {
 
 class _EstadoCarruselSugerenciasSeguimiento
     extends ConsumerState<CarruselSugerenciasSeguimiento> {
-  final Set<String> _siguiendo = {};
+  Future<void> _toggleSeguir(SugerenciaSeguimiento s) async {
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+    await ref.read(almacenFeedProvider.notifier).toggleSeguir(s.id);
+  }
+
+  Future<void> _abrirPerfil(int indice) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PantallaExploradoresDeslizables(
+          exploradores: widget.sugerencias,
+          indiceInicial: indice,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,41 +52,54 @@ class _EstadoCarruselSugerenciasSeguimiento
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            'Sugerencias de seguimiento',
-            style: TipografiaHaku.titulo(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: PaletaRutas.marronOscuro,
+          child: SizedBox(
+            height: 32,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  widget.titulo,
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.marronOscuro,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset(
+                    'assets/iconos/llama.svg',
+                    width: 18,
+                    height: 18,
+                    colorFilter: const ColorFilter.mode(
+                      PaletaRutas.marronCuero,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         SizedBox(
-          height: 188,
+          height: 128,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: widget.sugerencias.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final s = widget.sugerencias[index];
-              final siguiendo = _siguiendo.contains(s.id);
-              return _TarjetaSugerencia(
+              final siguiendo =
+                  ref.watch(almacenFeedProvider).siguiendoIds.contains(s.id);
+              return _TarjetaExplorador(
                 sugerencia: s,
                 indice: index,
                 siguiendo: siguiendo,
-                onSeguir: () async {
-                  final ok = await asegurarSesion(context, ref);
-                  if (!ok || !mounted) return;
-                  setState(() {
-                    if (siguiendo) {
-                      _siguiendo.remove(s.id);
-                    } else {
-                      _siguiendo.add(s.id);
-                    }
-                  });
-                },
+                onTap: () => _abrirPerfil(index),
+                onSeguir: () => _toggleSeguir(s),
               );
             },
           ),
@@ -77,148 +109,125 @@ class _EstadoCarruselSugerenciasSeguimiento
   }
 }
 
-class _TarjetaSugerencia extends StatelessWidget {
+class _TarjetaExplorador extends StatelessWidget {
   final SugerenciaSeguimiento sugerencia;
   final int indice;
   final bool siguiendo;
+  final VoidCallback onTap;
   final VoidCallback onSeguir;
 
-  const _TarjetaSugerencia({
+  const _TarjetaExplorador({
     required this.sugerencia,
     required this.indice,
     required this.siguiendo,
+    required this.onTap,
     required this.onSeguir,
   });
 
   @override
   Widget build(BuildContext context) {
-    final veloNegro = indice % 3 != 1;
-
     return Material(
-      color: Colors.transparent,
+      color: Colors.white,
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => abrirPerfilAjeno(
-          context,
-          id: sugerencia.id,
-          nombre: sugerencia.nombre,
-          usuario: sugerencia.usuario,
-          avatarUrl: sugerencia.avatarUrl,
-          bioCorta: sugerencia.bioCorta,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          width: 142,
+        onTap: onTap,
+        child: Container(
+          width: 92,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
-            image: DecorationImage(
-              image: AssetImage(FondosDetalleHaku.porIndice(indice)),
-              fit: BoxFit.cover,
-              opacity: 0.55,
-            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ColoredBox(
-                    color: veloNegro
-                        ? Colors.black.withValues(alpha: 0.55)
-                        : Colors.white.withValues(alpha: 0.62),
+          padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
+          child: Column(
+            children: [
+              ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: sugerencia.avatarUrl,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      const ColoredBox(color: Color(0xFFD4C8B8)),
+                  errorWidget: (_, __, ___) => const ColoredBox(
+                    color: Color(0xFFBBBBBB),
+                    child: Icon(Icons.person, size: 22, color: Colors.white70),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-                  child: Column(
-                    children: [
-                      ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: sugerencia.avatarUrl,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => const ColoredBox(
-                            color: Color(0xFFCCCCCC),
-                            child: SizedBox(width: 56, height: 56),
-                          ),
-                          errorWidget: (_, __, ___) => const ColoredBox(
-                            color: Color(0xFFBBBBBB),
-                            child: SizedBox(
-                              width: 56,
-                              height: 56,
-                              child: Icon(Icons.person, color: Colors.white70),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        sugerencia.nombre,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: veloNegro
-                              ? Colors.white
-                              : PaletaRutas.marronOscuro,
-                        ),
-                      ),
-                      Text(
-                        sugerencia.usuario,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 11,
-                          color: veloNegro
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : PaletaRutas.marronOscuro.withValues(alpha: 0.65),
-                        ),
-                      ),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 32,
-                        child: TextButton(
-                          onPressed: onSeguir,
-                          style: TextButton.styleFrom(
-                            backgroundColor: siguiendo
-                                ? Colors.transparent
-                                : (veloNegro
-                                    ? Colors.white.withValues(alpha: 0.92)
-                                    : Colors.black.withValues(alpha: 0.88)),
-                            foregroundColor: siguiendo
-                                ? (veloNegro
-                                    ? Colors.white
-                                    : PaletaRutas.marronOscuro)
-                                : (veloNegro
-                                    ? PaletaRutas.marronOscuro
-                                    : Colors.white),
-                            side: siguiendo
-                                ? BorderSide(
-                                    color: veloNegro
-                                        ? Colors.white.withValues(alpha: 0.7)
-                                        : PaletaRutas.marronOscuro
-                                            .withValues(alpha: 0.45),
-                                  )
-                                : BorderSide.none,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: Text(
-                            siguiendo ? 'Siguiendo' : 'Seguir',
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                sugerencia.nombre,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.titulo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.marronOscuro,
+                ),
+              ),
+              const Spacer(),
+              _BotonSeguirTextil(
+                siguiendo: siguiendo,
+                indice: indice,
+                onPressed: onSeguir,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BotonSeguirTextil extends StatelessWidget {
+  final bool siguiendo;
+  final int indice;
+  final VoidCallback onPressed;
+
+  const _BotonSeguirTextil({
+    required this.siguiendo,
+    required this.indice,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 24,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  FondosDetalleHaku.porIndice(indice),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const ColoredBox(color: Colors.black87),
+                ),
+                ColoredBox(
+                  color: Colors.black.withValues(
+                    alpha: siguiendo ? 0.62 : 0.38,
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    siguiendo ? 'Siguiendo' : 'Seguir',
+                    style: TipografiaHaku.titulo(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],

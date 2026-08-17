@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../proveedores/proveedor_sesion.dart';
 import 'pantalla_recuperar_contrasena.dart';
 import 'pantalla_registro.dart';
@@ -42,10 +44,12 @@ class _EstadoPantallaIniciarSesion
     setState(() => _cargando = true);
     await Future<void>.delayed(const Duration(milliseconds: 450));
     if (!mounted) return;
-    ref.read(sesionProvider.notifier).iniciarSesion(
+    await ref.read(sesionProvider.notifier).iniciarSesion(
           correo: correo,
           nombreUsuario: correo.split('@').first,
         );
+    await ref.read(almacenFeedProvider.notifier).cargar();
+    if (!mounted) return;
     setState(() => _cargando = false);
     Navigator.of(context).pop(true);
   }
@@ -54,7 +58,10 @@ class _EstadoPantallaIniciarSesion
     setState(() => _cargando = true);
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
-    ref.read(sesionProvider.notifier).iniciarConGoogle();
+    await ref.read(sesionProvider.notifier).iniciarConGoogle();
+    await ref.read(almacenFeedProvider.notifier).cargar();
+    await ref.read(metricasDescubrimientoProvider.notifier).reiniciarDemo();
+    if (!mounted) return;
     setState(() => _cargando = false);
     Navigator.of(context).pop(true);
   }

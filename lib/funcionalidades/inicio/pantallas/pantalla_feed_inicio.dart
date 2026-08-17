@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
-import '../../rutas/widgets/logo_haku_encabezado.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 import '../widgets/carrusel_rutas_recomendadas.dart';
 import '../widgets/carrusel_sugerencias_seguimiento.dart';
 import '../widgets/publicacion_estilo_threads.dart';
 import 'pantalla_busqueda_inicio.dart';
 import 'pantalla_mensajes_inicio.dart';
 
-/// Inicio: feed con carruseles + publicaciones estilo Threads.
+/// Inicio = presentación del producto (descubrimientos + comunidad + posts).
 class PantallaFeedInicio extends ConsumerWidget {
   const PantallaFeedInicio({super.key});
 
@@ -30,11 +31,18 @@ class PantallaFeedInicio extends ConsumerWidget {
 
   Future<void> _abrirMensajes(BuildContext context, WidgetRef ref) async {
     final ok = await asegurarSesion(context, ref);
-    if (!ok) return;
-    if (!context.mounted) return;
+    if (!ok || !context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const PantallaMensajesInicio(),
+      ),
+    );
+  }
+
+  void _abrirDetalleRuta(BuildContext context, ModeloRuta ruta) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaDetalleRuta(ruta: ruta),
       ),
     );
   }
@@ -44,144 +52,203 @@ class PantallaFeedInicio extends ConsumerWidget {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 110;
     final rutas = RutasDataSourceLocal.obtenerPorCategoria(
       CategoriaRuta.recomendadas,
-    );
-    final sugerencias = FeedInicioDataSourceLocal.sugerencias;
-    final publicaciones = FeedInicioDataSourceLocal.publicaciones;
+    ).take(6).toList();
+    final feed = ref.watch(almacenFeedProvider);
+    final sugerencias = feed.listo
+        ? feed.exploradores
+        : FeedInicioDataSourceLocal.sugerencias;
+    final publicaciones = feed.listo
+        ? feed.publicaciones
+        : FeedInicioDataSourceLocal.publicaciones;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
-              child: Column(
-                children: [
-                  const LogoHakuEncabezado(height: 68),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _abrirBusqueda(context),
-                            borderRadius: BorderRadius.circular(14),
-                            child: Ink(
-                              height: 44,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.82),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  width: 1.1,
+      body: FondoSuaveSeccion(
+        child: SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'HAKU',
+                          style: TipografiaHaku.titulo(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.6,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Buscar',
+                          onPressed: () => _abrirBusqueda(context),
+                          icon: const Icon(
+                            Icons.search_rounded,
+                            color: PaletaRutas.marronOscuro,
+                          ),
+                        ),
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            IconButton(
+                              tooltip: 'Mensajes',
+                              onPressed: () => _abrirMensajes(context, ref),
+                              icon: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                color: PaletaRutas.marronOscuro,
+                              ),
+                            ),
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                width: 16,
+                                height: 16,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(
+                                  color: PaletaRutas.terracota,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '3',
+                                  style: TipografiaHaku.interfaz(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.search_rounded,
-                                    size: 22,
-                                    color: PaletaRutas.marronOscuro
-                                        .withValues(alpha: 0.7),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Buscar personas o lugares',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TipografiaHaku.interfaz(
-                                        fontSize: 13,
-                                        color: PaletaRutas.marronOscuro
-                                            .withValues(alpha: 0.55),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _abrirMensajes(context, ref),
-                          borderRadius: BorderRadius.circular(14),
-                          child: Ink(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.black),
-                            ),
-                            child: const Icon(
-                              Icons.chat_bubble_outline_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  const LineaEncabezadoInca(altura: 2),
-                ],
-              ),
-            ),
-            Expanded(
-              child: FondoSuaveSeccion(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(0, 16, 0, bottomPad),
-                  children: [
-                    CarruselRutasRecomendadas(
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                    child: Column(
+                      children: [
+                        Text(
+                          'DESCUBRIMIENTOS\nSEMANALES',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            height: 1.12,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Nuevas rutas, historias y paisajes que te esperan en Cusco.',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 14,
+                            height: 1.4,
+                            color: PaletaRutas.marronCuero,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: CarruselRutasRecomendadas(
                       rutas: rutas,
-                      onTapRuta: (ruta) {
+                      titulo: 'Rutas destacadas',
+                      onVerTodas: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => PantallaDetalleRuta(ruta: ruta),
+                            builder: (_) => const PantallaRutas(),
                           ),
                         );
                       },
+                      onTapRuta: (r) => _abrirDetalleRuta(context, r),
                     ),
-                    const SizedBox(height: 28),
-                    CarruselSugerenciasSeguimiento(sugerencias: sugerencias),
-                    const SizedBox(height: 28),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Publicaciones',
-                        style: TipografiaHaku.titulo(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.marronOscuro,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    for (var i = 0; i < publicaciones.length; i++) ...[
-                      PublicacionEstiloThreads(
-                        publicacion: publicaciones[i],
-                        indice: i,
-                      ),
-                      if (i < publicaciones.length - 1)
-                        const SizedBox(height: 12),
-                    ],
-                  ],
+                  ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 22),
+                    child: CarruselSugerenciasSeguimiento(
+                      sugerencias: sugerencias,
+                      titulo: 'Exploradores destacados',
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, 22, 20, 10),
+                    child: _TituloConBordeInca(
+                      texto: 'Publicaciones recientes',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i == publicaciones.length - 1 ? bottomPad : 12,
+                        ),
+                        child: PublicacionEstiloThreads(
+                          publicacion: publicaciones[i],
+                          indice: i,
+                        ),
+                      );
+                    },
+                    childCount: publicaciones.length,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+  }
+}
+
+class _TituloConBordeInca extends StatelessWidget {
+  const _TituloConBordeInca({required this.texto});
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          texto,
+          textAlign: TextAlign.center,
+          style: TipografiaHaku.titulo(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ClipRect(
+          child: SizedBox(
+            height: 12,
+            width: double.infinity,
+            child: SvgPicture.asset(
+              'assets/iconos/lineas_inca.svg',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              colorFilter: ColorFilter.mode(
+                PaletaRutas.marronCuero.withValues(alpha: 0.7),
+                BlendMode.srcIn,
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

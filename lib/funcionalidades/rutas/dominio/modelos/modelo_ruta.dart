@@ -5,6 +5,45 @@ enum CategoriaRuta {
   naturaleza,
 }
 
+/// Parada / hito de una ruta (para mapa simulado y BD futura `puntos_ruta`).
+class PuntoRuta {
+  final String id;
+  final String nombre;
+  final String tipo;
+  final double lat;
+  final double lng;
+  final String? nota;
+
+  const PuntoRuta({
+    required this.id,
+    required this.nombre,
+    required this.tipo,
+    required this.lat,
+    required this.lng,
+    this.nota,
+  });
+
+  factory PuntoRuta.fromJson(Map<String, dynamic> json) {
+    return PuntoRuta(
+      id: json['id'] as String? ?? '',
+      nombre: json['nombre'] as String? ?? '',
+      tipo: json['tipo'] as String? ?? 'parada',
+      lat: (json['lat'] as num?)?.toDouble() ?? 0,
+      lng: (json['lng'] as num?)?.toDouble() ?? 0,
+      nota: json['nota'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nombre': nombre,
+        'tipo': tipo,
+        'lat': lat,
+        'lng': lng,
+        'nota': nota,
+      };
+}
+
 /// Modelo de una ruta turística / caminata.
 class ModeloRuta {
   final String id;
@@ -26,6 +65,11 @@ class ModeloRuta {
   final int cantidadResenas;
   final String textoBoton;
   final String? tipoSitio;
+  final List<PuntoRuta> puntos;
+  final String puntoPartida;
+  final String comoLlegar;
+  final String transporte;
+  final List<String> tips;
 
   const ModeloRuta({
     required this.id,
@@ -47,6 +91,11 @@ class ModeloRuta {
     this.cantidadResenas = 0,
     this.textoBoton = 'Cómo llegar',
     this.tipoSitio,
+    this.puntos = const [],
+    this.puntoPartida = '',
+    this.comoLlegar = '',
+    this.transporte = '',
+    this.tips = const [],
   });
 
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
@@ -76,6 +125,15 @@ class ModeloRuta {
       cantidadResenas: json['cantidadResenas'] as int? ?? 0,
       textoBoton: json['textoBoton'] as String? ?? 'Cómo llegar',
       tipoSitio: json['tipoSitio'] as String?,
+      puntos: (json['puntos'] as List<dynamic>? ?? [])
+          .whereType<Map>()
+          .map((e) => PuntoRuta.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      puntoPartida: json['puntoPartida'] as String? ?? '',
+      comoLlegar: json['comoLlegar'] as String? ?? '',
+      transporte: json['transporte'] as String? ?? '',
+      tips: (json['tips'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+          const [],
     );
   }
 
@@ -100,6 +158,11 @@ class ModeloRuta {
       'cantidadResenas': cantidadResenas,
       'textoBoton': textoBoton,
       'tipoSitio': tipoSitio,
+      'puntos': puntos.map((p) => p.toJson()).toList(),
+      'puntoPartida': puntoPartida,
+      'comoLlegar': comoLlegar,
+      'transporte': transporte,
+      'tips': tips,
     };
   }
 
@@ -123,6 +186,11 @@ class ModeloRuta {
     int? cantidadResenas,
     String? textoBoton,
     String? tipoSitio,
+    List<PuntoRuta>? puntos,
+    String? puntoPartida,
+    String? comoLlegar,
+    String? transporte,
+    List<String>? tips,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
@@ -144,6 +212,11 @@ class ModeloRuta {
       cantidadResenas: cantidadResenas ?? this.cantidadResenas,
       textoBoton: textoBoton ?? this.textoBoton,
       tipoSitio: tipoSitio ?? this.tipoSitio,
+      puntos: puntos ?? this.puntos,
+      puntoPartida: puntoPartida ?? this.puntoPartida,
+      comoLlegar: comoLlegar ?? this.comoLlegar,
+      transporte: transporte ?? this.transporte,
+      tips: tips ?? this.tips,
     );
   }
 }

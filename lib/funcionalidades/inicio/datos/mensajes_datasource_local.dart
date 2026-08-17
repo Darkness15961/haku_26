@@ -1,6 +1,8 @@
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import 'feed_inicio_datasource_local.dart';
 
+export '../../comunidad/dominio/modelo_comunidad.dart';
+
 /// Estado en memoria de grupos y comunidades (demo).
 class MensajeriaEstado {
   MensajeriaEstado._();
@@ -20,47 +22,9 @@ class MensajeriaEstado {
     ),
   ];
 
-  final List<ComunidadHaku> comunidades = [
-    ComunidadHaku(
-      id: 'com1',
-      nombre: 'Trekkers Cusco',
-      descripcion: 'Salidas semanales y tips de altura.',
-      miembros: 1280,
-      imagenUrl:
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80',
-    ),
-    ComunidadHaku(
-      id: 'com2',
-      nombre: 'Fotógrafos Andinos',
-      descripcion: 'Amaneceres, niebla y color.',
-      miembros: 642,
-      imagenUrl:
-          'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=400&q=80',
-    ),
-    ComunidadHaku(
-      id: 'com3',
-      nombre: 'Ruta Inca Crew',
-      descripcion: 'Preparación y logística del Camino Inca.',
-      miembros: 910,
-      imagenUrl:
-          'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=400&q=80',
-    ),
-  ];
-
-  final Set<String> solicitudesComunidad = {};
-
   void agregarGrupo(GrupoRuta grupo) => grupos.insert(0, grupo);
 
   void eliminarGrupo(String id) => grupos.removeWhere((g) => g.id == id);
-
-  void agregarComunidad(ComunidadHaku comunidad) =>
-      comunidades.insert(0, comunidad);
-
-  void solicitarUnirse(String comunidadId) =>
-      solicitudesComunidad.add(comunidadId);
-
-  bool solicitudEnviada(String comunidadId) =>
-      solicitudesComunidad.contains(comunidadId);
 }
 
 /// Datos demo de mensajería 1:1.
@@ -118,9 +82,6 @@ class MensajesDataSourceLocal {
     ),
   ];
 
-  static List<ComunidadHaku> get comunidades =>
-      MensajeriaEstado.instancia.comunidades;
-
   static List<GrupoRuta> get grupos => MensajeriaEstado.instancia.grupos;
 }
 
@@ -141,24 +102,6 @@ class ChatConversacion {
     required this.ultimoMensaje,
     required this.hace,
     required this.noLeidos,
-  });
-}
-
-class ComunidadHaku {
-  final String id;
-  final String nombre;
-  final String descripcion;
-  final int miembros;
-  final String imagenUrl;
-  final List<String> invitadosIds;
-
-  const ComunidadHaku({
-    required this.id,
-    required this.nombre,
-    required this.descripcion,
-    required this.miembros,
-    required this.imagenUrl,
-    this.invitadosIds = const [],
   });
 }
 

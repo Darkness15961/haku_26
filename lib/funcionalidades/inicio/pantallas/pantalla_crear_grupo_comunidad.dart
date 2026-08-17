@@ -1,6 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../comunidad/widgets/chip_categoria_comunidad.dart';
+import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -8,6 +11,7 @@ import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../datos/mensajes_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
 /// Formulario: crear grupo de mensajería (nombre, personas, ruta).
 class PantallaCrearGrupo extends StatefulWidget {
@@ -304,21 +308,21 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
   }
 }
 
-/// Formulario: crear comunidad (nombre + personas invitadas).
-class PantallaCrearComunidad extends StatefulWidget {
+/// Formulario: crear comunidad (nombre, categorías, personas).
+class PantallaCrearComunidad extends ConsumerStatefulWidget {
   const PantallaCrearComunidad({super.key});
 
   @override
-  State<PantallaCrearComunidad> createState() => _EstadoPantallaCrearComunidad();
+  ConsumerState<PantallaCrearComunidad> createState() =>
+      _EstadoPantallaCrearComunidad();
 }
 
-class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
+class _EstadoPantallaCrearComunidad
+    extends ConsumerState<PantallaCrearComunidad> {
   final _nombreCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final Set<String> _invitados = {};
-
-  List<SugerenciaSeguimiento> get _personas =>
-      FeedInicioDataSourceLocal.sugerencias;
+  final Set<CategoriaLugar> _categorias = {};
 
   @override
   void dispose() {
@@ -327,7 +331,7 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
     super.dispose();
   }
 
-  void _crear() {
+  Future<void> _crear() async {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -338,10 +342,10 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
       );
       return;
     }
-    if (_invitados.isEmpty) {
+    if (_categorias.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invita al menos a una persona'),
+          content: Text('Elige al menos una categoría'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -352,23 +356,19 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
         ? 'Comunidad creada en Haku'
         : _descCtrl.text.trim();
 
-    MensajeriaEstado.instancia.agregarComunidad(
-      ComunidadHaku(
-        id: 'com_${DateTime.now().millisecondsSinceEpoch}',
-        nombre: nombre,
-        descripcion: desc,
-        miembros: 1 + _invitados.length,
-        imagenUrl:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
-        invitadosIds: _invitados.toList(),
-      ),
-    );
+    await ref.read(almacenFeedProvider.notifier).crearComunidad(
+          nombre: nombre,
+          descripcion: desc,
+          categorias: _categorias.toList(),
+          invitadosIds: _invitados.toList(),
+        );
 
+    if (!mounted) return;
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Comunidad "$nombre" creada · ${_invitados.length} invitados',
+          'Comunidad "$nombre" creada · ${_categorias.length} categorías',
         ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
@@ -379,6 +379,9 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
+    final personas = ref.watch(almacenFeedProvider).exploradores;
+    final lista =
+        personas.isEmpty ? FeedInicioDataSourceLocal.sugerencias : personas;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -411,6 +414,36 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
                     ),
                     const SizedBox(height: 18),
                     Text(
+                      'Categorías (puedes elegir varias)',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.marronOscuro,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final cat in CategoriaLugar.values)
+                          ChipCategoriaComunidad(
+                            categoria: cat,
+                            seleccionado: _categorias.contains(cat),
+                            onTap: () {
+                              setState(() {
+                                if (_categorias.contains(cat)) {
+                                  _categorias.remove(cat);
+                                } else {
+                                  _categorias.add(cat);
+                                }
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
                       'Descripción (opcional)',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
@@ -437,7 +470,7 @@ class _EstadoPantallaCrearComunidad extends State<PantallaCrearComunidad> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ..._personas.map((p) {
+                    ...lista.map((p) {
                       final sel = _invitados.contains(p.id);
                       return CheckboxListTile(
                         value: sel,

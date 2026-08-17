@@ -25,6 +25,57 @@ class RutasDataSourceLocal {
       cantidadResenas: 3120,
       textoBoton: 'Cómo llegar',
       tipoSitio: 'Trekking',
+      puntoPartida: 'Km 82 — Piscacucho',
+      transporte: 'Tren + bus / colectivo desde Cusco',
+      comoLlegar:
+          'Desde Cusco toma tren o colectivo a Ollantaytambo y continúa hasta el Km 82 (Piscacucho), punto de control donde inicia el Camino Inca. Reserva anticipada obligatoria.',
+      tips: [
+        'Permiso del Camino Inca con 3–6 meses de anticipación',
+        'Aclimatación mínima 2 días en Cusco',
+        'Llevar bastones y capas para lluvia',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'ri1',
+          nombre: 'Piscacucho (Km 82)',
+          tipo: 'inicio',
+          lat: -13.2245,
+          lng: -72.4340,
+          nota: 'Control de ingreso',
+        ),
+        PuntoRuta(
+          id: 'ri2',
+          nombre: 'Wayllabamba',
+          tipo: 'parada',
+          lat: -13.2360,
+          lng: -72.4680,
+          nota: 'Campamento día 1',
+        ),
+        PuntoRuta(
+          id: 'ri3',
+          nombre: 'Warmiwañusca',
+          tipo: 'parada',
+          lat: -13.2520,
+          lng: -72.5100,
+          nota: 'Paso más alto ~4,200 m',
+        ),
+        PuntoRuta(
+          id: 'ri4',
+          nombre: 'Wiñay Wayna',
+          tipo: 'parada',
+          lat: -13.1720,
+          lng: -72.5360,
+          nota: 'Ruinas y campamento',
+        ),
+        PuntoRuta(
+          id: 'ri5',
+          nombre: 'Machu Picchu',
+          tipo: 'destino',
+          lat: -13.1631,
+          lng: -72.5450,
+          nota: 'Ciudadela',
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'valle_sagrado',
@@ -48,6 +99,46 @@ class RutasDataSourceLocal {
       cantidadResenas: 2180,
       textoBoton: 'Ver en el mapa',
       tipoSitio: 'Circuito',
+      puntoPartida: 'Plaza de Armas, Cusco',
+      transporte: 'Colectivo / taxi / tour privado',
+      comoLlegar:
+          'Sale desde Cusco por la carretera hacia Pisac (≈45 min). Continúa a Urubamba y Ollantaytambo. Puedes hacerlo en un día largo o dormir en el valle.',
+      tips: const [
+        'Mercado de Pisac abre fuerte los martes/jueves/domingo',
+        'Llevar efectivo en soles para artesanos',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'vs0',
+          nombre: 'Cusco',
+          tipo: 'inicio',
+          lat: -13.5167,
+          lng: -71.9788,
+        ),
+        PuntoRuta(
+          id: 'vs1',
+          nombre: 'Pisac',
+          tipo: 'parada',
+          lat: -13.4225,
+          lng: -71.8467,
+          nota: 'Mercado y ruinas',
+        ),
+        PuntoRuta(
+          id: 'vs2',
+          nombre: 'Urubamba',
+          tipo: 'parada',
+          lat: -13.3067,
+          lng: -72.1161,
+        ),
+        PuntoRuta(
+          id: 'vs3',
+          nombre: 'Ollantaytambo',
+          tipo: 'destino',
+          lat: -13.2581,
+          lng: -72.2636,
+          nota: 'Fortaleza viva',
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'cusco_historico',
@@ -71,6 +162,44 @@ class RutasDataSourceLocal {
       cantidadResenas: 4560,
       textoBoton: 'Iniciar aventura',
       tipoSitio: 'Urbana',
+      puntoPartida: 'Plaza de Armas',
+      transporte: 'A pie (todo el circuito)',
+      comoLlegar:
+          'Comienza en la Plaza de Armas. Baja a Qorikancha, sube por San Blas y continúa hasta Sacsayhuamán (taxi opcional en el tramo final).',
+      tips: const [
+        'Boleto turístico parcial cubre Sacsayhuamán',
+        'Hidrátate: la altura se siente al subir',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'ch1',
+          nombre: 'Plaza de Armas',
+          tipo: 'inicio',
+          lat: -13.5167,
+          lng: -71.9788,
+        ),
+        PuntoRuta(
+          id: 'ch2',
+          nombre: 'Qorikancha',
+          tipo: 'parada',
+          lat: -13.5205,
+          lng: -71.9753,
+        ),
+        PuntoRuta(
+          id: 'ch3',
+          nombre: 'San Blas',
+          tipo: 'parada',
+          lat: -13.5140,
+          lng: -71.9758,
+        ),
+        PuntoRuta(
+          id: 'ch4',
+          nombre: 'Sacsayhuamán',
+          tipo: 'destino',
+          lat: -13.5094,
+          lng: -71.9817,
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'machu_picchu',
@@ -94,6 +223,37 @@ class RutasDataSourceLocal {
       cantidadResenas: 2345,
       textoBoton: 'Ver en el mapa',
       tipoSitio: 'Sitio Arqueológico',
+      puntoPartida: 'Estación Poroy / Ollantaytambo',
+      transporte: 'Tren a Aguas Calientes + bus CONSETUR',
+      comoLlegar:
+          'Tren desde Poroy u Ollantaytambo hasta Aguas Calientes. De ahí, bus a la ciudadela o caminata empinada (≈1.5 h). Entrada con horario.',
+      tips: const [
+        'Compra tickets con fecha y circuito',
+        'Llega al primer bus si quieres menos gente',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'mp1',
+          nombre: 'Ollantaytambo',
+          tipo: 'inicio',
+          lat: -13.2581,
+          lng: -72.2636,
+        ),
+        PuntoRuta(
+          id: 'mp2',
+          nombre: 'Aguas Calientes',
+          tipo: 'parada',
+          lat: -13.1547,
+          lng: -72.5255,
+        ),
+        PuntoRuta(
+          id: 'mp3',
+          nombre: 'Machu Picchu',
+          tipo: 'destino',
+          lat: -13.1631,
+          lng: -72.5450,
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'laguna_humantay',
@@ -117,6 +277,38 @@ class RutasDataSourceLocal {
       cantidadResenas: 1890,
       textoBoton: 'Cómo llegar',
       tipoSitio: 'Naturaleza',
+      puntoPartida: 'Soraypampa',
+      transporte: 'Van desde Cusco (salida ~4–5 am)',
+      comoLlegar:
+          'Van o tour desde Cusco hasta Mollepata y luego Soraypampa. Desde allí, caminata de ~1.5–2 h hasta la laguna. Caballos opcionales en tramos.',
+      tips: const [
+        'Salida muy temprano para evitar nubes',
+        'Bastones ayudan en el último tramo',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'lh1',
+          nombre: 'Cusco',
+          tipo: 'inicio',
+          lat: -13.5167,
+          lng: -71.9788,
+        ),
+        PuntoRuta(
+          id: 'lh2',
+          nombre: 'Soraypampa',
+          tipo: 'parada',
+          lat: -13.3960,
+          lng: -72.5750,
+          nota: 'Inicio de caminata',
+        ),
+        PuntoRuta(
+          id: 'lh3',
+          nombre: 'Laguna Humantay',
+          tipo: 'destino',
+          lat: -13.3820,
+          lng: -72.5880,
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'vinicunca',
@@ -140,6 +332,37 @@ class RutasDataSourceLocal {
       cantidadResenas: 2740,
       textoBoton: 'Iniciar aventura',
       tipoSitio: 'Trekking',
+      puntoPartida: 'Cusipata / Phulawasipata',
+      transporte: 'Tour o van privada desde Cusco',
+      comoLlegar:
+          'Traslado temprano a Cusipata y luego a Phulawasipata. Caminata de altura hasta el mirador. Alternativa: Red Valley.',
+      tips: const [
+        'Aclimatación obligatoria',
+        'Capa térmica + impermeable',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'vn1',
+          nombre: 'Cusco',
+          tipo: 'inicio',
+          lat: -13.5167,
+          lng: -71.9788,
+        ),
+        PuntoRuta(
+          id: 'vn2',
+          nombre: 'Phulawasipata',
+          tipo: 'parada',
+          lat: -13.8700,
+          lng: -71.3200,
+        ),
+        PuntoRuta(
+          id: 'vn3',
+          nombre: 'Vinicunca',
+          tipo: 'destino',
+          lat: -13.8697,
+          lng: -71.3031,
+        ),
+      ],
     ),
     ModeloRuta(
       id: 'maras_moray',
@@ -163,6 +386,37 @@ class RutasDataSourceLocal {
       cantidadResenas: 1650,
       textoBoton: 'Ver ruta',
       tipoSitio: 'Circuito',
+      puntoPartida: 'Urubamba o Cusco',
+      transporte: 'Taxi / colectivo / bicicleta',
+      comoLlegar:
+          'Desde Cusco o Urubamba hacia Maras. Visita Moray primero y luego las salineras. Hay opción en bici desde Urubamba.',
+      tips: const [
+        'Entrada separada a salineras',
+        'Mejor luz al atardecer en Maras',
+      ],
+      puntos: [
+        PuntoRuta(
+          id: 'mm1',
+          nombre: 'Urubamba',
+          tipo: 'inicio',
+          lat: -13.3067,
+          lng: -72.1161,
+        ),
+        PuntoRuta(
+          id: 'mm2',
+          nombre: 'Moray',
+          tipo: 'parada',
+          lat: -13.3295,
+          lng: -72.1956,
+        ),
+        PuntoRuta(
+          id: 'mm3',
+          nombre: 'Salineras de Maras',
+          tipo: 'destino',
+          lat: -13.3000,
+          lng: -72.1560,
+        ),
+      ],
     ),
   ];
 

@@ -1,18 +1,23 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
-/// Carrusel horizontal de rutas recomendadas con foto.
+/// Carrusel horizontal de rutas destacadas (fotos grandes).
 class CarruselRutasRecomendadas extends StatelessWidget {
   final List<ModeloRuta> rutas;
   final ValueChanged<ModeloRuta>? onTapRuta;
+  final VoidCallback? onVerTodas;
+  final String titulo;
 
   const CarruselRutasRecomendadas({
     super.key,
     required this.rutas,
     this.onTapRuta,
+    this.onVerTodas,
+    this.titulo = 'Rutas recomendadas',
   });
 
   @override
@@ -22,18 +27,55 @@ class CarruselRutasRecomendadas extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            'Rutas recomendadas',
-            style: TipografiaHaku.titulo(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: PaletaRutas.marronOscuro,
+          child: SizedBox(
+            height: 32,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  titulo,
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.marronOscuro,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset(
+                    'assets/iconos/montania.svg',
+                    width: 18,
+                    height: 18,
+                  ),
+                ),
+                if (onVerTodas != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: onVerTodas,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Ver todas >',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: PaletaRutas.marronCuero,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 196,
+          height: 248,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -41,10 +83,8 @@ class CarruselRutasRecomendadas extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final ruta = rutas[index];
-              final veloNegro = index.isEven;
               return _TarjetaRutaCarrusel(
                 ruta: ruta,
-                veloNegro: veloNegro,
                 onTap: () => onTapRuta?.call(ruta),
               );
             },
@@ -57,12 +97,10 @@ class CarruselRutasRecomendadas extends StatelessWidget {
 
 class _TarjetaRutaCarrusel extends StatelessWidget {
   final ModeloRuta ruta;
-  final bool veloNegro;
   final VoidCallback? onTap;
 
   const _TarjetaRutaCarrusel({
     required this.ruta,
-    required this.veloNegro,
     this.onTap,
   });
 
@@ -72,18 +110,21 @@ class _TarjetaRutaCarrusel extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
-          width: 168,
+          width: 176,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.black,
-              width: 1.2,
-            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(14.8),
+            borderRadius: BorderRadius.circular(18),
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -95,32 +136,17 @@ class _TarjetaRutaCarrusel extends StatelessWidget {
                   errorWidget: (_, __, ___) =>
                       const ColoredBox(color: Color(0xFFD4C8B8)),
                 ),
-                // Delineado fino interno para realzar la foto.
-                IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14.8),
-                      border: Border.all(
-                        color: Colors.black.withValues(alpha: 0.85),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                DecoratedBox(
+                const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: veloNegro
-                          ? [
-                              Colors.black.withValues(alpha: 0.15),
-                              Colors.black.withValues(alpha: 0.72),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.08),
-                              Colors.black.withValues(alpha: 0.55),
-                            ],
+                      colors: [
+                        Color(0x22000000),
+                        Color(0x00000000),
+                        Color(0xCC000000),
+                      ],
+                      stops: [0, 0.4, 1],
                     ),
                   ),
                 ),
@@ -137,20 +163,16 @@ class _TarjetaRutaCarrusel extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: veloNegro
-                                ? Colors.black.withValues(alpha: 0.45)
-                                : Colors.white.withValues(alpha: 0.28),
+                            color: PaletaRutas.marronOscuro.withValues(alpha: 0.72),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
                           ),
                           child: Text(
-                            ruta.dificultadTexto,
+                            ruta.dificultadTexto.toUpperCase(),
                             style: TipografiaHaku.interfaz(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
                               color: Colors.white,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ),
@@ -168,13 +190,40 @@ class _TarjetaRutaCarrusel extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${ruta.dias} d · ${ruta.distancia}',
+                        '${ruta.dias} días · ${ruta.distancia}',
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.88),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
+                      if (ruta.etiquetas.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: ruta.etiquetas.take(2).map((e) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                e,
+                                style: TipografiaHaku.interfaz(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -5,7 +5,9 @@ import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../datos/feed_inicio_datasource_local.dart';
 import '../datos/mensajes_datasource_local.dart';
+import 'pantalla_chat_directo.dart';
 import 'pantalla_comunidades.dart';
 import 'pantalla_crear_grupo_comunidad.dart';
 import 'pantalla_detalle_grupo.dart';
@@ -357,11 +359,16 @@ class _CardChat extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Chat con ${chat.nombre}'),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.black.withValues(alpha: 0.88),
+          final persona = SugerenciaSeguimiento(
+            id: chat.id,
+            nombre: chat.nombre,
+            usuario: chat.usuario,
+            avatarUrl: chat.avatarUrl,
+            bioCorta: '',
+          );
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => PantallaChatDirecto(persona: persona),
             ),
           );
         },

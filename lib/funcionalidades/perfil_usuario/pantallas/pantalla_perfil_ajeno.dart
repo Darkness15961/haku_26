@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/pantallas/pantalla_mensajes_inicio.dart';
+import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -126,13 +127,15 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
                       Row(
                         children: [
                           Expanded(
-                            child: _BotonAccionPerfil(
-                              etiqueta: _siguiendo ? 'Siguiendo' : 'Seguir',
+                            child: BotonFondoTextil(
+                              texto: _siguiendo ? 'Siguiendo' : 'Seguir',
                               icono: _siguiendo
                                   ? Icons.check_rounded
                                   : Icons.person_add_alt_1_rounded,
-                              relleno: !_siguiendo,
-                              onTap: _seguir,
+                              onPressed: _seguir,
+                              altura: 44,
+                              radius: 12,
+                              indiceFondo: 0,
                             ),
                           ),
                           const SizedBox(width: 10),

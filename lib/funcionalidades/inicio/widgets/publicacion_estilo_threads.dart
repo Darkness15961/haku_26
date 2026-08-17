@@ -1,14 +1,17 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../autenticacion/navegacion_auth.dart';
-import '../../rutas/widgets/decoracion_detalle_fondo.dart';
-import '../../rutas/widgets/estilos_rutas.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
+import '../../lugares/dominio/modelos/modelo_lugar.dart';
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../pantallas/pantalla_comentarios_publicacion.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
-/// Publicación vertical al estilo Threads (avatar + texto + acciones).
+/// Post estilo Instagram: foto grande, poco texto, acciones claras.
 class PublicacionEstiloThreads extends ConsumerStatefulWidget {
   final PublicacionFeed publicacion;
   final int indice;
@@ -26,86 +29,60 @@ class PublicacionEstiloThreads extends ConsumerStatefulWidget {
 
 class _EstadoPublicacionEstiloThreads
     extends ConsumerState<PublicacionEstiloThreads> {
-  late bool _liked;
-  late int _likes;
-  bool _guardado = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _liked = false;
-    _likes = widget.publicacion.likes;
-  }
+  static TextStyle get _ui => TipografiaHaku.interfaz();
 
   Future<void> _toggleLike() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    setState(() {
-      _liked = !_liked;
-      _likes += _liked ? 1 : -1;
-    });
+    await ref
+        .read(almacenFeedProvider.notifier)
+        .toggleLikePublicacion(widget.publicacion.id);
   }
 
   Future<void> _toggleGuardar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    setState(() => _guardado = !_guardado);
+    await ref
+        .read(almacenFeedProvider.notifier)
+        .toggleGuardarPublicacion(widget.publicacion.id);
   }
 
   Future<void> _comentar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Comentarios próximamente'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-      ),
-    );
+    await abrirComentariosPublicacion(context, widget.publicacion);
   }
-
-  Color get _textoPrincipal {
-    switch (widget.publicacion.estiloFondo) {
-      case EstiloFondoPublicacion.veloNegro:
-      case EstiloFondoPublicacion.veloNegroSuave:
-        return Colors.white;
-      case EstiloFondoPublicacion.veloBlanco:
-      case EstiloFondoPublicacion.sinVelo:
-        return PaletaRutas.marronOscuro;
-    }
-  }
-
-  Color get _textoSecundario => _textoPrincipal.withValues(alpha: 0.62);
 
   @override
   Widget build(BuildContext context) {
     final p = widget.publicacion;
+    final feed = ref.watch(almacenFeedProvider);
+    final live = feed.publicaciones.where((x) => x.id == p.id);
+    final post = live.isNotEmpty ? live.first : p;
+    final liked = feed.likesPublicacionIds.contains(p.id);
+    final likes = post.likes;
+    final guardado = feed.guardadosIds.contains(p.id);
+    final imagen = post.imagenUrl ??
+        'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=900&q=80';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
-        image: DecorationImage(
-          image: AssetImage(FondosDetalleHaku.porIndice(widget.indice)),
-          fit: BoxFit.cover,
-          opacity: p.estiloFondo == EstiloFondoPublicacion.sinVelo ? 0.28 : 0.5,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Stack(
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Positioned.fill(child: _velo(p.estiloFondo)),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
                     onTap: () => abrirPerfilAjeno(
                       context,
-                      id: p.usuario,
+                      ref,
+                      id: p.autorId.isNotEmpty ? p.autorId : p.usuario,
                       nombre: p.autor,
                       usuario: p.usuario,
                       avatarUrl: p.avatarUrl,
@@ -113,216 +90,197 @@ class _EstadoPublicacionEstiloThreads
                     child: ClipOval(
                       child: CachedNetworkImage(
                         imageUrl: p.avatarUrl,
-                        width: 42,
-                        height: 42,
+                        width: 36,
+                        height: 36,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => const ColoredBox(
-                          color: Color(0xFFCCCCCC),
-                          child: SizedBox(width: 42, height: 42),
-                        ),
-                        errorWidget: (_, __, ___) => const ColoredBox(
-                          color: Color(0xFFBBBBBB),
-                          child: SizedBox(
-                            width: 42,
-                            height: 42,
-                            child: Icon(
-                              Icons.person,
-                              size: 22,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: () => abrirPerfilAjeno(
-                            context,
-                            id: p.usuario,
-                            nombre: p.autor,
-                            usuario: p.usuario,
-                            avatarUrl: p.avatarUrl,
+                    child: GestureDetector(
+                      onTap: () => abrirPerfilAjeno(
+                        context,
+                        ref,
+                        id: p.autorId.isNotEmpty ? p.autorId : p.usuario,
+                        nombre: p.autor,
+                        usuario: p.usuario,
+                        avatarUrl: p.avatarUrl,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.autor,
+                            style: _ui.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  p.autor,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: _textoPrincipal,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                p.usuario,
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 12,
-                                  color: _textoSecundario,
-                                ),
-                              ),
-                              Text(
-                                ' · ${p.hace}',
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 12,
-                                  color: _textoSecundario,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          p.texto,
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: _textoPrincipal,
-                          ),
-                        ),
-                        if (p.imagenUrl != null) ...[
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: AspectRatio(
-                              aspectRatio: 16 / 10,
-                              child: CachedNetworkImage(
-                                imageUrl: p.imagenUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => ColoredBox(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                ),
-                                errorWidget: (_, __, ___) => ColoredBox(
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: _textoSecundario,
-                                  ),
-                                ),
-                              ),
+                          Text(
+                            '${p.usuario} · ${p.hace}',
+                            style: _ui.copyWith(
+                              fontSize: 12,
+                              color: PaletaRutas.marronCuero,
                             ),
                           ),
                         ],
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _Accion(
-                              icono: _liked
-                                  ? Icons.explore_rounded
-                                  : Icons.explore_outlined,
-                              etiqueta: '$_likes',
-                              color: _liked
-                                  ? PaletaRutas.verdeOliva
-                                  : _textoSecundario,
-                              onTap: _toggleLike,
-                            ),
-                            const SizedBox(width: 18),
-                            _Accion(
-                              icono: Icons.chat_bubble_outline_rounded,
-                              etiqueta: '${p.comentarios}',
-                              color: _textoSecundario,
-                              onTap: _comentar,
-                            ),
-                            const SizedBox(width: 18),
-                            _Accion(
-                              icono: _guardado
-                                  ? Icons.bookmark_rounded
-                                  : Icons.bookmark_border_rounded,
-                              etiqueta: '',
-                              color: _guardado
-                                  ? PaletaRutas.verdeOliva
-                                  : _textoSecundario,
-                              onTap: _toggleGuardar,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              onPressed: () {},
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                              icon: Icon(
-                                Icons.ios_share_rounded,
-                                size: 18,
-                                color: _textoSecundario,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.more_horiz,
+                      color: PaletaRutas.marronOscuro,
                     ),
                   ),
                 ],
               ),
             ),
+            AspectRatio(
+              aspectRatio: 4 / 5,
+              child: _ImagenPublicacion(url: imagen),
+            ),
+            if ((post.lugarNombre ?? '').isNotEmpty ||
+                (post.categoria ?? '').isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  [
+                    if ((post.lugarNombre ?? '').isNotEmpty) post.lugarNombre,
+                    if ((post.categoria ?? '').isNotEmpty)
+                      _etiquetaCategoria(post.categoria!),
+                  ].join(' · '),
+                  style: _ui.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.marronCuero,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _toggleLike,
+                    icon: Icon(
+                      liked ? Icons.favorite_rounded : Icons.favorite_border,
+                      color: liked
+                          ? PaletaRutas.terracota
+                          : PaletaRutas.marronOscuro,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _comentar,
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: PaletaRutas.marronOscuro,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.send_outlined,
+                      color: PaletaRutas.marronOscuro,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _toggleGuardar,
+                    icon: Icon(
+                      guardado
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: PaletaRutas.marronOscuro,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Text(
+                '$likes me gusta',
+                style: _ui.copyWith(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: RichText(
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: _ui.copyWith(fontSize: 13, height: 1.35),
+                  children: [
+                    TextSpan(
+                      text: '${p.autor} ',
+                      style: _ui.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    TextSpan(text: p.texto),
+                  ],
+                ),
+              ),
+            ),
+            if (p.comentarios > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: GestureDetector(
+                  onTap: _comentar,
+                  child: Text(
+                    'Ver los ${p.comentarios} comentarios',
+                    style: _ui.copyWith(
+                      fontSize: 13,
+                      color: PaletaRutas.marronCuero,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
-
-  Widget _velo(EstiloFondoPublicacion estilo) {
-    switch (estilo) {
-      case EstiloFondoPublicacion.veloNegro:
-        return ColoredBox(color: Colors.black.withValues(alpha: 0.72));
-      case EstiloFondoPublicacion.veloNegroSuave:
-        return ColoredBox(color: Colors.black.withValues(alpha: 0.52));
-      case EstiloFondoPublicacion.veloBlanco:
-        return ColoredBox(color: Colors.white.withValues(alpha: 0.78));
-      case EstiloFondoPublicacion.sinVelo:
-        return ColoredBox(color: Colors.white.withValues(alpha: 0.35));
-    }
-  }
 }
 
-class _Accion extends StatelessWidget {
-  final IconData icono;
-  final String etiqueta;
-  final Color color;
-  final VoidCallback onTap;
+String _etiquetaCategoria(String id) {
+  for (final c in CategoriaLugar.values) {
+    if (c.name == id) return c.etiqueta;
+  }
+  return id;
+}
 
-  const _Accion({
-    required this.icono,
-    required this.etiqueta,
-    required this.color,
-    required this.onTap,
-  });
+class _ImagenPublicacion extends StatelessWidget {
+  final String url;
+
+  const _ImagenPublicacion({required this.url});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icono, size: 20, color: color),
-            if (etiqueta.isNotEmpty) ...[
-              const SizedBox(width: 5),
-              Text(
-                etiqueta,
-                style: TipografiaHaku.interfaz(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ],
+    final local = !url.startsWith('http');
+    if (local) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: Color(0xFFD4C8B8),
+          child: Icon(Icons.image_not_supported_outlined),
         ),
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      placeholder: (_, __) => const ColoredBox(color: Color(0xFFE8E0D4)),
+      errorWidget: (_, __, ___) => const ColoredBox(
+        color: Color(0xFFD4C8B8),
+        child: Icon(Icons.image_not_supported_outlined),
       ),
     );
   }

@@ -15,7 +15,7 @@ abstract final class PaletaRutas {
   static const crema = Color(0xFFF6F0E2);
 }
 
-/// Tipografías del producto Haku (familias disponibles en google_fonts).
+/// Tipografías del producto Haku (mismas que Perfil / commit base).
 abstract final class TipografiaHaku {
   /// Logo / marca — Caveat (manuscrita; alternativa a Edu VIC WA NT Hand).
   static TextStyle logo({

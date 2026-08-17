@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../proveedores/proveedor_mapa_cusco.dart';
 import 'tarjeta_provincia.dart';
 
@@ -61,7 +62,11 @@ class PanelProvinciaLateral extends ConsumerWidget {
                       provincia: provincia,
                       destinos: destinos,
                       onExplorar: () {
-                        // TODO: Navegar a detalle de provincia
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const PantallaExploraLugares(),
+                          ),
+                        );
                       },
                     ),
                   ),

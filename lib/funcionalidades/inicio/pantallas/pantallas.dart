@@ -5,3 +5,6 @@ export 'pantalla_mensajes_inicio.dart';
 export 'pantalla_crear_grupo_comunidad.dart';
 export 'pantalla_comunidades.dart';
 export 'pantalla_detalle_grupo.dart';
+export 'pantalla_exploradores_deslizables.dart';
+export 'pantalla_chat_directo.dart';
+export 'pantalla_clips_perfil.dart';

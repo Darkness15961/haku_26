@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../proveedores/proveedor_mapa_cusco.dart';
 import 'tarjeta_provincia.dart';
 
@@ -93,7 +94,14 @@ class PanelProvinciaMobile extends ConsumerWidget {
                               child: TarjetaProvincia(
                                 provincia: provincia,
                                 destinos: destinos,
-                                onExplorar: () {},
+                                onExplorar: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const PantallaExploraLugares(),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),

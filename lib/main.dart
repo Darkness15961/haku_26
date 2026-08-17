@@ -6,6 +6,7 @@ import 'funcionalidades/inicio/indice.dart';
 import 'funcionalidades/rutas/widgets/estilos_rutas.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: AplicacionHaku()));
 }
 

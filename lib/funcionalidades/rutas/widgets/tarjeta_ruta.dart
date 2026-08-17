@@ -30,7 +30,6 @@ class TarjetaRuta extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: Stack(
               children: [
-                // Fondo textil del card.
                 Positioned.fill(
                   child: Image.asset(
                     FondosDetalleHaku.porIndice(indice),
@@ -39,28 +38,31 @@ class TarjetaRuta extends StatelessWidget {
                         const ColoredBox(color: Colors.black87),
                   ),
                 ),
-                // Transparentado negro sobre el fondo del card (no sobre la foto).
+                // Velo un poco más oscuro para mejor contraste de texto.
                 Positioned.fill(
                   child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.78),
+                    color: Colors.black.withValues(alpha: 0.82),
                   ),
                 ),
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: Colors.white.withValues(alpha: 0.18),
                     ),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
                       Container(
-                        width: 84,
-                        height: 84,
+                        width: 88,
+                        height: 88,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.2),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.2,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10.8),
@@ -95,36 +97,73 @@ class TarjetaRuta extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             ),
+                            if (ruta.calificacion > 0) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 15,
+                                    color: PaletaRutas.terracota,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    ruta.calificacion.toStringAsFixed(1),
+                                    style: TipografiaHaku.interfaz(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  if (ruta.tipoSitio != null) ...[
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        ruta.tipoSitio!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TipografiaHaku.interfaz(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.88),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 6),
                             Row(
                               children: [
                                 Icon(
                                   Icons.place_outlined,
                                   size: 14,
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: Colors.white.withValues(alpha: 0.92),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${ruta.cantidadLugares} lugares',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
-                                    color: Colors.white.withValues(alpha: 0.85),
+                                    color: Colors.white.withValues(alpha: 0.92),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Icon(
                                   Icons.schedule_outlined,
                                   size: 14,
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: Colors.white.withValues(alpha: 0.92),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   ruta.dias == 1
-                                      ? '1 dia'
-                                      : '${ruta.dias} dias',
+                                      ? '1 día'
+                                      : '${ruta.dias} días',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
-                                    color: Colors.white.withValues(alpha: 0.85),
+                                    color: Colors.white.withValues(alpha: 0.92),
                                   ),
                                 ),
                               ],
@@ -136,8 +175,8 @@ class TarjetaRuta extends StatelessWidget {
                                   'Dificultad',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white.withValues(alpha: 0.85),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -151,10 +190,19 @@ class TarjetaRuta extends StatelessWidget {
                                       shape: BoxShape.circle,
                                       color: activo
                                           ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.3),
+                                          : Colors.white.withValues(alpha: 0.28),
                                     ),
                                   );
                                 }),
+                                const SizedBox(width: 6),
+                                Text(
+                                  ruta.dificultadTexto,
+                                  style: TipografiaHaku.interfaz(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                ),
                               ],
                             ),
                           ],

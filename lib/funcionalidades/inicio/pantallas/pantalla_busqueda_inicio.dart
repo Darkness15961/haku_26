@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
@@ -10,18 +11,21 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
 enum TipoBusquedaInicio { personas, lugares }
 
 /// Búsqueda de personas o lugares desde Inicio.
-class PantallaBusquedaInicio extends StatefulWidget {
+class PantallaBusquedaInicio extends ConsumerStatefulWidget {
   const PantallaBusquedaInicio({super.key});
 
   @override
-  State<PantallaBusquedaInicio> createState() => _EstadoPantallaBusquedaInicio();
+  ConsumerState<PantallaBusquedaInicio> createState() =>
+      _EstadoPantallaBusquedaInicio();
 }
 
-class _EstadoPantallaBusquedaInicio extends State<PantallaBusquedaInicio> {
+class _EstadoPantallaBusquedaInicio
+    extends ConsumerState<PantallaBusquedaInicio> {
   final _controller = TextEditingController();
   TipoBusquedaInicio _tipo = TipoBusquedaInicio.personas;
   String _query = '';
@@ -34,7 +38,10 @@ class _EstadoPantallaBusquedaInicio extends State<PantallaBusquedaInicio> {
 
   List<SugerenciaSeguimiento> get _personas {
     final q = _query.trim().toLowerCase();
-    final base = FeedInicioDataSourceLocal.sugerencias;
+    final feed = ref.watch(almacenFeedProvider);
+    final base = feed.perfiles.isNotEmpty
+        ? feed.perfiles
+        : FeedInicioDataSourceLocal.sugerencias;
     if (q.isEmpty) return base;
     return base
         .where(
@@ -272,20 +279,21 @@ class _ChipTipo extends StatelessWidget {
   }
 }
 
-class _CardPersona extends StatelessWidget {
+class _CardPersona extends ConsumerWidget {
   final SugerenciaSeguimiento persona;
   final int indice;
 
   const _CardPersona({required this.persona, required this.indice});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final veloNegro = indice.isEven;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => abrirPerfilAjeno(
           context,
+          ref,
           id: persona.id,
           nombre: persona.nombre,
           usuario: persona.usuario,

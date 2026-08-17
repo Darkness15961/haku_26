@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
+import '../../comunidad/indice.dart';
 import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
-import '../../rutas/indice.dart';
-import '../proveedores/proveedor_mapa_cusco.dart';
 import '../widgets/barra_navegacion_curva.dart';
 import '../widgets/contenido_inicio.dart';
 import 'pantalla_feed_inicio.dart';
 
-/// Pantalla principal: 4 tabs + acción central (+).
+/// Shell: Inicio | Explora | + | Comunidad | Perfil
 class PantallaInicio extends ConsumerStatefulWidget {
   const PantallaInicio({super.key});
 
@@ -19,21 +18,20 @@ class PantallaInicio extends ConsumerStatefulWidget {
 }
 
 class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
-  /// 0 Inicio, 1 Explora, 2 Rutas, 3 Perfil
+  /// 0 Inicio, 1 Explora, 2 Comunidad, 3 Perfil
   int _indiceSeleccionado = 0;
 
   static const List<Widget> _pantallas = [
     PantallaFeedInicio(),
     ContenidoInicio(),
-    PantallaRutas(),
+    PantallaComunidad(),
     PantallaPerfilUsuario(),
   ];
 
-  /// Visual: Inicio | Explora | + | Rutas | Perfil
   static const List<ItemBarraNavegacion> _itemsNavegacion = [
     ItemBarraNavegacion(
-      iconoNormal: Icons.grid_view_outlined,
-      iconoActivo: Icons.grid_view_rounded,
+      iconoNormal: Icons.home_outlined,
+      iconoActivo: Icons.home_rounded,
       etiqueta: 'Inicio',
     ),
     ItemBarraNavegacion(
@@ -48,9 +46,9 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
       esCentral: true,
     ),
     ItemBarraNavegacion(
-      iconoNormal: Icons.map_outlined,
-      iconoActivo: Icons.map_rounded,
-      etiqueta: 'Rutas',
+      iconoNormal: Icons.groups_outlined,
+      iconoActivo: Icons.groups_rounded,
+      etiqueta: 'Comunidad',
     ),
     ItemBarraNavegacion(
       iconoNormal: Icons.person_outline_rounded,
@@ -73,14 +71,12 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
       return;
     }
 
-    // Perfil requiere sesión.
     if (stack == 3) {
       final ok = await asegurarSesion(context, ref);
       if (!ok || !mounted) return;
     }
 
     if (stack == _indiceSeleccionado) return;
-    ref.read(mapasCuscoProvider.notifier).deseleccionarProvincia();
     setState(() => _indiceSeleccionado = stack);
   }
 

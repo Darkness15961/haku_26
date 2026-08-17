@@ -1,7 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../favoritos/indice.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -9,18 +13,20 @@ import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../widgets/insignia_perfil.dart';
 import '../widgets/tarjeta_destino_sugerido.dart';
 import '../widgets/tarjeta_estadistica_perfil.dart';
+import 'pantalla_configuracion.dart';
 
 enum _SeccionPerfil { perfil, contenido }
 
-/// Perfil / Mi Viaje según la guía visual (datos de prueba).
-class PantallaPerfilUsuario extends StatefulWidget {
+/// Perfil — identidad por contribuciones.
+class PantallaPerfilUsuario extends ConsumerStatefulWidget {
   const PantallaPerfilUsuario({super.key});
 
   @override
-  State<PantallaPerfilUsuario> createState() => _EstadoPantallaPerfilUsuario();
+  ConsumerState<PantallaPerfilUsuario> createState() =>
+      _EstadoPantallaPerfilUsuario();
 }
 
-class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
+class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> {
   static const _avatarUrl =
       'https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&q=80';
   static const _destinoUrl =
@@ -40,6 +46,20 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 110;
+    final sesion = ref.watch(sesionProvider);
+    final store = ref.watch(almacenFeedProvider);
+    final nombre = sesion.usuario?.nombreUsuario ?? 'Camila Quispe';
+    final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
+    final bio = sesion.usuario?.bio ?? 'Tu aporte al mapa vivo';
+    final misPosts = store.publicaciones
+        .where((p) => p.autorId == AlmacenFeedNotifier.idUsuarioLocal)
+        .toList();
+    final urlsContenido = misPosts.isNotEmpty
+        ? [
+            for (final p in misPosts)
+              if ((p.imagenUrl ?? '').isNotEmpty) p.imagenUrl!,
+          ]
+        : _publicacionesDemo;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -82,7 +102,13 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
                             minWidth: 40,
                             minHeight: 40,
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const PantallaConfiguracion(),
+                              ),
+                            );
+                          },
                           icon: const Icon(
                             Icons.settings_outlined,
                             color: PaletaRutas.marronOscuro,
@@ -90,7 +116,7 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
                         ),
                         Expanded(
                           child: Text(
-                            'Mi Viaje',
+                            'Perfil',
                             textAlign: TextAlign.center,
                             style: TipografiaHaku.titulo(
                               fontSize: 26,
@@ -118,7 +144,13 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _CardExplorador(avatarUrl: _avatarUrl),
+                      _CardExplorador(
+                        avatarUrl: avatarUrl,
+                        nombre: nombre,
+                        bio: bio,
+                      ),
+                      const SizedBox(height: 12),
+                      _BannerMetricas(),
                       const SizedBox(height: 18),
                       _SelectorSeccionPerfil(
                         seccion: _seccion,
@@ -128,13 +160,13 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 220),
                         child: _seccion == _SeccionPerfil.perfil
-                            ? const _ContenidoPerfil(
-                                key: ValueKey('perfil'),
+                            ? _ContenidoPerfil(
+                                key: const ValueKey('perfil'),
                                 destinoUrl: _destinoUrl,
                               )
-                            : const _ContenidoPublicaciones(
-                                key: ValueKey('contenido'),
-                                urls: _publicacionesDemo,
+                            : _ContenidoPublicaciones(
+                                key: const ValueKey('contenido'),
+                                urls: urlsContenido,
                               ),
                       ),
                     ],
@@ -149,10 +181,58 @@ class _EstadoPantallaPerfilUsuario extends State<PantallaPerfilUsuario> {
   }
 }
 
+class _BannerMetricas extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(metricasTickProvider);
+    final m = ref.watch(metricasDescubrimientoProvider);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PaletaRutas.crema,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: PaletaRutas.beigeEnvejecido),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _kpi('${m.documentados}', 'Descubrimientos'),
+          _kpi('${m.experienciasPublicadas}', 'Experiencias'),
+          _kpi('${m.salidasEnroladas}', 'Salidas'),
+        ],
+      ),
+    );
+  }
+
+  Widget _kpi(String v, String e) {
+    return Column(
+      children: [
+        Text(
+          v,
+          style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+        Text(
+          e,
+          style: TipografiaHaku.interfaz(
+            fontSize: 11,
+            color: PaletaRutas.marronCuero,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _CardExplorador extends StatelessWidget {
   final String avatarUrl;
+  final String nombre;
+  final String bio;
 
-  const _CardExplorador({required this.avatarUrl});
+  const _CardExplorador({
+    required this.avatarUrl,
+    required this.nombre,
+    required this.bio,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +283,7 @@ class _CardExplorador extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Explorador',
+                  nombre,
                   style: TipografiaHaku.titulo(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -211,38 +291,23 @@ class _CardExplorador extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Nivel 12',
+                  bio,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TipografiaHaku.interfaz(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: 3500 / 5000,
-                          minHeight: 10,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.25),
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '3500 / 5000 XP',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Lugares · Experiencias · Salidas',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -335,13 +400,29 @@ class _IconoSeccion extends StatelessWidget {
   }
 }
 
-class _ContenidoPerfil extends StatelessWidget {
+class _ContenidoPerfil extends ConsumerWidget {
   final String destinoUrl;
 
   const _ContenidoPerfil({super.key, required this.destinoUrl});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(almacenFeedProvider);
+    final m = ref.watch(metricasDescubrimientoProvider);
+    final nPosts = store.publicaciones
+        .where((p) => p.autorId == AlmacenFeedNotifier.idUsuarioLocal)
+        .length;
+    final nRutas = store.favoritosRutaIds.length;
+    final nLugares = m.documentados;
+    final nSalidas = m.salidasEnroladas;
+    final insignias = _insigniasDesde(
+      posts: nPosts,
+      rutas: nRutas,
+      lugares: nLugares,
+      salidas: nSalidas,
+      siguiendo: store.siguiendoIds.length,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -354,34 +435,34 @@ class _ContenidoPerfil extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Row(
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TarjetaEstadisticaPerfil(
-              icono: Icons.account_balance_outlined,
-              valor: '24',
-              etiqueta: 'Lugares visitados',
+              icono: Icons.place_outlined,
+              valor: '$nLugares',
+              etiqueta: 'Lugares',
               indice: 0,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
-              icono: Icons.explore_outlined,
-              valor: '8',
-              etiqueta: 'Rutas completadas',
+              icono: Icons.route_outlined,
+              valor: '$nRutas',
+              etiqueta: 'Rutas',
               indice: 1,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
-              icono: Icons.menu_book_outlined,
-              valor: '12',
-              etiqueta: 'Experiencias vividas',
+              icono: Icons.photo_camera_outlined,
+              valor: '$nPosts',
+              etiqueta: 'Experiencias',
               indice: 2,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
-              icono: Icons.military_tech_outlined,
-              valor: '3',
-              etiqueta: 'Insignias obtenidas',
+              icono: Icons.hiking,
+              valor: '$nSalidas',
+              etiqueta: 'Salidas',
               indice: 3,
             ),
           ],
@@ -400,7 +481,7 @@ class _ContenidoPerfil extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => _mostrarTodasInsignias(context, insignias),
               style: TextButton.styleFrom(
                 foregroundColor: PaletaRutas.verdeBosque,
                 padding: EdgeInsets.zero,
@@ -425,32 +506,19 @@ class _ContenidoPerfil extends StatelessWidget {
             vertical: 14,
           ),
           decoration: FondosDetalleHaku.tarjeta(indice: 1),
-          child: const Row(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InsigniaPerfil(
-                icono: Icons.terrain_rounded,
-                nombre: 'Explorador Inca',
-                colorFondo: Color(0xFF1A1A1A),
-              ),
-              SizedBox(width: 8),
-              InsigniaPerfil(
-                icono: Icons.filter_hdr_rounded,
-                nombre: 'Montañista',
-                colorFondo: Color(0xFF2D6A4F),
-              ),
-              SizedBox(width: 8),
-              InsigniaPerfil(
-                icono: Icons.hiking_rounded,
-                nombre: 'Aventurero',
-                colorFondo: Color(0xFF9C3B2E),
-              ),
-              SizedBox(width: 8),
-              InsigniaPerfil(
-                icono: Icons.photo_camera_outlined,
-                nombre: 'Fotógrafo',
-                colorFondo: Color(0xFF1E4D6B),
-              ),
+              for (var i = 0; i < insignias.length && i < 4; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                InsigniaPerfil(
+                  icono: insignias[i].icono,
+                  nombre: insignias[i].nombre,
+                  colorFondo: insignias[i].desbloqueada
+                      ? insignias[i].color
+                      : const Color(0xFFB0B0B0),
+                ),
+              ],
             ],
           ),
         ),
@@ -474,6 +542,162 @@ class _ContenidoPerfil extends StatelessWidget {
       ],
     );
   }
+}
+
+class _InsigniaInfo {
+  final IconData icono;
+  final String nombre;
+  final String descripcion;
+  final Color color;
+  final bool desbloqueada;
+
+  const _InsigniaInfo({
+    required this.icono,
+    required this.nombre,
+    required this.descripcion,
+    required this.color,
+    required this.desbloqueada,
+  });
+}
+
+List<_InsigniaInfo> _insigniasDesde({
+  required int posts,
+  required int rutas,
+  required int lugares,
+  required int salidas,
+  required int siguiendo,
+}) {
+  return [
+    _InsigniaInfo(
+      icono: Icons.terrain_rounded,
+      nombre: 'Explorador Inca',
+      descripcion: 'Abre el mapa y explora una provincia',
+      color: const Color(0xFF1A1A1A),
+      desbloqueada: true,
+    ),
+    _InsigniaInfo(
+      icono: Icons.filter_hdr_rounded,
+      nombre: 'Montañista',
+      descripcion: 'Guarda al menos 1 ruta',
+      color: const Color(0xFF2D6A4F),
+      desbloqueada: rutas >= 1,
+    ),
+    _InsigniaInfo(
+      icono: Icons.hiking_rounded,
+      nombre: 'Aventurero',
+      descripcion: 'Enrólate en una salida',
+      color: const Color(0xFF9C3B2E),
+      desbloqueada: salidas >= 1,
+    ),
+    _InsigniaInfo(
+      icono: Icons.photo_camera_outlined,
+      nombre: 'Fotógrafo',
+      descripcion: 'Publica 1 experiencia',
+      color: const Color(0xFF1E4D6B),
+      desbloqueada: posts >= 1,
+    ),
+    _InsigniaInfo(
+      icono: Icons.place_outlined,
+      nombre: 'Documentalista',
+      descripcion: 'Documenta 3 lugares',
+      color: const Color(0xFF6B4F1E),
+      desbloqueada: lugares >= 3,
+    ),
+    _InsigniaInfo(
+      icono: Icons.people_outline,
+      nombre: 'Conector',
+      descripcion: 'Sigue a 3 exploradores',
+      color: const Color(0xFF4A3B6B),
+      desbloqueada: siguiendo >= 3,
+    ),
+  ];
+}
+
+void _mostrarTodasInsignias(
+  BuildContext context,
+  List<_InsigniaInfo> insignias,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Todas las insignias',
+                style: TipografiaHaku.titulo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 14),
+              for (final i in insignias)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: i.desbloqueada
+                            ? i.color
+                            : Colors.grey.shade300,
+                        child: Icon(
+                          i.icono,
+                          color: i.desbloqueada
+                              ? Colors.white
+                              : Colors.grey.shade600,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              i.nombre,
+                              style: TipografiaHaku.interfaz(
+                                fontWeight: FontWeight.w700,
+                                color: i.desbloqueada
+                                    ? PaletaRutas.marronOscuro
+                                    : Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              i.descripcion,
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 12,
+                                color: PaletaRutas.marronCuero,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        i.desbloqueada
+                            ? Icons.check_circle
+                            : Icons.lock_outline,
+                        size: 18,
+                        color: i.desbloqueada
+                            ? PaletaRutas.verdeBosque
+                            : Colors.grey,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _ContenidoPublicaciones extends StatelessWidget {
