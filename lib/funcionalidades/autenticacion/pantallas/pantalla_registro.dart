@@ -144,7 +144,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                   padding: EdgeInsets.fromLTRB(20, 18, 20, bottom),
                   children: [
                     Text(
-                      'Tipo de documento',
+                      'Documento',
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -215,7 +215,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'Correo electrónico',
+                      'Correo',
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -343,7 +343,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Al continuar aceptas nuestros Términos y Condiciones',
+                      'Términos y Condiciones',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,

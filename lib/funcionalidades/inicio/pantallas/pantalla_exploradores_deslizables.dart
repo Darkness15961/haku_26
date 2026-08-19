@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -107,7 +108,7 @@ class _EstadoPantallaExploradoresDeslizables
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Perfil de ${_actual.nombre}'),
+                            content: Text('Perfil'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -204,14 +205,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               children: [
-                ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: p.avatarUrl,
-                    width: 92,
-                    height: 92,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                AvatarHaku(url: p.avatarUrl, size: 92),
                 const SizedBox(height: 10),
                 Text(
                   p.nombre,
@@ -315,8 +309,8 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
             child: Center(
               child: Text(
                 _tab == 1
-                    ? 'Aún no hay favoritos'
-                    : 'Aún no hay publicaciones',
+                    ? 'Sin favoritos'
+                    : 'Sin posts',
                 style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
               ),
             ),

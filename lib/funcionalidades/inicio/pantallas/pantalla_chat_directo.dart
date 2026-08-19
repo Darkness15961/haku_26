@@ -1,36 +1,26 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
 /// Chat 1:1 con un explorador.
-class PantallaChatDirecto extends StatefulWidget {
+class PantallaChatDirecto extends ConsumerStatefulWidget {
   final SugerenciaSeguimiento persona;
 
   const PantallaChatDirecto({super.key, required this.persona});
 
   @override
-  State<PantallaChatDirecto> createState() => _EstadoPantallaChatDirecto();
+  ConsumerState<PantallaChatDirecto> createState() => _EstadoPantallaChatDirecto();
 }
 
-class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
+class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
-  late final List<_Mensaje> _mensajes;
-
-  @override
-  void initState() {
-    super.initState();
-    _mensajes = [
-      _Mensaje(
-        mio: false,
-        texto: 'Hola, vi tu perfil en HAKU. ¿Sale alguna ruta esta semana?',
-      ),
-    ];
-  }
 
   @override
   void dispose() {
@@ -39,13 +29,14 @@ class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
     super.dispose();
   }
 
-  void _enviar() {
+  Future<void> _enviar() async {
     final t = _ctrl.text.trim();
     if (t.isEmpty) return;
-    setState(() {
-      _mensajes.add(_Mensaje(mio: true, texto: t));
-      _ctrl.clear();
-    });
+    _ctrl.clear();
+    await ref.read(almacenFeedProvider.notifier).agregarMensajeDirecto(
+          conversacionId: widget.persona.id,
+          texto: t,
+        );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       _scroll.animateTo(
@@ -59,6 +50,21 @@ class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
   @override
   Widget build(BuildContext context) {
     final p = widget.persona;
+    final persistidos = ref
+        .watch(almacenFeedProvider)
+        .mensajesDirectos
+        .where((m) => m.conversacionId == p.id)
+        .toList()
+      ..sort((a, b) => a.creadoEn.compareTo(b.creadoEn));
+    final mensajes = persistidos.isEmpty
+        ? const [_Mensaje(mio: false, texto: 'Hola.')]
+        : [
+            for (final m in persistidos)
+              _Mensaje(
+                mio: m.autorId == AlmacenFeedNotifier.idUsuarioLocal,
+                texto: m.texto,
+              ),
+          ];
     return Scaffold(
       backgroundColor: Colors.white,
       body: FondoSuaveSeccion(
@@ -76,14 +82,7 @@ class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
                       color: PaletaRutas.marronOscuro,
                     ),
                   ),
-                  ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: p.avatarUrl,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  AvatarHaku(url: p.avatarUrl, size: 40),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -117,9 +116,9 @@ class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
               child: ListView.builder(
                 controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                itemCount: _mensajes.length,
+                itemCount: mensajes.length,
                 itemBuilder: (context, i) {
-                  final m = _mensajes[i];
+                  final m = mensajes[i];
                   return Align(
                     alignment:
                         m.mio ? Alignment.centerRight : Alignment.centerLeft,
@@ -161,7 +160,7 @@ class _EstadoPantallaChatDirecto extends State<PantallaChatDirecto> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _enviar(),
                       decoration: InputDecoration(
-                        hintText: 'Escribe un mensaje…',
+                        hintText: 'Mensaje',
                         hintStyle: TipografiaHaku.interfaz(
                           color: PaletaRutas.marronCuero,
                         ),

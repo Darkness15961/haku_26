@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/indice.dart';
+import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
+import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/barra_navegacion_curva.dart';
-import '../widgets/contenido_inicio.dart';
 import 'pantalla_feed_inicio.dart';
 
-/// Shell: Inicio | Explora | + | Comunidad | Perfil
+/// Shell Fase 1: Inicio (aportes) | Explora (lugares) | + (publicar) | Comunidad | Perfil
 class PantallaInicio extends ConsumerStatefulWidget {
   const PantallaInicio({super.key});
 
@@ -23,7 +24,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
   static const List<Widget> _pantallas = [
     PantallaFeedInicio(),
-    ContenidoInicio(),
+    PantallaExploraLugares(),
     PantallaComunidad(),
     PantallaPerfilUsuario(),
   ];
@@ -77,6 +78,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     }
 
     if (stack == _indiceSeleccionado) return;
+    ref.read(pestaniaShellInicioProvider.notifier).state = stack;
     setState(() => _indiceSeleccionado = stack);
   }
 
@@ -92,6 +94,12 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(pestaniaShellInicioProvider, (prev, next) {
+      if (next != _indiceSeleccionado && mounted) {
+        setState(() => _indiceSeleccionado = next);
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       extendBody: true,

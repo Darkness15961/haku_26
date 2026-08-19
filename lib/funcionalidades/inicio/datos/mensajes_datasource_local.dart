@@ -1,3 +1,4 @@
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import 'feed_inicio_datasource_local.dart';
 
@@ -25,57 +26,58 @@ class MensajeriaEstado {
   void agregarGrupo(GrupoRuta grupo) => grupos.insert(0, grupo);
 
   void eliminarGrupo(String id) => grupos.removeWhere((g) => g.id == id);
+
+  void reemplazarGrupos(List<GrupoRuta> lista) {
+    grupos
+      ..clear()
+      ..addAll(lista);
+  }
 }
 
 /// Datos demo de mensajería 1:1.
 class MensajesDataSourceLocal {
   static const List<ChatConversacion> chats = [
     ChatConversacion(
-      id: 'c1',
+      id: 'mariaq',
       nombre: 'María Quispe',
       usuario: '@mariaq',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: '¿Salimos mañana a Sacsayhuamán?',
       hace: '12m',
       noLeidos: 2,
     ),
     ChatConversacion(
-      id: 'c2',
+      id: 's1',
       nombre: 'Andina Trek',
       usuario: '@andinatrek',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: 'Te envié el itinerario del Valle.',
       hace: '1h',
       noLeidos: 0,
     ),
     ChatConversacion(
-      id: 'c3',
+      id: 'diegoandes',
       nombre: 'Diego Andes',
       usuario: '@diegoandes',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: 'Lleva bastones para Humantay 👍',
       hace: '3h',
       noLeidos: 1,
     ),
     ChatConversacion(
-      id: 'c4',
+      id: 'sofiatrek',
       nombre: 'Sofía Trek',
       usuario: '@sofiatrek',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: 'Vinicunca quedó brutal.',
       hace: 'Ayer',
       noLeidos: 0,
     ),
     ChatConversacion(
-      id: 'c5',
+      id: 's3',
       nombre: 'Cusco Walks',
       usuario: '@cuscowalks',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: '¿Te interesa el tour urbano?',
       hace: '2d',
       noLeidos: 0,
@@ -103,6 +105,22 @@ class ChatConversacion {
     required this.hace,
     required this.noLeidos,
   });
+
+  ChatConversacion copyWith({
+    String? ultimoMensaje,
+    String? hace,
+    int? noLeidos,
+  }) {
+    return ChatConversacion(
+      id: id,
+      nombre: nombre,
+      usuario: usuario,
+      avatarUrl: avatarUrl,
+      ultimoMensaje: ultimoMensaje ?? this.ultimoMensaje,
+      hace: hace ?? this.hace,
+      noLeidos: noLeidos ?? this.noLeidos,
+    );
+  }
 }
 
 class GrupoRuta {
@@ -141,6 +159,35 @@ class GrupoRuta {
       rutaId: ruta.id,
       rutaTitulo: ruta.titulo,
       miembroIds: List.unmodifiable(miembroIds),
+    );
+  }
+
+  Map<String, dynamic> aMapa() => {
+        'id': id,
+        'nombre': nombre,
+        'creador_id': creadorId,
+        'es_creador': esCreador,
+        'ruta_id': rutaId,
+        'ruta_titulo': rutaTitulo,
+        'miembro_ids': miembroIds,
+        'ultimo_mensaje': ultimoMensaje,
+        'hace': hace,
+      };
+
+  factory GrupoRuta.desdeMapa(Map<String, dynamic> m) {
+    return GrupoRuta(
+      id: m['id'] as String? ?? '',
+      nombre: m['nombre'] as String? ?? '',
+      creadorId: m['creador_id'] as String? ?? '',
+      esCreador: m['es_creador'] as bool? ?? false,
+      rutaId: m['ruta_id'] as String? ?? '',
+      rutaTitulo: m['ruta_titulo'] as String? ?? '',
+      miembroIds: [
+        for (final x in (m['miembro_ids'] as List<dynamic>? ?? []))
+          x.toString(),
+      ],
+      ultimoMensaje: m['ultimo_mensaje'] as String? ?? '',
+      hace: m['hace'] as String? ?? '',
     );
   }
 

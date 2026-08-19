@@ -1,17 +1,24 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../favoritos/indice.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../rutas/datos/rutas_datasource_local.dart';
+import '../../rutas/dominio/modelos/modelo_ruta.dart';
+import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../widgets/insignia_perfil.dart';
-import '../widgets/tarjeta_destino_sugerido.dart';
 import '../widgets/tarjeta_estadistica_perfil.dart';
 import 'pantalla_configuracion.dart';
 
@@ -27,19 +34,9 @@ class PantallaPerfilUsuario extends ConsumerStatefulWidget {
 }
 
 class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> {
-  static const _avatarUrl =
-      'https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&q=80';
-  static const _destinoUrl =
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80';
+  static const _avatarUrl = CatalogoImagenesHaku.avatar;
 
-  static const _publicacionesDemo = [
-    'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=400&q=80',
-    'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=400&q=80',
-    'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80',
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
-    'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
-    'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=400&q=80',
-  ];
+  static final _publicacionesDemo = CatalogoImagenesHaku.destinos;
 
   _SeccionPerfil _seccion = _SeccionPerfil.perfil;
 
@@ -50,7 +47,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
     final store = ref.watch(almacenFeedProvider);
     final nombre = sesion.usuario?.nombreUsuario ?? 'Camila Quispe';
     final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
-    final bio = sesion.usuario?.bio ?? 'Tu aporte al mapa vivo';
+    final bio = sesion.usuario?.bio ?? 'Cusco';
     final misPosts = store.publicaciones
         .where((p) => p.autorId == AlmacenFeedNotifier.idUsuarioLocal)
         .toList();
@@ -119,13 +116,12 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                             'Perfil',
                             textAlign: TextAlign.center,
                             style: TipografiaHaku.titulo(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
                               color: PaletaRutas.marronOscuro,
                             ),
                           ),
                         ),
-                        // Equilibra el espacio de los dos iconos de la izquierda.
                         const SizedBox(width: 80),
                       ],
                     ),
@@ -140,29 +136,27 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
             Expanded(
               child: FondoSuaveSeccion(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPad),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _CardExplorador(
+                      _PortadaPerfil(
                         avatarUrl: avatarUrl,
                         nombre: nombre,
                         bio: bio,
+                        posts: misPosts.length,
                       ),
-                      const SizedBox(height: 12),
-                      _BannerMetricas(),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                       _SelectorSeccionPerfil(
                         seccion: _seccion,
                         onCambiar: (s) => setState(() => _seccion = s),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 20),
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 220),
                         child: _seccion == _SeccionPerfil.perfil
-                            ? _ContenidoPerfil(
-                                key: const ValueKey('perfil'),
-                                destinoUrl: _destinoUrl,
+                            ? const _ContenidoPerfil(
+                                key: ValueKey('perfil'),
                               )
                             : _ContenidoPublicaciones(
                                 key: const ValueKey('contenido'),
@@ -181,139 +175,146 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
   }
 }
 
-class _BannerMetricas extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(metricasTickProvider);
-    final m = ref.watch(metricasDescubrimientoProvider);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: PaletaRutas.crema,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PaletaRutas.beigeEnvejecido),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _kpi('${m.documentados}', 'Descubrimientos'),
-          _kpi('${m.experienciasPublicadas}', 'Experiencias'),
-          _kpi('${m.salidasEnroladas}', 'Salidas'),
-        ],
-      ),
-    );
-  }
-
-  Widget _kpi(String v, String e) {
-    return Column(
-      children: [
-        Text(
-          v,
-          style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w800),
-        ),
-        Text(
-          e,
-          style: TipografiaHaku.interfaz(
-            fontSize: 11,
-            color: PaletaRutas.marronCuero,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CardExplorador extends StatelessWidget {
-  final String avatarUrl;
-  final String nombre;
-  final String bio;
-
-  const _CardExplorador({
+class _PortadaPerfil extends StatelessWidget {
+  const _PortadaPerfil({
     required this.avatarUrl,
     required this.nombre,
     required this.bio,
+    required this.posts,
   });
+
+  final String avatarUrl;
+  final String nombre;
+  final String bio;
+  final int posts;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: 140,
+                    width: double.infinity,
+                    child: Image.asset(
+                      'public/image/fondoHaku.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'public/image/FONDO_HAKU2.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.black.withValues(alpha: 0.65),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 16,
+                    bottom: 14,
+                    child: Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/iconos/chacana.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Explorador HAKU',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              bottom: -42,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: AvatarHaku(
+                  url: avatarUrl,
+                  size: 84,
+                  borderWidth: 3,
+                  borderColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: avatarUrl,
-              width: 72,
-              height: 72,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const ColoredBox(
-                color: Color(0xFF333333),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
-              errorWidget: (_, __, ___) => const ColoredBox(
-                color: Color(0xFF333333),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
+        const SizedBox(height: 52),
+        Text(
+          nombre,
+          style: TipografiaHaku.titulo(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          bio,
+          style: TipografiaHaku.interfaz(
+            fontSize: 13,
+            color: PaletaRutas.marronCuero,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: PaletaRutas.terracota.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: PaletaRutas.terracota.withValues(alpha: 0.35),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nombre,
-                  style: TipografiaHaku.titulo(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  bio,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Lugares · Experiencias · Salidas',
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+          child: Text(
+            '$posts aportes · Cusco',
+            style: TipografiaHaku.interfaz(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: PaletaRutas.terracota,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -401,9 +402,7 @@ class _IconoSeccion extends StatelessWidget {
 }
 
 class _ContenidoPerfil extends ConsumerWidget {
-  final String destinoUrl;
-
-  const _ContenidoPerfil({super.key, required this.destinoUrl});
+  const _ContenidoPerfil({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -415,6 +414,7 @@ class _ContenidoPerfil extends ConsumerWidget {
     final nRutas = store.favoritosRutaIds.length;
     final nLugares = m.documentados;
     final nSalidas = m.salidasEnroladas;
+    final hilos = RutasDataSourceLocal.obtenerCultura();
     final insignias = _insigniasDesde(
       posts: nPosts,
       rutas: nRutas,
@@ -426,15 +426,6 @@ class _ContenidoPerfil extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Estadísticas',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
-        ),
-        const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -455,7 +446,7 @@ class _ContenidoPerfil extends ConsumerWidget {
             TarjetaEstadisticaPerfil(
               icono: Icons.photo_camera_outlined,
               valor: '$nPosts',
-              etiqueta: 'Experiencias',
+              etiqueta: 'Posts',
               indice: 2,
             ),
             const SizedBox(width: 8),
@@ -467,14 +458,14 @@ class _ContenidoPerfil extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 22),
         Row(
           children: [
             Expanded(
               child: Text(
                 'Insignias',
                 style: TipografiaHaku.titulo(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: PaletaRutas.marronOscuro,
                 ),
@@ -483,17 +474,17 @@ class _ContenidoPerfil extends ConsumerWidget {
             TextButton(
               onPressed: () => _mostrarTodasInsignias(context, insignias),
               style: TextButton.styleFrom(
-                foregroundColor: PaletaRutas.verdeBosque,
+                foregroundColor: PaletaRutas.terracota,
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'Ver todas',
+                'Todas',
                 style: TipografiaHaku.interfaz(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.verdeBosque,
+                  color: PaletaRutas.terracota,
                 ),
               ),
             ),
@@ -522,22 +513,66 @@ class _ContenidoPerfil extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 28),
-        Text(
-          'Próximo destino sugerido',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Cultura',
+                style: TipografiaHaku.titulo(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.marronOscuro,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PantallaRutas(),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: PaletaRutas.terracota,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Todas',
+                style: TipografiaHaku.interfaz(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.terracota,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        TarjetaDestinoSugerido(
-          titulo: 'Parque Nacional Ausangate',
-          rating: 4.9,
-          resenas: 856,
-          imagenUrl: destinoUrl,
-          indice: 0,
+        SizedBox(
+          height: 168,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: hilos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, i) {
+              final r = hilos[i];
+              return _PedacitoCultura(
+                ruta: r,
+                indice: i,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => PantallaDetalleRuta(ruta: r),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -571,42 +606,63 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.terrain_rounded,
       nombre: 'Explorador Inca',
-      descripcion: 'Abre el mapa y explora una provincia',
+      descripcion: 'Explora el mapa',
       color: const Color(0xFF1A1A1A),
       desbloqueada: true,
     ),
     _InsigniaInfo(
+      icono: Icons.grid_on_outlined,
+      nombre: 'Tejedora',
+      descripcion: '1 post',
+      color: const Color(0xFF9C3B2E),
+      desbloqueada: posts >= 1,
+    ),
+    _InsigniaInfo(
+      icono: Icons.restaurant_outlined,
+      nombre: 'Fogón',
+      descripcion: '1 lugar',
+      color: const Color(0xFF6B4F1E),
+      desbloqueada: lugares >= 1,
+    ),
+    _InsigniaInfo(
+      icono: Icons.coffee_outlined,
+      nombre: 'Alfarera',
+      descripcion: 'Cerámica',
+      color: const Color(0xFF1E4D6B),
+      desbloqueada: rutas >= 1,
+    ),
+    _InsigniaInfo(
       icono: Icons.filter_hdr_rounded,
       nombre: 'Montañista',
-      descripcion: 'Guarda al menos 1 ruta',
+      descripcion: '1 ruta guardada',
       color: const Color(0xFF2D6A4F),
       desbloqueada: rutas >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.hiking_rounded,
       nombre: 'Aventurero',
-      descripcion: 'Enrólate en una salida',
+      descripcion: '1 salida',
       color: const Color(0xFF9C3B2E),
       desbloqueada: salidas >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.photo_camera_outlined,
       nombre: 'Fotógrafo',
-      descripcion: 'Publica 1 experiencia',
+      descripcion: '1 post',
       color: const Color(0xFF1E4D6B),
       desbloqueada: posts >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.place_outlined,
       nombre: 'Documentalista',
-      descripcion: 'Documenta 3 lugares',
+      descripcion: '3 lugares',
       color: const Color(0xFF6B4F1E),
       desbloqueada: lugares >= 3,
     ),
     _InsigniaInfo(
       icono: Icons.people_outline,
       nombre: 'Conector',
-      descripcion: 'Sigue a 3 exploradores',
+      descripcion: '3 follows',
       color: const Color(0xFF4A3B6B),
       desbloqueada: siguiendo >= 3,
     ),
@@ -632,9 +688,9 @@ void _mostrarTodasInsignias(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Todas las insignias',
+                'Insignias',
                 style: TipografiaHaku.titulo(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -686,7 +742,7 @@ void _mostrarTodasInsignias(
                             : Icons.lock_outline,
                         size: 18,
                         color: i.desbloqueada
-                            ? PaletaRutas.verdeBosque
+                            ? PaletaRutas.terracota
                             : Colors.grey,
                       ),
                     ],
@@ -719,7 +775,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Aún no tienes publicaciones',
+              'Vacío',
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -731,49 +787,145 @@ class _ContenidoPublicaciones extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Mis publicaciones',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: urls.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
-            childAspectRatio: 1,
-          ),
-          itemBuilder: (context, index) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: urls[index],
-                fit: BoxFit.cover,
-                placeholder: (_, __) => ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.08),
-                ),
-                errorWidget: (_, __, ___) => ColoredBox(
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: urls.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1,
+      ),
+      itemBuilder: (context, index) {
+        final grande = index == 0 && urls.length > 1;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(grande ? 14 : 10),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
                   color: Colors.black.withValues(alpha: 0.12),
-                  child: const Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.white70,
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ImagenHaku(
+              url: urls[index],
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PedacitoCultura extends StatelessWidget {
+  const _PedacitoCultura({
+    required this.ruta,
+    required this.indice,
+    required this.onTap,
+  });
+
+  final ModeloRuta ruta;
+  final int indice;
+  final VoidCallback onTap;
+
+  static const _sombra = [
+    Shadow(color: Color(0xB3000000), blurRadius: 5, offset: Offset(0, 1)),
+  ];
+
+  IconData get _icono {
+    switch (ruta.hilo) {
+      case HiloCultura.tejido:
+        return Icons.grid_on_outlined;
+      case HiloCultura.ceramica:
+        return Icons.coffee_outlined;
+      case HiloCultura.comida:
+        return Icons.restaurant_outlined;
+      case HiloCultura.teatro:
+        return Icons.theater_comedy_outlined;
+      case HiloCultura.pintura:
+        return Icons.palette_outlined;
+      case HiloCultura.camino:
+        return Icons.route_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          width: 160,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  FondosDetalleHaku.porIndice(indice),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const ColoredBox(color: Colors.black87),
+                ),
+                const ColoredBox(color: Color(0x7A000000)),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: ImagenHaku(
+                          url: ruta.imagenUrl,
+                          height: 64,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Icon(_icono, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              ruta.hilo.etiqueta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ).copyWith(shadows: _sombra),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        ruta.titulo,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TipografiaHaku.titulo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ).copyWith(shadows: _sombra),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
-      ],
+      ),
     );
   }
 }

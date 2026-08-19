@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 
 /// Usuario autenticado (demo local persistente).
@@ -32,9 +34,8 @@ class UsuarioSesion {
     id: AlmacenFeedNotifier.idUsuarioLocal,
     nombreUsuario: 'Camila Quispe',
     correo: 'camila.quispe@gmail.com',
-    avatarUrl:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
-    bio: 'Documentando Cusco: mercados, apus y rutas poco exploradas.',
+    avatarUrl: CatalogoImagenesHaku.avatar,
+    bio: 'Cusco.',
     provincia: 'Cusco',
   );
 
@@ -54,7 +55,7 @@ class UsuarioSesion {
       id: m['id'] as String? ?? AlmacenFeedNotifier.idUsuarioLocal,
       nombreUsuario: m['nombre_usuario'] as String? ?? 'Explorador HAKU',
       correo: m['correo'] as String? ?? '',
-      avatarUrl: m['avatar_url'] as String?,
+      avatarUrl: CatalogoImagenesHaku.resolverAvatar(m['avatar_url'] as String?),
       bio: m['bio'] as String?,
       provincia: m['provincia'] as String?,
       documento: m['documento'] as String?,
@@ -156,7 +157,7 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
         nombreUsuario: nombreUsuario,
         correo: correo,
         avatarUrl: UsuarioSesion.demoGoogle.avatarUrl,
-        bio: 'Explorador HAKU — descubriendo el mapa vivo de Cusco.',
+        bio: 'Cusco.',
         provincia: 'Cusco',
         documento: documento,
         tipoDocumento: tipoDocumento,

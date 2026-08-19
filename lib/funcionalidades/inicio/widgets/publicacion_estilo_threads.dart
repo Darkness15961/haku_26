@@ -1,8 +1,8 @@
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
@@ -62,18 +62,42 @@ class _EstadoPublicacionEstiloThreads
     final liked = feed.likesPublicacionIds.contains(p.id);
     final likes = post.likes;
     final guardado = feed.guardadosIds.contains(p.id);
-    final imagen = post.imagenUrl ??
-        'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=900&q=80';
+    final imagen = post.imagenUrl ?? CatalogoImagenesHaku.respaldo;
+    final esCultural = (post.categoria ?? '').isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Material(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: PaletaRutas.marronOscuro.withValues(alpha: 0.1),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(18),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (esCultural)
+                Container(
+                  height: 3,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        PaletaRutas.terracota,
+                        PaletaRutas.marronCuero,
+                        PaletaRutas.terracota,
+                      ],
+                    ),
+                  ),
+                ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(
@@ -87,14 +111,7 @@ class _EstadoPublicacionEstiloThreads
                       usuario: p.usuario,
                       avatarUrl: p.avatarUrl,
                     ),
-                    child: ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: p.avatarUrl,
-                        width: 36,
-                        height: 36,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    child: AvatarHaku(url: p.avatarUrl, size: 36),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -139,8 +156,37 @@ class _EstadoPublicacionEstiloThreads
               ),
             ),
             AspectRatio(
-              aspectRatio: 4 / 5,
-              child: _ImagenPublicacion(url: imagen),
+              aspectRatio: widget.indice.isEven ? 4 / 5 : 1,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _ImagenPublicacion(url: imagen),
+                  if ((post.categoria ?? '').isNotEmpty)
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: PaletaRutas.terracota.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _etiquetaCategoria(post.categoria!),
+                          style: _ui.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             if ((post.lugarNombre ?? '').isNotEmpty ||
                 (post.categoria ?? '').isNotEmpty)
@@ -148,9 +194,9 @@ class _EstadoPublicacionEstiloThreads
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Text(
                   [
-                    if ((post.lugarNombre ?? '').isNotEmpty) post.lugarNombre,
                     if ((post.categoria ?? '').isNotEmpty)
                       _etiquetaCategoria(post.categoria!),
+                    if ((post.lugarNombre ?? '').isNotEmpty) post.lugarNombre,
                   ].join(' · '),
                   style: _ui.copyWith(
                     fontSize: 12,
@@ -206,6 +252,18 @@ class _EstadoPublicacionEstiloThreads
                 style: _ui.copyWith(fontWeight: FontWeight.w700, fontSize: 13),
               ),
             ),
+            if ((post.lugarNombre ?? '').isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Text(
+                  post.lugarNombre!,
+                  style: _ui.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.terracota,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: RichText(
@@ -226,13 +284,13 @@ class _EstadoPublicacionEstiloThreads
                 ),
               ),
             ),
-            if (p.comentarios > 0)
+            if (post.comentarios > 0)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                 child: GestureDetector(
                   onTap: _comentar,
                   child: Text(
-                    'Ver los ${p.comentarios} comentarios',
+                    '${post.comentarios} comentarios',
                     style: _ui.copyWith(
                       fontSize: 13,
                       color: PaletaRutas.marronCuero,
@@ -240,7 +298,8 @@ class _EstadoPublicacionEstiloThreads
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -261,27 +320,10 @@ class _ImagenPublicacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final local = !url.startsWith('http');
-    if (local) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        errorBuilder: (_, __, ___) => const ColoredBox(
-          color: Color(0xFFD4C8B8),
-          child: Icon(Icons.image_not_supported_outlined),
-        ),
-      );
-    }
-    return CachedNetworkImage(
-      imageUrl: url,
+    return ImagenHaku(
+      url: url,
       fit: BoxFit.cover,
       width: double.infinity,
-      placeholder: (_, __) => const ColoredBox(color: Color(0xFFE8E0D4)),
-      errorWidget: (_, __, ___) => const ColoredBox(
-        color: Color(0xFFD4C8B8),
-        child: Icon(Icons.image_not_supported_outlined),
-      ),
     );
   }
 }

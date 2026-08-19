@@ -1,3 +1,4 @@
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import 'feed_inicio_datasource_local.dart';
 
@@ -10,72 +11,60 @@ class SemillaAlmacenHaku {
         id: 'mariaq',
         nombre: 'María Quispe',
         usuario: '@mariaq',
-        avatar:
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Amaneceres en piedra',
         bio: 'Salgo al amanecer. Sacsayhuamán, mercados y el silencio del apu.',
-        portada:
-            'https://images.unsplash.com/photo-1589802829985-817e51171b92?w=900&q=80',
+        portada: CatalogoImagenesHaku.encabezadoRutas,
         provincia: 'Cusco',
       ),
       _perfil(
         id: 'diegoandes',
         nombre: 'Diego Andes',
         usuario: '@diegoandes',
-        avatar:
-            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Tips de trekking',
         bio: 'Humantay, bastones y ritmo. Comparo rutas para no sufrir de más.',
-        portada:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80',
+        portada: CatalogoImagenesHaku.ausangate,
         provincia: 'Anta',
       ),
       _perfil(
         id: 'sofiatrek',
         nombre: 'Sofía Trek',
         usuario: '@sofiatrek',
-        avatar:
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Montaña de colores',
         bio: 'Vinicunca cuando la niebla deja ver. Armo grupos para la próxima.',
-        portada:
-            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80',
+        portada: CatalogoImagenesHaku.machuPicchu,
         provincia: 'Canchis',
       ),
       _perfil(
         id: 'haku',
         nombre: 'Haku Community',
         usuario: '@haku',
-        avatar:
-            'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'La comunidad HAKU',
         bio: 'Rutas, historias y paisajes de Cusco. El mapa lo armamos juntos.',
-        portada:
-            'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=900&q=80',
+        portada: CatalogoImagenesHaku.fondoHaku,
         provincia: 'Cusco',
       ),
       _perfil(
         id: 'camilarios',
         nombre: 'Camila Ríos',
         usuario: '@camilarios',
-        avatar:
-            'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Turismo lento',
         bio: 'Pisac al mediodía: choclo, queso y charla con artesanos.',
-        portada:
-            'https://images.unsplash.com/photo-1555881403-96d4f9e83f0c?w=900&q=80',
+        portada: CatalogoImagenesHaku.moray,
         provincia: 'Calca',
       ),
       _perfil(
         id: 'yo',
         nombre: 'Camila Quispe',
         usuario: '@camila.haku',
-        avatar:
-            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
+        avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Mapa vivo de Cusco',
-        bio: 'Documentando Cusco: mercados, apus y rutas poco exploradas.',
-        portada:
-            'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=900&q=80',
+        bio: 'Cusco.',
+        portada: CatalogoImagenesHaku.fondoPublicaciones,
         provincia: 'Cusco',
         seguidores: 1280,
         siguiendo: 86,
@@ -102,7 +91,7 @@ class SemillaAlmacenHaku {
         id: extra,
         nombre: extra,
         usuario: '@$extra',
-        avatarUrl: '',
+        avatarUrl: CatalogoImagenesHaku.avatar,
       ).publicaciones.take(6);
       for (final c in pubs) {
         clips.add(_clip(c, extra));
@@ -114,62 +103,72 @@ class SemillaAlmacenHaku {
         id: 'p1',
         autorId: 'mariaq',
         texto:
-            'Salida al amanecer en Sacsayhuamán. El silencio de la piedra y la ciudad abajo… ¿alguien más madruga por estas vistas?',
-        imagen:
-            'https://images.unsplash.com/photo-1589802829985-817e51171b92?w=800&q=80',
+            'Telar en Chinchero. Lana cardada, cochinilla y un aguayo que aún huele a humo de fogón.',
+        imagen: CatalogoImagenesHaku.tejido,
         likes: 128,
         comentarios: 24,
         creadoEn: DateTime.now().subtract(const Duration(hours: 2)),
+        lugarId: 'chinchero',
+        lugarNombre: 'Chinchero',
+        categoria: 'Tejido',
       ),
       _post(
         id: 'p2',
         autorId: 'diegoandes',
         texto:
-            'Tip rápido: si vas a Humantay, lleva bastones. El último tramo se siente, pero la laguna lo vale todo.',
-        imagen:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80',
+            'Barro en San Blas. Platos, qeros y el horno que tarda tres días en enfriarse.',
+        imagen: CatalogoImagenesHaku.ceramica,
         likes: 86,
         comentarios: 31,
         creadoEn: DateTime.now().subtract(const Duration(hours: 5)),
+        lugarId: 'san_blas',
+        lugarNombre: 'San Blas',
+        categoria: 'Cerámica',
       ),
       _post(
         id: 'p3',
         autorId: 'sofiatrek',
         texto:
-            'Vinicunca con poca niebla. Colores absurdos. Si alguien quiere armar grupo para la próxima, avisen acá.',
-        imagen:
-            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+            'Caldo en San Pedro. Choclo, queso y la mesa que no cierra hasta mediodía.',
+        imagen: CatalogoImagenesHaku.comida,
         likes: 412,
         comentarios: 67,
         creadoEn: DateTime.now().subtract(const Duration(days: 1)),
+        lugarId: 'san_pedro',
+        lugarNombre: 'San Pedro',
+        categoria: 'Fogón',
       ),
       _post(
         id: 'p4',
         autorId: 'haku',
         texto:
-            'Nuevas rutas recomendadas esta semana en el Valle Sagrado. ¿Cuál es tu próxima caminata?',
-        imagen:
-            'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800&q=80',
+            'Inti Raymi en escena. Danza, traje y sol sobre Sacsayhuamán — teatro vivo, no postal.',
+        imagen: CatalogoImagenesHaku.teatro,
         likes: 540,
         comentarios: 92,
         creadoEn: DateTime.now().subtract(const Duration(days: 1)),
+        lugarId: 'machu_picchu',
+        lugarNombre: 'Sacsayhuamán',
+        categoria: 'Teatro',
       ),
       _post(
         id: 'p5',
         autorId: 'camilarios',
         texto:
-            'Mercado de Pisac al mediodía: choclo, queso y una charla con artesanos. Turismo lento, el mejor.',
-        imagen:
-            'https://images.unsplash.com/photo-1555881403-96d4f9e83f0c?w=900&q=80',
+            'Taller en San Blas. Apus en lienzo y mano que no tiembla — pintura que documenta, no decora.',
+        imagen: CatalogoImagenesHaku.pintura,
         likes: 73,
         comentarios: 18,
         creadoEn: DateTime.now().subtract(const Duration(days: 2)),
+        lugarId: 'san_blas',
+        lugarNombre: 'San Blas',
+        categoria: 'Pintura',
       ),
       ..._postsUsuarioLocal(),
     ];
 
     return {
-      'version': 1,
+      'version': 3,
       'perfiles': perfiles,
       'clips': clips,
       'publicaciones': publicaciones,
@@ -178,6 +177,11 @@ class SemillaAlmacenHaku {
       'miembros_comunidad': _miembrosComunidad(),
       'interacciones': _interaccionesDemo(),
       'metricas_usuario': _metricasDemo(),
+      'comentarios': _comentariosDemo(),
+      'lugares_creados': <Map<String, dynamic>>[],
+      'salidas': _salidasSemilla(),
+      'grupos_ruta': _gruposSemilla(),
+      'mensajes_directos': _mensajesSemilla(),
     };
   }
 
@@ -187,42 +191,45 @@ class SemillaAlmacenHaku {
         id: 'yo_p1',
         autorId: 'yo',
         texto:
-            'Primera vez en Moray. Las terrazas parecen un anfiteatro natural — anoté tip de horario para la próxima.',
-        imagen:
-            'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800&q=80',
+            'Aprendí a urdir en Chinchero. Tres horas y todavía no entiendo cómo leen el patrón de memoria.',
+        imagen: CatalogoImagenesHaku.tejido,
         likes: 64,
         comentarios: 11,
         creadoEn: DateTime.now().subtract(const Duration(hours: 8)),
+        lugarId: 'chinchero',
+        lugarNombre: 'Chinchero',
+        categoria: 'Tejido',
       ),
       _post(
         id: 'yo_p2',
         autorId: 'yo',
         texto:
-            'Documenté un mirador poco marcado cerca de Chinchero. Si van, lleven agua y salgan temprano.',
-        imagen:
-            'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80',
+            'Primera vez modelando barro. San Blas, horno compartido y manos negras de arcilla.',
+        imagen: CatalogoImagenesHaku.ceramica,
         likes: 91,
         comentarios: 19,
         creadoEn: DateTime.now().subtract(const Duration(days: 2)),
+        lugarNombre: 'San Blas',
+        categoria: 'Cerámica',
       ),
       _post(
         id: 'yo_p3',
         autorId: 'yo',
         texto:
-            'Humantay con cielo limpio. El esfuerzo del último tramo se olvida al instante.',
-        imagen:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+            'Fogón en San Pedro: choclo, queso y caldo. Turismo lento, el que más me gusta.',
+        imagen: CatalogoImagenesHaku.comida,
         likes: 203,
         comentarios: 34,
         creadoEn: DateTime.now().subtract(const Duration(days: 4)),
+        lugarNombre: 'San Pedro',
+        categoria: 'Fogón',
       ),
       _post(
         id: 'yo_p4',
         autorId: 'yo',
         texto:
             'Fogón en el mercado: choclo + queso. Turismo lento, el que más me gusta.',
-        imagen:
-            'https://images.unsplash.com/photo-1555881403-96d4f9e83f0c?w=800&q=80',
+        imagen: CatalogoImagenesHaku.comida,
         likes: 47,
         comentarios: 8,
         creadoEn: DateTime.now().subtract(const Duration(days: 6)),
@@ -262,6 +269,33 @@ class SemillaAlmacenHaku {
         'salidas_enroladas': 3,
       };
 
+  static List<Map<String, dynamic>> _comentariosDemo() {
+    final ahora = DateTime.now();
+    return [
+      {
+        'id': 'cm_p1_1',
+        'publicacion_id': 'p1',
+        'autor_id': 'diegoandes',
+        'texto': 'Anotado. Salgo temprano.',
+        'creado_en': ahora.subtract(const Duration(hours: 2)).toIso8601String(),
+      },
+      {
+        'id': 'cm_p1_2',
+        'publicacion_id': 'p1',
+        'autor_id': 's1',
+        'texto': 'Lleva protector. El sol pega fuerte.',
+        'creado_en': ahora.subtract(const Duration(hours: 5)).toIso8601String(),
+      },
+      {
+        'id': 'cm_yo1_1',
+        'publicacion_id': 'yo_p1',
+        'autor_id': 'mariaq',
+        'texto': 'Moray a esa hora está vacío. Buen tip.',
+        'creado_en': ahora.subtract(const Duration(hours: 3)).toIso8601String(),
+      },
+    ];
+  }
+
   /// Completa colecciones nuevas sin borrar follows / likes ya guardados.
   static Map<String, dynamic> fusionar(Map<String, dynamic> doc) {
     final seed = documento();
@@ -291,8 +325,26 @@ class SemillaAlmacenHaku {
       for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
         if (e is Map) Map<String, dynamic>.from(e),
     ];
+    var pubsTocadas = false;
     if (!pubs.any((p) => p['autor_id'] == 'yo')) {
       pubs.addAll(_postsUsuarioLocal());
+      pubsTocadas = true;
+    }
+    const lugaresSemilla = {
+      'yo_p1': ('chinchero', 'Chinchero'),
+      'yo_p2': ('san_blas', 'San Blas'),
+      'yo_p3': ('san_pedro', 'San Pedro'),
+    };
+    for (final p in pubs) {
+      final id = p['id']?.toString();
+      final lugar = lugaresSemilla[id];
+      if (lugar == null) continue;
+      if ((p['lugar_nombre'] as String?)?.trim().isNotEmpty == true) continue;
+      p['lugar_id'] = lugar.$1;
+      p['lugar_nombre'] = lugar.$2;
+      pubsTocadas = true;
+    }
+    if (pubsTocadas) {
       doc['publicaciones'] = pubs;
     }
 
@@ -314,6 +366,104 @@ class SemillaAlmacenHaku {
     );
     inter.putIfAbsent('comunidad_ids', () => <String>[]);
     inter.putIfAbsent('favoritos_ruta_ids', () => <String>[]);
+    if (inter['cultura_feed_v3'] != true) {
+      const culturaFeed = {
+        'p1': {
+          'texto':
+              'Telar en Chinchero. Lana cardada, cochinilla y un aguayo que aún huele a humo de fogón.',
+          'imagen_url': CatalogoImagenesHaku.tejido,
+          'lugar_id': 'chinchero',
+          'lugar_nombre': 'Chinchero',
+          'categoria': 'Tejido',
+        },
+        'p2': {
+          'texto':
+              'Barro en San Blas. Platos, qeros y el horno que tarda tres días en enfriarse.',
+          'imagen_url': CatalogoImagenesHaku.ceramica,
+          'lugar_id': 'san_blas',
+          'lugar_nombre': 'San Blas',
+          'categoria': 'Cerámica',
+        },
+        'p3': {
+          'texto':
+              'Caldo en San Pedro. Choclo, queso y la mesa que no cierra hasta mediodía.',
+          'imagen_url': CatalogoImagenesHaku.comida,
+          'lugar_id': 'san_pedro',
+          'lugar_nombre': 'San Pedro',
+          'categoria': 'Fogón',
+        },
+        'p4': {
+          'texto':
+              'Inti Raymi en escena. Danza, traje y sol sobre Sacsayhuamán — teatro vivo, no postal.',
+          'imagen_url': CatalogoImagenesHaku.teatro,
+          'lugar_id': 'machu_picchu',
+          'lugar_nombre': 'Sacsayhuamán',
+          'categoria': 'Teatro',
+        },
+        'p5': {
+          'texto':
+              'Taller en San Blas. Apus en lienzo y mano que no tiembla — pintura que documenta, no decora.',
+          'imagen_url': CatalogoImagenesHaku.pintura,
+          'lugar_id': 'san_blas',
+          'lugar_nombre': 'San Blas',
+          'categoria': 'Pintura',
+        },
+      };
+      final pubsPatch = [
+        for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      var tocadas = false;
+      for (final p in pubsPatch) {
+        final patch = culturaFeed[p['id']?.toString()];
+        if (patch == null) continue;
+        p.addAll(patch);
+        tocadas = true;
+      }
+      if (tocadas) doc['publicaciones'] = pubsPatch;
+      inter['cultura_feed_v2'] = true;
+      inter['cultura_feed_v3'] = true;
+    }
+    if (inter['comunidades_imagenes_v1'] != true) {
+      const imagenesCom = {
+        'com_trekkers': CatalogoImagenesHaku.ausangate,
+        'com_fotos': CatalogoImagenesHaku.moray,
+        'com_inca': CatalogoImagenesHaku.machuPicchu,
+        'com_fogon': CatalogoImagenesHaku.comida,
+        'com_misterios': CatalogoImagenesHaku.huacachina,
+        'com_naturaleza': CatalogoImagenesHaku.ausangate,
+        'com_magia': CatalogoImagenesHaku.llamaMachu,
+        'com_urbano': CatalogoImagenesHaku.encabezadoRutas,
+        'com_ciencia': CatalogoImagenesHaku.ausangate,
+        'com_relatos': CatalogoImagenesHaku.machuPicchu,
+      };
+      final coms = [
+        for (final e in (doc['comunidades'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      for (final c in coms) {
+        final id = c['id']?.toString();
+        final img = imagenesCom[id];
+        if (img != null) c['imagen_url'] = img;
+      }
+      if (coms.isNotEmpty) doc['comunidades'] = coms;
+      inter['comunidades_imagenes_v1'] = true;
+    }
+    if (inter['avatares_locales_v1'] != true) {
+      final avatarLocal = CatalogoImagenesHaku.avatar;
+      final perfilesPatch = [
+        for (final e in (doc['perfiles'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      for (final p in perfilesPatch) {
+        final av = p['avatar_url']?.toString() ?? '';
+        if (av.isEmpty || av.startsWith('http')) {
+          p['avatar_url'] = avatarLocal;
+        }
+      }
+      if (perfilesPatch.isNotEmpty) doc['perfiles'] = perfilesPatch;
+      inter['avatares_locales_v1'] = true;
+    }
     if (inter['demo_usuario_v1'] != true) {
       final demo = _interaccionesDemo();
       for (final e in demo.entries) {
@@ -326,6 +476,37 @@ class SemillaAlmacenHaku {
     }
     doc['interacciones'] = inter;
     doc['metricas_usuario'] ??= _metricasDemo();
+    doc['comentarios'] ??= _comentariosDemo();
+    doc['lugares_creados'] ??= <Map<String, dynamic>>[];
+    if (doc['salidas'] is! List || (doc['salidas'] as List).isEmpty) {
+      doc['salidas'] = seed['salidas'];
+    } else {
+      final salidas = [
+        for (final e in doc['salidas'] as List)
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      var tocadas = false;
+      for (final s in salidas) {
+        final ids = s['inscrito_ids'];
+        if (ids is List && ids.isNotEmpty) continue;
+        final seedMatch = (seed['salidas'] as List)
+            .whereType<Map>()
+            .cast<Map<String, dynamic>>()
+            .where((x) => x['id'] == s['id']);
+        if (seedMatch.isEmpty) continue;
+        s['inscrito_ids'] = seedMatch.first['inscrito_ids'];
+        s['checkin_ids'] ??= seedMatch.first['checkin_ids'];
+        tocadas = true;
+      }
+      if (tocadas) doc['salidas'] = salidas;
+    }
+    if (doc['grupos_ruta'] is! List || (doc['grupos_ruta'] as List).isEmpty) {
+      doc['grupos_ruta'] = seed['grupos_ruta'];
+    }
+    if (doc['mensajes_directos'] is! List ||
+        (doc['mensajes_directos'] as List).isEmpty) {
+      doc['mensajes_directos'] = seed['mensajes_directos'];
+    }
     return doc;
   }
 
@@ -356,8 +537,7 @@ class SemillaAlmacenHaku {
         id: 'com_trekkers',
         nombre: 'Trekkers Cusco',
         descripcion: 'Salidas semanales, aclimatación y tips de altura.',
-        imagen:
-            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+        imagen: CatalogoImagenesHaku.ausangate,
         creadorId: 's1',
         provincia: 'Anta',
         categorias: const [
@@ -369,8 +549,7 @@ class SemillaAlmacenHaku {
         id: 'com_fotos',
         nombre: 'Fotógrafos Andinos',
         descripcion: 'Amaneceres, niebla y color. Workshops los fines.',
-        imagen:
-            'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800&q=80',
+        imagen: CatalogoImagenesHaku.moray,
         creadorId: 's2',
         provincia: 'Cusco',
         categorias: const [
@@ -382,8 +561,7 @@ class SemillaAlmacenHaku {
         id: 'com_inca',
         nombre: 'Ruta Inca Crew',
         descripcion: 'Preparación y logística del Camino Inca.',
-        imagen:
-            'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800&q=80',
+        imagen: CatalogoImagenesHaku.machuPicchu,
         creadorId: 'sofiatrek',
         provincia: 'Urubamba',
         categorias: const [
@@ -395,8 +573,7 @@ class SemillaAlmacenHaku {
         id: 'com_fogon',
         nombre: 'Fogón Andino',
         descripcion: 'Mercados, choclo, queso y fogón de barrio.',
-        imagen:
-            'https://images.unsplash.com/photo-1555881403-96d4f9e83f0c?w=800&q=80',
+        imagen: CatalogoImagenesHaku.comida,
         creadorId: 'camilarios',
         provincia: 'Calca',
         categorias: const [
@@ -408,8 +585,7 @@ class SemillaAlmacenHaku {
         id: 'com_misterios',
         nombre: 'Apus y misterios',
         descripcion: 'Puentes vivos, relatos y sitios poco explorados.',
-        imagen:
-            'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80',
+        imagen: CatalogoImagenesHaku.huacachina,
         creadorId: 's5',
         provincia: 'Canas',
         categorias: const [
@@ -422,8 +598,7 @@ class SemillaAlmacenHaku {
         id: 'com_naturaleza',
         nombre: 'Naturaleza Viva',
         descripcion: 'Lagunas, glaciares y bosque de nubes.',
-        imagen:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+        imagen: CatalogoImagenesHaku.ausangate,
         creadorId: 's4',
         provincia: 'Quispicanchi',
         categorias: const [
@@ -435,8 +610,7 @@ class SemillaAlmacenHaku {
         id: 'com_magia',
         nombre: 'Magia de los Apus',
         descripcion: 'Caminatas con ofrenda y paisaje sagrado.',
-        imagen:
-            'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80',
+        imagen: CatalogoImagenesHaku.llamaMachu,
         creadorId: 'sofiatrek',
         provincia: 'Canchis',
         categorias: const [
@@ -448,8 +622,7 @@ class SemillaAlmacenHaku {
         id: 'com_urbano',
         nombre: 'Cusco a pie',
         descripcion: 'Miradores, callejones y comida de barrio.',
-        imagen:
-            'https://images.unsplash.com/photo-1548013146-72479768bada?w=700&q=80',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
         creadorId: 's3',
         provincia: 'Cusco',
         categorias: const [
@@ -461,8 +634,7 @@ class SemillaAlmacenHaku {
         id: 'com_ciencia',
         nombre: 'Ciencia de altura',
         descripcion: 'Glaciares, ciencia ciudadana y nevados.',
-        imagen:
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=80',
+        imagen: CatalogoImagenesHaku.fondoExplora,
         creadorId: 's4',
         provincia: 'Quispicanchi',
         categorias: const [
@@ -474,8 +646,7 @@ class SemillaAlmacenHaku {
         id: 'com_relatos',
         nombre: 'Relatos Pacha',
         descripcion: 'Historias de mercados, fiestas y caminos.',
-        imagen:
-            'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=80',
+        imagen: CatalogoImagenesHaku.machuPicchu,
         creadorId: 's5',
         provincia: 'Calca',
         categorias: const [
@@ -613,6 +784,9 @@ class SemillaAlmacenHaku {
     required int likes,
     required int comentarios,
     required DateTime creadoEn,
+    String? lugarId,
+    String? lugarNombre,
+    String? categoria,
   }) {
     return {
       'id': id,
@@ -622,6 +796,85 @@ class SemillaAlmacenHaku {
       'likes': likes,
       'comentarios': comentarios,
       'creado_en': creadoEn.toIso8601String(),
+      'lugar_id': lugarId,
+      'lugar_nombre': lugarNombre,
+      'categoria': categoria,
     };
+  }
+
+  static List<Map<String, dynamic>> _salidasSemilla() {
+    return [
+      {
+        'id': 's1',
+        'lugar_id': 'laguna_humantay',
+        'lugar_nombre': 'Laguna Humantay',
+        'organizador_nombre': 'Carlos',
+        'fecha': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+        'hora': '5:30 AM',
+        'punto_encuentro': 'Plaza de Armas',
+        'cupos': 10,
+        'inscritos': 3,
+        'minimo': 4,
+        'dificultad': 'Moderada',
+        'grupo': 'Trekkers Cusco',
+        'comunidad_id': 'com_trekkers',
+        'inscrito_ids': ['s1', 's2', 'diegoandes'],
+        'checkin_ids': ['s1'],
+      },
+      {
+        'id': 's2',
+        'lugar_id': 'moray',
+        'lugar_nombre': 'Moray',
+        'organizador_nombre': 'Ana',
+        'fecha': DateTime.now().add(const Duration(days: 5)).toIso8601String(),
+        'hora': '7:00 AM',
+        'punto_encuentro': 'Cristo Blanco',
+        'cupos': 8,
+        'inscritos': 2,
+        'minimo': 3,
+        'dificultad': 'Fácil',
+        'grupo': 'Fotógrafos Andinos',
+        'comunidad_id': 'com_fotos',
+        'inscrito_ids': ['s2', 'sofiatrek'],
+        'checkin_ids': <String>[],
+      },
+    ];
+  }
+
+  static List<Map<String, dynamic>> _gruposSemilla() {
+    return [
+      {
+        'id': 'g_demo',
+        'nombre': 'Humantay Team',
+        'creador_id': 'yo',
+        'es_creador': true,
+        'ruta_id': 'laguna_humantay',
+        'ruta_titulo': 'Laguna Humantay',
+        'miembro_ids': ['s1', 's2'],
+        'ultimo_mensaje': 'Nos vemos a las 5 am en el punto.',
+        'hace': '40m',
+      },
+    ];
+  }
+
+  static List<Map<String, dynamic>> _mensajesSemilla() {
+    return [
+      {
+        'id': 'md_seed_1',
+        'conversacion_id': 'mariaq',
+        'autor_id': 'mariaq',
+        'texto': '¿Salimos mañana a Sacsayhuamán?',
+        'creado_en':
+            DateTime.now().subtract(const Duration(minutes: 12)).toIso8601String(),
+      },
+      {
+        'id': 'md_seed_2',
+        'conversacion_id': 'diegoandes',
+        'autor_id': 'diegoandes',
+        'texto': 'Lleva bastones para Humantay.',
+        'creado_en':
+            DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+      },
+    ];
   }
 }

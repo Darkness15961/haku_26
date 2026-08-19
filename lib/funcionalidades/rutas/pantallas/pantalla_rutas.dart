@@ -23,13 +23,13 @@ class _EstadoPantallaRutas extends State<PantallaRutas>
 
   static const _etiquetas = [
     'Recomendadas',
-    'Populares',
+    'Cultura',
     'Naturaleza',
   ];
 
   static const _categorias = [
     CategoriaRuta.recomendadas,
-    CategoriaRuta.populares,
+    CategoriaRuta.cultura,
     CategoriaRuta.naturaleza,
   ];
 
@@ -75,15 +75,6 @@ class _EstadoPantallaRutas extends State<PantallaRutas>
                     style: TipografiaHaku.titulo(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Caminatas y recorridos de Cusco',
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: PaletaRutas.marronCuero,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -174,21 +165,11 @@ class _EmptyRutas extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Aún no hay rutas aquí',
+              'Vacío',
               textAlign: TextAlign.center,
               style: TipografiaHaku.titulo(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pronto la comunidad documentará más recorridos en esta sección.',
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(
-                fontSize: 13,
-                height: 1.35,
-                color: PaletaRutas.marronCuero,
               ),
             ),
             const SizedBox(height: 18),
@@ -198,7 +179,7 @@ class _EmptyRutas extends StatelessWidget {
                 foregroundColor: PaletaRutas.verdeBosque,
               ),
               child: Text(
-                'Ver recomendadas',
+                'Recomendadas',
                 style: TipografiaHaku.interfaz(
                   fontWeight: FontWeight.w700,
                   color: PaletaRutas.verdeBosque,

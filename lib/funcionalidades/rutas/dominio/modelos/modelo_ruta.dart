@@ -3,6 +3,36 @@ enum CategoriaRuta {
   recomendadas,
   populares,
   naturaleza,
+  cultura,
+}
+
+/// Qué documenta la ruta: un camino o un hilo de cultura viva.
+enum HiloCultura {
+  camino,
+  tejido,
+  ceramica,
+  comida,
+  teatro,
+  pintura,
+}
+
+extension HiloCulturaX on HiloCultura {
+  String get etiqueta {
+    switch (this) {
+      case HiloCultura.camino:
+        return 'Camino';
+      case HiloCultura.tejido:
+        return 'Tejido';
+      case HiloCultura.ceramica:
+        return 'Cerámica';
+      case HiloCultura.comida:
+        return 'Fogón';
+      case HiloCultura.teatro:
+        return 'Teatro';
+      case HiloCultura.pintura:
+        return 'Pintura';
+    }
+  }
 }
 
 /// Parada / hito de una ruta (para mapa simulado y BD futura `puntos_ruta`).
@@ -70,6 +100,7 @@ class ModeloRuta {
   final String comoLlegar;
   final String transporte;
   final List<String> tips;
+  final HiloCultura hilo;
 
   const ModeloRuta({
     required this.id,
@@ -96,6 +127,7 @@ class ModeloRuta {
     this.comoLlegar = '',
     this.transporte = '',
     this.tips = const [],
+    this.hilo = HiloCultura.camino,
   });
 
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
@@ -134,6 +166,10 @@ class ModeloRuta {
       transporte: json['transporte'] as String? ?? '',
       tips: (json['tips'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           const [],
+      hilo: HiloCultura.values.firstWhere(
+        (h) => h.name == json['hilo'],
+        orElse: () => HiloCultura.camino,
+      ),
     );
   }
 
@@ -163,6 +199,7 @@ class ModeloRuta {
       'comoLlegar': comoLlegar,
       'transporte': transporte,
       'tips': tips,
+      'hilo': hilo.name,
     };
   }
 
@@ -191,6 +228,7 @@ class ModeloRuta {
     String? comoLlegar,
     String? transporte,
     List<String>? tips,
+    HiloCultura? hilo,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
@@ -217,6 +255,7 @@ class ModeloRuta {
       comoLlegar: comoLlegar ?? this.comoLlegar,
       transporte: transporte ?? this.transporte,
       tips: tips ?? this.tips,
+      hilo: hilo ?? this.hilo,
     );
   }
 }

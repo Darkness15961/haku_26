@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
@@ -58,7 +59,7 @@ class _EstadoPantallaPublicaciones
     _lugarId = widget.rutaId;
     if (titulo != null && titulo.isNotEmpty) {
       _lugarNombre = titulo;
-      _descripcion.text = 'Documentando: $titulo';
+      _descripcion.text = titulo;
     }
   }
 
@@ -147,7 +148,7 @@ class _EstadoPantallaPublicaciones
               const SizedBox(height: 14),
               _OpcionSheet(
                 icono: Icons.photo_library_outlined,
-                titulo: 'Subir foto',
+                titulo: 'Foto',
                 onTap: () {
                   Navigator.pop(context);
                   _elegirFoto();
@@ -156,7 +157,7 @@ class _EstadoPantallaPublicaciones
               const SizedBox(height: 8),
               _OpcionSheet(
                 icono: Icons.videocam_outlined,
-                titulo: 'Subir video',
+                titulo: 'Video',
                 onTap: () {
                   Navigator.pop(context);
                   _elegirVideo();
@@ -268,15 +269,20 @@ class _EstadoPantallaPublicaciones
     var lugarId = _lugarId;
     final nombreLugar = _lugarNombre?.trim();
     if ((lugarId == null || lugarId.isEmpty) &&
+        (nombreLugar == null || nombreLugar.isEmpty)) {
+      _aviso('Lugar');
+      return;
+    }
+    if ((lugarId == null || lugarId.isEmpty) &&
         nombreLugar != null &&
         nombreLugar.isNotEmpty) {
       lugarId = 'lugar_${DateTime.now().millisecondsSinceEpoch}';
-      ref.read(lugaresDataSourceProvider).agregar(
+      await ref.read(almacenFeedProvider.notifier).guardarLugarCreado(
             ModeloLugar(
               id: lugarId,
               nombre: nombreLugar,
               descripcion: _descripcion.text.trim().isEmpty
-                  ? 'Documentado en una publicación HAKU.'
+                  ? 'HAKU.'
                   : _descripcion.text.trim(),
               imagenUrl: _media?.path ??
                   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
@@ -305,8 +311,7 @@ class _EstadoPantallaPublicaciones
             usuario: sesion != null
                 ? '@${sesion.nombreUsuario.toLowerCase().replaceAll(' ', '')}'
                 : '@haku',
-            avatarUrl:
-                'https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&q=80',
+            avatarUrl: CatalogoImagenesHaku.resolverAvatar(sesion?.avatarUrl),
             hace: 'ahora',
             texto: _descripcion.text.trim(),
             imagenUrl: _media?.path,
@@ -328,9 +333,7 @@ class _EstadoPantallaPublicaciones
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          nombreLugar == null
-              ? 'Publicación lista'
-              : 'Publicado en $nombreLugar',
+          nombreLugar == null ? 'Publicado' : 'Publicado en $nombreLugar',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: Colors.black,
@@ -387,7 +390,7 @@ class _EstadoPantallaPublicaciones
                               icono: Icons.notes_rounded,
                               titulo: 'Descripcion',
                               subtitulo: _descripcion.text.trim().isEmpty
-                                  ? 'Cuenta tu aventura...'
+                                  ? 'Qué viste'
                                   : _descripcion.text.trim(),
                               onTap: () => setState(
                                 () => _editandoDescripcion =
@@ -404,7 +407,7 @@ class _EstadoPantallaPublicaciones
                             const SizedBox(height: 10),
                             _CardOpcion(
                               icono: Icons.music_note_rounded,
-                              titulo: 'Agregar musica',
+                              titulo: 'Música',
                               subtitulo: _musica ?? 'Elige un sonido',
                               onTap: () {
                                 setState(
@@ -417,8 +420,7 @@ class _EstadoPantallaPublicaciones
                             _CardOpcion(
                               icono: Icons.place_outlined,
                               titulo: 'Lugar',
-                              subtitulo: _lugarNombre ??
-                                  'Elige o escribe el lugar después',
+                              subtitulo: _lugarNombre ?? 'Obligatorio',
                               onTap: _mostrarLugares,
                             ),
                             const SizedBox(height: 10),
@@ -432,7 +434,7 @@ class _EstadoPantallaPublicaciones
                             const SizedBox(height: 10),
                             _CardOpcion(
                               icono: Icons.person_add_alt_1_rounded,
-                              titulo: 'Etiquetar personas',
+                              titulo: 'Etiquetar',
                               subtitulo: _etiquetas.isEmpty
                                   ? 'Menciona companeros de viaje'
                                   : _etiquetas.join(', '),
@@ -588,7 +590,7 @@ class _PasoElegirMedia extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Subir foto o video',
+                              'Foto o video',
                               style: TipografiaHaku.interfaz(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -597,7 +599,7 @@ class _PasoElegirMedia extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Primero elige tu media,\nluego agrega detalles',
+                              'Elige media',
                               textAlign: TextAlign.center,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,
@@ -898,7 +900,7 @@ class _CampoDescripcion extends StatelessWidget {
         decoration: InputDecoration(
           isDense: true,
           border: InputBorder.none,
-          hintText: 'Que descubriste hoy?',
+          hintText: 'Qué viste',
           hintStyle: TipografiaHaku.interfaz(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.45),
@@ -1049,7 +1051,7 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
               style: TipografiaHaku.interfaz(color: Colors.white),
               cursorColor: Colors.white,
               decoration: InputDecoration(
-                hintText: 'Buscar un lugar existente…',
+                hintText: 'Lugar',
                 hintStyle: TipografiaHaku.interfaz(
                   color: Colors.white.withValues(alpha: 0.45),
                 ),
@@ -1100,7 +1102,7 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
               style: TipografiaHaku.interfaz(color: Colors.white),
               cursorColor: Colors.white,
               decoration: InputDecoration(
-                hintText: 'O escribe un lugar nuevo…',
+                hintText: 'Nuevo lugar',
                 hintStyle: TipografiaHaku.interfaz(
                   color: Colors.white.withValues(alpha: 0.45),
                 ),

@@ -1,3 +1,5 @@
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+
 import '../dominio/modelos/modelo_lugar.dart';
 
 /// Catálogo local + lugares creados en sesión (mutables).
@@ -13,11 +15,10 @@ class LugaresDataSourceLocal {
       nombre: 'Laguna Humantay',
       descripcion:
           'Laguna turquesa al pie del nevado Humantay. Información enriquecida por la comunidad HAKU.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+      imagenUrl: CatalogoImagenesHaku.ausangate,
       galeria: const [
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
-        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+        CatalogoImagenesHaku.ausangate,
+        CatalogoImagenesHaku.moray,
       ],
       categoria: CategoriaLugar.naturaleza,
       provincia: 'Anta',
@@ -37,8 +38,7 @@ class LugaresDataSourceLocal {
       nombre: 'Cañón Q’eswachaka',
       descripcion:
           'Puente inca vivo y cañón profundo. Descubierto recientemente en HAKU.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80',
+      imagenUrl: CatalogoImagenesHaku.huacachina,
       categoria: CategoriaLugar.misterioso,
       provincia: 'Canas',
       distrito: 'Quehue',
@@ -111,8 +111,7 @@ class LugaresDataSourceLocal {
       id: 'laguna_oculta',
       nombre: 'Laguna Escondida de Calca',
       descripcion: 'Poco explorada. Ideal para documentar.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&q=80',
+      imagenUrl: CatalogoImagenesHaku.huacachina,
       categoria: CategoriaLugar.magico,
       provincia: 'Calca',
       distrito: 'Lares',
@@ -187,5 +186,13 @@ class LugaresDataSourceLocal {
 
   void agregar(ModeloLugar lugar) {
     _creados.insert(0, lugar);
+  }
+
+  List<ModeloLugar> get creados => List.unmodifiable(_creados);
+
+  void reemplazarCreados(List<ModeloLugar> lugares) {
+    _creados
+      ..clear()
+      ..addAll(lugares);
   }
 }

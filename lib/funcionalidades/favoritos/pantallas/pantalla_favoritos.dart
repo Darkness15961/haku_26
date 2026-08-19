@@ -73,24 +73,16 @@ class PantallaFavoritos extends ConsumerWidget {
                         padding: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
                         children: [
                           Text(
-                            'Aún no hay favoritos',
+                            'Vacío',
                             textAlign: TextAlign.center,
                             style: TipografiaHaku.titulo(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Guarda rutas con el corazón o publicaciones con el bookmark.',
-                            textAlign: TextAlign.center,
-                            style: TipografiaHaku.interfaz(
-                              color: PaletaRutas.marronCuero,
-                            ),
-                          ),
                           const SizedBox(height: 16),
                           BotonPrimarioRuta(
-                            texto: 'Explorar rutas',
+                            texto: 'Rutas',
                             icono: Icons.map_outlined,
                             onPressed: () {
                               Navigator.of(context).push(

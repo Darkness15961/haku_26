@@ -51,7 +51,7 @@ class _EstadoPantallaConfiguracion
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Perfil actualizado',
+          'Listo',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: Colors.black,
@@ -72,12 +72,11 @@ class _EstadoPantallaConfiguracion
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         title: Text(
-          'Reiniciar datos locales',
+          'Reiniciar',
           style: TipografiaHaku.titulo(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Se borran follows, likes, comunidades unidas y publicaciones propias. '
-          'La semilla se vuelve a cargar.',
+          'Se recarga la semilla.',
           style: TipografiaHaku.interfaz(fontSize: 14),
         ),
         actions: [
@@ -107,7 +106,7 @@ class _EstadoPantallaConfiguracion
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'BD local reiniciada',
+          'Reiniciado',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: Colors.black,
@@ -171,7 +170,7 @@ class _EstadoPantallaConfiguracion
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Tu identidad en HAKU',
+                            'Cuenta',
                             style: TipografiaHaku.titulo(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -184,7 +183,7 @@ class _EstadoPantallaConfiguracion
                             style: TipografiaHaku.interfaz(color: Colors.white),
                             cursorColor: Colors.white,
                             decoration: InputDecoration(
-                              labelText: 'Nombre visible',
+                              labelText: 'Nombre',
                               labelStyle: TipografiaHaku.interfaz(
                                 color: Colors.white70,
                               ),
@@ -213,7 +212,7 @@ class _EstadoPantallaConfiguracion
                                 foregroundColor: PaletaRutas.marronOscuro,
                               ),
                               child: Text(
-                                'Guardar nombre',
+                                'Guardar',
                                 style: TipografiaHaku.interfaz(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -226,24 +225,15 @@ class _EstadoPantallaConfiguracion
                     const SizedBox(height: 14),
                     _TileConfig(
                       icono: Icons.logout_rounded,
-                      titulo: 'Cerrar sesión',
-                      subtitulo: 'Vuelves a modo visitante',
+                      titulo: 'Salir',
+                      subtitulo: '',
                       onTap: _cerrarSesion,
                     ),
                     _TileConfig(
                       icono: Icons.restart_alt_rounded,
-                      titulo: 'Reiniciar BD local',
-                      subtitulo: 'Solo para pruebas de simulación',
+                      titulo: 'Reiniciar',
+                      subtitulo: '',
                       onTap: _resetBd,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Simulación HAKU · los datos viven en este dispositivo '
-                      'hasta conectar Supabase.',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 12,
-                        color: PaletaRutas.marronCuero,
-                      ),
                     ),
                   ],
                 ),
@@ -286,13 +276,15 @@ class _TileConfig extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          subtitle: Text(
-            subtitulo,
-            style: TipografiaHaku.interfaz(
-              fontSize: 12,
-              color: Colors.white70,
-            ),
-          ),
+          subtitle: subtitulo.isEmpty
+              ? null
+              : Text(
+                  subtitulo,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white54),
         ),
       ),

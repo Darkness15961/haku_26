@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/feed_inicio_datasource_local.dart';
@@ -118,14 +119,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                     bottom: 88,
                     child: Column(
                       children: [
-                        ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: widget.persona.avatarUrl,
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                        AvatarHaku(url: widget.persona.avatarUrl, size: 48),
                         const SizedBox(height: 18),
                         _AccionClip(
                           icono: liked

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../autenticacion/navegacion_auth.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -43,7 +44,7 @@ class _EstadoPantallaRegistrarLugar
   Future<void> _siguiente() async {
     if (_paso == 0) {
       if (_nombre.text.trim().isEmpty) {
-        _aviso('Ponle un nombre al lugar');
+        _aviso('Nombre');
         return;
       }
     }
@@ -60,7 +61,7 @@ class _EstadoPantallaRegistrarLugar
       id: id,
       nombre: _nombre.text.trim(),
       descripcion: _experiencia.text.trim().isEmpty
-          ? 'Documentado por la comunidad HAKU.'
+          ? 'HAKU.'
           : _experiencia.text.trim(),
       imagenUrl: _foto?.path ??
           'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
@@ -78,7 +79,7 @@ class _EstadoPantallaRegistrarLugar
       creadoPorUsuario: true,
     );
 
-    ref.read(lugaresDataSourceProvider).agregar(lugar);
+    ref.read(almacenFeedProvider.notifier).guardarLugarCreado(lugar);
     notificarLugaresCambiaron(ref);
     ref.read(metricasDescubrimientoProvider.notifier).registrarDescubrimiento(
           id,
@@ -92,11 +93,11 @@ class _EstadoPantallaRegistrarLugar
       builder: (ctx) => AlertDialog(
         backgroundColor: PaletaRutas.crema,
         title: Text(
-          '¡Nuevo lugar para HAKU!',
+          'Nuevo lugar',
           style: TipografiaHaku.titulo(fontSize: 22, fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Acabas de documentar un descubrimiento.\n+50 puntos de descubrimiento',
+          '+50 pts',
           style: TipografiaHaku.interfaz(height: 1.4),
         ),
         actions: [
@@ -166,7 +167,7 @@ class _EstadoPantallaRegistrarLugar
               const SizedBox(height: 18),
               Expanded(child: _contenidoPaso()),
               BotonPrimarioRuta(
-                texto: _paso == 4 ? 'Publicar descubrimiento' : 'Continuar',
+                texto: _paso == 4 ? 'Publicar' : 'Siguiente',
                 onPressed: _siguiente,
               ),
             ],
@@ -183,7 +184,7 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text(
-              '¿Qué descubriste?',
+              'Lugar',
               style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -194,7 +195,7 @@ class _EstadoPantallaRegistrarLugar
               },
               icon: const Icon(Icons.add_a_photo_outlined),
               label: Text(
-                _foto == null ? 'Agregar fotografía' : 'Foto lista',
+                _foto == null ? 'Foto' : 'Listo',
                 style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
@@ -207,7 +208,7 @@ class _EstadoPantallaRegistrarLugar
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
-                'Usar ubicación actual',
+                'Ubicación',
                 style: TipografiaHaku.interfaz(fontWeight: FontWeight.w600),
               ),
               value: _usandoUbicacion,
@@ -217,7 +218,7 @@ class _EstadoPantallaRegistrarLugar
             TextField(
               controller: _nombre,
               decoration: InputDecoration(
-                labelText: 'Nombre del lugar',
+                labelText: 'Nombre',
                 labelStyle: TipografiaHaku.interfaz(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -230,7 +231,7 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text(
-              '¿Qué tipo de lugar es?',
+              'Tipo',
               style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -257,7 +258,7 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text(
-              '¿Cómo llegaste?',
+              'Acceso',
               style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -276,7 +277,7 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text(
-              '¿Qué tan difícil fue?',
+              'Dificultad',
               style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -295,7 +296,7 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text(
-              'Comparte tu experiencia',
+              'Experiencia',
               style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -303,7 +304,7 @@ class _EstadoPantallaRegistrarLugar
               controller: _experiencia,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: '¿Qué viste? ¿Qué deberían saber otros?',
+                hintText: 'Qué viste',
                 hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

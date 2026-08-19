@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/almacenamiento/almacenamiento_haku.dart';
-import '../../comunidad/dominio/modelo_comunidad.dart';
+import '../../../nucleo/datos/esquema_haku.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../comunidad/datos/salidas_datasource_local.dart';
+import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../datos/feed_inicio_datasource_local.dart';
+import '../datos/mensajes_datasource_local.dart';
 import '../datos/semilla_almacen_haku.dart';
 
 class EstadoAlmacenFeed {
@@ -18,6 +22,9 @@ class EstadoAlmacenFeed {
   final Set<String> favoritosRutaIds;
   final List<ComunidadHaku> comunidades;
   final Set<String> comunidadIds;
+  final List<ComentarioPublicacion> comentarios;
+  final List<MensajeDirecto> mensajesDirectos;
+  final int satelites;
 
   const EstadoAlmacenFeed({
     this.listo = false,
@@ -31,6 +38,9 @@ class EstadoAlmacenFeed {
     this.favoritosRutaIds = const {},
     this.comunidades = const [],
     this.comunidadIds = const {},
+    this.comentarios = const [],
+    this.mensajesDirectos = const [],
+    this.satelites = 0,
   });
 
   List<SugerenciaSeguimiento> get exploradores =>
@@ -48,6 +58,9 @@ class EstadoAlmacenFeed {
     Set<String>? favoritosRutaIds,
     List<ComunidadHaku>? comunidades,
     Set<String>? comunidadIds,
+    List<ComentarioPublicacion>? comentarios,
+    List<MensajeDirecto>? mensajesDirectos,
+    int? satelites,
   }) {
     return EstadoAlmacenFeed(
       listo: listo ?? this.listo,
@@ -61,6 +74,9 @@ class EstadoAlmacenFeed {
       favoritosRutaIds: favoritosRutaIds ?? this.favoritosRutaIds,
       comunidades: comunidades ?? this.comunidades,
       comunidadIds: comunidadIds ?? this.comunidadIds,
+      comentarios: comentarios ?? this.comentarios,
+      mensajesDirectos: mensajesDirectos ?? this.mensajesDirectos,
+      satelites: satelites ?? this.satelites,
     );
   }
 
@@ -89,7 +105,15 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
       doc = SemillaAlmacenHaku.fusionar(doc);
       await _db!.guardar(doc);
     }
+    _hidratarLugaresCreados(doc);
+    _hidratarSalidas(doc);
+    _hidratarGrupos(doc);
     state = _desdeDocumento(doc);
+  }
+
+  Future<void> persistirSatelites() async {
+    await _persistir();
+    state = state.copyWith(satelites: state.satelites + 1);
   }
 
   Future<void> _persistir() async {
@@ -213,11 +237,78 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
     await _persistir();
   }
 
+  Future<void> agregarComentario({
+    required String publicacionId,
+    required String texto,
+  }) async {
+    final t = texto.trim();
+    if (t.isEmpty) return;
+    final c = ComentarioPublicacion(
+      id: 'cm_${DateTime.now().millisecondsSinceEpoch}',
+      publicacionId: publicacionId,
+      autorId: idUsuarioLocal,
+      texto: t,
+      creadoEn: DateTime.now(),
+    );
+    state = state.copyWith(comentarios: [c, ...state.comentarios]);
+    await incrementarComentarios(publicacionId);
+  }
+
+  Future<void> guardarLugarCreado(ModeloLugar lugar) async {
+    LugaresDataSourceLocal.instancia.agregar(lugar);
+    await _persistir();
+  }
+
+  void _hidratarLugaresCreados(Map<String, dynamic> doc) {
+    final raw = doc[EsquemaHaku.lugaresCreados] as List<dynamic>? ?? const [];
+    final lugares = raw
+        .whereType<Map>()
+        .map((e) => ModeloLugar.desdeMapa(Map<String, dynamic>.from(e)))
+        .toList();
+    LugaresDataSourceLocal.instancia.reemplazarCreados(lugares);
+  }
+
+  void _hidratarSalidas(Map<String, dynamic> doc) {
+    final raw = doc[EsquemaHaku.salidas] as List<dynamic>? ?? const [];
+    if (raw.isEmpty) return;
+    SalidasDataSourceLocal.instancia.reemplazarTodas([
+      for (final e in raw.whereType<Map>())
+        ModeloSalida.desdeMapa(Map<String, dynamic>.from(e)),
+    ]);
+  }
+
+  void _hidratarGrupos(Map<String, dynamic> doc) {
+    final raw = doc[EsquemaHaku.gruposRuta] as List<dynamic>? ?? const [];
+    if (raw.isEmpty) return;
+    MensajeriaEstado.instancia.reemplazarGrupos([
+      for (final e in raw.whereType<Map>())
+        GrupoRuta.desdeMapa(Map<String, dynamic>.from(e)),
+    ]);
+  }
+
+  Future<void> agregarMensajeDirecto({
+    required String conversacionId,
+    required String texto,
+  }) async {
+    final t = texto.trim();
+    if (t.isEmpty) return;
+    final m = MensajeDirecto(
+      id: 'md_${DateTime.now().millisecondsSinceEpoch}',
+      conversacionId: conversacionId,
+      autorId: idUsuarioLocal,
+      texto: t,
+      creadoEn: DateTime.now(),
+    );
+    state = state.copyWith(mensajesDirectos: [...state.mensajesDirectos, m]);
+    await _persistir();
+  }
+
   static const idUsuarioLocal = 'yo';
 
   Future<void> toggleUnirseComunidad(String comunidadId) async {
     final comunidades = [...state.comunidades];
     final i = comunidades.indexWhere((c) => c.id == comunidadId);
+    if (i < 0) return;
     if (i < 0) return;
     final next = {...state.comunidadIds};
     final miembros = [...comunidades[i].miembroIds];
@@ -238,8 +329,7 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
     required String descripcion,
     required List<CategoriaLugar> categorias,
     required List<String> invitadosIds,
-    String imagenUrl =
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+    String imagenUrl = CatalogoImagenesHaku.encabezadoRutas,
   }) async {
     final id = 'com_${DateTime.now().millisecondsSinceEpoch}';
     final miembros = {idUsuarioLocal, ...invitadosIds}.toList();
@@ -306,7 +396,7 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
             autorId: autorId,
             autor: autor?.nombre ?? autorId,
             usuario: autor?.usuario ?? '@$autorId',
-            avatarUrl: autor?.avatarUrl ?? '',
+            avatarUrl: CatalogoImagenesHaku.resolverAvatar(autor?.avatarUrl),
             hace: _hace(creado),
             texto: m['texto'] as String? ?? '',
             imagenUrl: m['imagen_url'] as String?,
@@ -370,6 +460,17 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
       favoritosRutaIds: ids('favoritos_ruta_ids'),
       comunidades: comunidades,
       comunidadIds: comunidadIds,
+      comentarios: (doc[EsquemaHaku.comentarios] as List<dynamic>? ?? [])
+          .whereType<Map>()
+          .map((e) => ComentarioPublicacion.desdeMapa(
+                Map<String, dynamic>.from(e),
+              ))
+          .toList(),
+      mensajesDirectos: (doc[EsquemaHaku.mensajesDirectos] as List<dynamic>? ??
+              [])
+          .whereType<Map>()
+          .map((e) => MensajeDirecto.desdeMapa(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 
@@ -406,6 +507,18 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
       ],
       'comunidades': state.comunidades.map((c) => c.aMapa()).toList(),
       'miembros_comunidad': miembros,
+      'comentarios': state.comentarios.map((c) => c.aMapa()).toList(),
+      'lugares_creados': LugaresDataSourceLocal.instancia.creados
+          .map((l) => l.aMapa())
+          .toList(),
+      'salidas': SalidasDataSourceLocal.instancia.snapshot
+          .map((s) => s.aMapa())
+          .toList(),
+      'grupos_ruta': MensajeriaEstado.instancia.grupos
+          .map((g) => g.aMapa())
+          .toList(),
+      'mensajes_directos':
+          state.mensajesDirectos.map((m) => m.aMapa()).toList(),
       'interacciones': {
         'demo_usuario_v1': true,
         'siguiendo_ids': state.siguiendoIds.toList(),

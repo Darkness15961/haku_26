@@ -69,7 +69,7 @@ class _EstadoHeroEntradaInicio extends State<HeroEntradaInicio>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Tu proxima aventura te espera',
+                        'Cusco',
                         textAlign: TextAlign.center,
                         style: TipografiaHaku.interfaz(
                           fontSize: 15,
@@ -92,7 +92,7 @@ class _EstadoHeroEntradaInicio extends State<HeroEntradaInicio>
                           ),
                         ),
                         child: Text(
-                          'Comenzar aventura',
+                          'Explorar',
                           style: TipografiaHaku.interfaz(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,

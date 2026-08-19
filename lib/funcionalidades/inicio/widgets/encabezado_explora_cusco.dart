@@ -150,7 +150,7 @@ class EncabezadoExploraCusco extends ConsumerWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Toca una provincia para descubrir destinos',
+                    '13 provincias',
                     style: TipografiaHaku.interfaz(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,

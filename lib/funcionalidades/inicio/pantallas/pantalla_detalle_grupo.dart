@@ -1,19 +1,21 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/mensajes_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 
 /// Detalle de grupo de ruta. Solo el creador puede finalizar (elimina el grupo).
-class PantallaDetalleGrupo extends StatelessWidget {
+class PantallaDetalleGrupo extends ConsumerWidget {
   final GrupoRuta grupo;
 
   const PantallaDetalleGrupo({super.key, required this.grupo});
 
-  Future<void> _finalizar(BuildContext context) async {
+  Future<void> _finalizar(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -26,8 +28,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
           ),
         ),
         content: Text(
-          'Al finalizar la ruta se eliminará el grupo "${grupo.nombre}". '
-          'Solo tú, como creador, puedes hacerlo.',
+          'Se elimina el grupo.',
           style: TipografiaHaku.interfaz(fontSize: 14),
         ),
         actions: [
@@ -47,7 +48,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
               backgroundColor: Colors.black.withValues(alpha: 0.9),
             ),
             child: Text(
-              'Finalizar y eliminar',
+              'Eliminar',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -61,10 +62,12 @@ class PantallaDetalleGrupo extends StatelessWidget {
     if (ok != true || !context.mounted) return;
 
     MensajeriaEstado.instancia.eliminarGrupo(grupo.id);
+    await ref.read(almacenFeedProvider.notifier).persistirSatelites();
+    if (!context.mounted) return;
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Ruta finalizada. Grupo "${grupo.nombre}" eliminado.'),
+        content: Text('Grupo eliminado'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -72,7 +75,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
     final miembros = grupo.miembros;
 
@@ -151,7 +154,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '${grupo.miembroIds.length} compañeros · ${grupo.esCreador ? 'Eres el creador' : 'Miembro'}',
+                            '${grupo.miembroIds.length} · ${grupo.esCreador ? 'Creador' : 'Miembro'}',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
                               color: Colors.white.withValues(alpha: 0.75),
@@ -190,19 +193,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: miembros[i].avatarUrl,
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) =>
-                                      const ColoredBox(
-                                    color: Color(0xFFBBBBBB),
-                                    child: SizedBox(width: 40, height: 40),
-                                  ),
-                                ),
-                              ),
+                              AvatarHaku(url: miembros[i].avatarUrl, size: 40),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -220,7 +211,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
                     if (grupo.esCreador) ...[
                       const SizedBox(height: 24),
                       Text(
-                        'Al finalizar la ruta, el grupo se elimina. Solo el creador puede hacerlo.',
+                        'Se elimina al terminar.',
                         style: TipografiaHaku.interfaz(
                           fontSize: 12,
                           color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
@@ -230,7 +221,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
                       SizedBox(
                         height: 48,
                         child: OutlinedButton.icon(
-                          onPressed: () => _finalizar(context),
+                          onPressed: () => _finalizar(context, ref),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             backgroundColor:
@@ -242,7 +233,7 @@ class PantallaDetalleGrupo extends StatelessWidget {
                           ),
                           icon: const Icon(Icons.flag_outlined),
                           label: Text(
-                            'Finalizar ruta (eliminar grupo)',
+                            'Finalizar',
                             style: TipografiaHaku.interfaz(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

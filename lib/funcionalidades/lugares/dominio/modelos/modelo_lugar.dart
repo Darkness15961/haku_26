@@ -172,4 +172,66 @@ class ModeloLugar {
       creadoPorUsuario: creadoPorUsuario ?? this.creadoPorUsuario,
     );
   }
+
+  Map<String, dynamic> aMapa() => {
+        'id': id,
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'imagen_url': imagenUrl,
+        'galeria': galeria,
+        'categoria_id': categoria.name,
+        'provincia': provincia,
+        'distrito': distrito,
+        'latitud': latitud,
+        'longitud': longitud,
+        'distancia_km': distanciaKm,
+        'calificacion': calificacion,
+        'exploradores': exploradores,
+        'fotos': fotos,
+        'nivel_exploracion': nivelExploracion.name,
+        'dificultad': dificultad,
+        'tiempo_estimado': tiempoEstimado,
+        'altitud': altitud,
+        'acceso': acceso,
+        'descubierto_en': descubiertoEn?.toIso8601String(),
+        'creado_por_usuario': creadoPorUsuario,
+      };
+
+  factory ModeloLugar.desdeMapa(Map<String, dynamic> m) {
+    CategoriaLugar cat = CategoriaLugar.naturaleza;
+    final catId = m['categoria_id'] as String? ?? m['categoria'] as String?;
+    for (final c in CategoriaLugar.values) {
+      if (c.name == catId) cat = c;
+    }
+    NivelExploracion nivel = NivelExploracion.enCrecimiento;
+    final nivId = m['nivel_exploracion'] as String?;
+    for (final n in NivelExploracion.values) {
+      if (n.name == nivId) nivel = n;
+    }
+    return ModeloLugar(
+      id: m['id'] as String? ?? '',
+      nombre: m['nombre'] as String? ?? '',
+      descripcion: m['descripcion'] as String? ?? '',
+      imagenUrl: m['imagen_url'] as String? ?? '',
+      galeria: [
+        for (final x in (m['galeria'] as List<dynamic>? ?? [])) x.toString(),
+      ],
+      categoria: cat,
+      provincia: m['provincia'] as String? ?? 'Cusco',
+      distrito: m['distrito'] as String? ?? '',
+      latitud: (m['latitud'] as num?)?.toDouble() ?? -13.5319,
+      longitud: (m['longitud'] as num?)?.toDouble() ?? -71.9675,
+      distanciaKm: (m['distancia_km'] as num?)?.toDouble() ?? 0,
+      calificacion: (m['calificacion'] as num?)?.toDouble() ?? 0,
+      exploradores: (m['exploradores'] as num?)?.toInt() ?? 0,
+      fotos: (m['fotos'] as num?)?.toInt() ?? 0,
+      nivelExploracion: nivel,
+      dificultad: m['dificultad'] as String? ?? 'Moderada',
+      tiempoEstimado: m['tiempo_estimado'] as String? ?? '',
+      altitud: m['altitud'] as String? ?? '',
+      acceso: m['acceso'] as String? ?? '',
+      descubiertoEn: DateTime.tryParse(m['descubierto_en'] as String? ?? ''),
+      creadoPorUsuario: m['creado_por_usuario'] as bool? ?? false,
+    );
+  }
 }

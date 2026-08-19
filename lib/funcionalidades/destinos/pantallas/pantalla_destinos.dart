@@ -53,7 +53,7 @@ class _EstadoPantallaDestinos extends State<PantallaDestinos> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Proximamente: $titulo'),
+        content: Text(titulo),
         backgroundColor: PaletaRutas.verdeBosque,
         behavior: SnackBarBehavior.floating,
       ),

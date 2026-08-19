@@ -123,7 +123,7 @@ class _ContenidoTarjeta extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      'Destino principal: ${provincia.destinoPrincipal}',
+                      provincia.destinoPrincipal,
                       style: TipografiaHaku.titulo(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -182,7 +182,7 @@ class _ContenidoTarjeta extends StatelessWidget {
           if (destinos.isNotEmpty)
             RankingDestinos(
               destinos: destinos,
-              titulo: 'Top destinos en ${provincia.nombreCorto}',
+              titulo: 'Top',
             ),
           const SizedBox(height: 18),
 
@@ -229,7 +229,7 @@ class _ContenidoTarjeta extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'EXPLORAR ${provincia.nombreCorto.toUpperCase()}',
+                        'EXPLORAR',
                         style: TipografiaHaku.interfaz(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,

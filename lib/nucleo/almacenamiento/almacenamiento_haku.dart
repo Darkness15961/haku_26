@@ -4,17 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Almacén local tipo localStorage. Documento JSON único = BD provisional.
 ///
-/// Colecciones (campos pensados para la BD real):
-/// - perfiles
-/// - clips
-/// - publicaciones
-/// - categorias_actividad
-/// - comunidades (grupos)
-/// - miembros_comunidad
-/// - interacciones (del usuario actual)
+/// Colecciones (mismas claves que `supabase/001_fase1.sql`):
+/// perfiles, clips, publicaciones, comentarios, categorias_actividad,
+/// comunidades, miembros_comunidad, interacciones, lugares_creados.
 class AlmacenamientoHaku {
   static const claveDocumento = 'haku_bd_local_v1';
-  static const versionEsquema = 1;
+  static const versionEsquema = 3;
 
   final SharedPreferences _prefs;
 

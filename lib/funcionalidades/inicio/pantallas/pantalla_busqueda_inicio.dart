@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
@@ -120,8 +121,8 @@ class _EstadoPantallaBusquedaInicio
                       ),
                       decoration: InputDecoration(
                         hintText: _tipo == TipoBusquedaInicio.personas
-                            ? 'Buscar personas…'
-                            : 'Buscar lugares…',
+                            ? 'Personas'
+                            : 'Lugares',
                         hintStyle: TipografiaHaku.interfaz(
                           fontSize: 14,
                           color: PaletaRutas.marronOscuro.withValues(alpha: 0.45),
@@ -322,18 +323,7 @@ class _CardPersona extends ConsumerWidget {
                 padding: const EdgeInsets.all(10),
                 child: Row(
                   children: [
-                    ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: persona.avatarUrl,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const ColoredBox(
-                          color: Color(0xFFBBBBBB),
-                          child: SizedBox(width: 48, height: 48),
-                        ),
-                      ),
-                    ),
+                    AvatarHaku(url: persona.avatarUrl, size: 48),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

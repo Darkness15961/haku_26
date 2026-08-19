@@ -1,26 +1,30 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../datos/mensajes_datasource_local.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 import 'pantalla_chat_directo.dart';
 import 'pantalla_comunidades.dart';
 import 'pantalla_crear_grupo_comunidad.dart';
 import 'pantalla_detalle_grupo.dart';
 
 /// Lista de chats / mensajería en cards estilo Haku.
-class PantallaMensajesInicio extends StatefulWidget {
+class PantallaMensajesInicio extends ConsumerStatefulWidget {
   const PantallaMensajesInicio({super.key});
 
   @override
-  State<PantallaMensajesInicio> createState() => _EstadoPantallaMensajesInicio();
+  ConsumerState<PantallaMensajesInicio> createState() =>
+      _EstadoPantallaMensajesInicio();
 }
 
-class _EstadoPantallaMensajesInicio extends State<PantallaMensajesInicio> {
+class _EstadoPantallaMensajesInicio
+    extends ConsumerState<PantallaMensajesInicio> {
   Future<void> _abrirCrearGrupo() async {
     final ok = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const PantallaCrearGrupo()),
@@ -44,10 +48,35 @@ class _EstadoPantallaMensajesInicio extends State<PantallaMensajesInicio> {
     if (eliminado == true && mounted) setState(() {});
   }
 
+  ChatConversacion _conUltimo(ChatConversacion c, EstadoAlmacenFeed store) {
+    final conv = store.mensajesDirectos
+        .where((m) => m.conversacionId == c.id)
+        .toList()
+      ..sort((a, b) => a.creadoEn.compareTo(b.creadoEn));
+    if (conv.isEmpty) return c;
+    final last = conv.last;
+    final mio = last.autorId == AlmacenFeedNotifier.idUsuarioLocal;
+    return c.copyWith(
+      ultimoMensaje: last.texto,
+      hace: _hace(last.creadoEn),
+      noLeidos: mio ? 0 : c.noLeidos,
+    );
+  }
+
+  static String _hace(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final store = ref.watch(almacenFeedProvider);
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
-    final chats = MensajesDataSourceLocal.chats;
+    final chats = [
+      for (final c in MensajesDataSourceLocal.chats) _conUltimo(c, store),
+    ];
     final grupos = MensajesDataSourceLocal.grupos;
 
     return Scaffold(
@@ -102,7 +131,7 @@ class _EstadoPantallaMensajesInicio extends State<PantallaMensajesInicio> {
                         Expanded(
                           child: _AccionMensajes(
                             icono: Icons.diversity_3_outlined,
-                            etiqueta: 'Crear comunidad',
+                            etiqueta: 'Comunidad',
                             onTap: _abrirCrearComunidad,
                           ),
                         ),
@@ -125,7 +154,7 @@ class _EstadoPantallaMensajesInicio extends State<PantallaMensajesInicio> {
                     if (grupos.isNotEmpty) ...[
                       const SizedBox(height: 18),
                       Text(
-                        'Grupos de ruta',
+                        'Grupos',
                         style: TipografiaHaku.titulo(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -395,18 +424,7 @@ class _CardChat extends StatelessWidget {
                   children: [
                     Stack(
                       children: [
-                        ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: chat.avatarUrl,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => const ColoredBox(
-                              color: Color(0xFFBBBBBB),
-                              child: SizedBox(width: 52, height: 52),
-                            ),
-                          ),
-                        ),
+                        AvatarHaku(url: chat.avatarUrl, size: 52),
                         if (chat.noLeidos > 0)
                           Positioned(
                             right: 0,

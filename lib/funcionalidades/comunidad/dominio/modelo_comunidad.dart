@@ -1,4 +1,5 @@
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 
 /// Comunidad / grupo (tabla `grupos` + categorías N:N).
 class ComunidadHaku {
@@ -64,7 +65,9 @@ class ComunidadHaku {
       id: m['id'] as String? ?? '',
       nombre: m['nombre'] as String? ?? '',
       descripcion: m['descripcion'] as String? ?? '',
-      imagenUrl: m['imagen_url'] as String? ?? '',
+      imagenUrl: CatalogoImagenesHaku.resolverImagen(
+        m['imagen_url'] as String?,
+      ),
       creadorId: m['creador_id'] as String? ?? '',
       provincia: m['provincia'] as String? ?? 'Cusco',
       estado: m['estado'] as String? ?? 'activa',

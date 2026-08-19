@@ -69,7 +69,7 @@ class _EstadoPantallaRecuperarContrasena
                   ),
                   Expanded(
                     child: Text(
-                      '¿Olvidaste tu contraseña?',
+                      '¿Olvidaste?',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.titulo(
                         fontSize: 18,
@@ -91,7 +91,7 @@ class _EstadoPantallaRecuperarContrasena
                   padding: EdgeInsets.fromLTRB(20, 24, 20, bottom),
                   children: [
                     Text(
-                      'Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.',
+                      'Te enviamos un enlace al correo.',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 14,
@@ -101,7 +101,7 @@ class _EstadoPantallaRecuperarContrasena
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Correo electrónico',
+                      'Correo',
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -159,7 +159,7 @@ class _EstadoPantallaRecuperarContrasena
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
-                          'Revisa tu bandeja de entrada. Si no lo ves, mira en spam.',
+                          'Revisa tu correo.',
                           textAlign: TextAlign.center,
                           style: TipografiaHaku.interfaz(
                             fontSize: 13,
@@ -181,7 +181,7 @@ class _EstadoPantallaRecuperarContrasena
                     ),
                     const SizedBox(height: 40),
                     Text(
-                      'El enlace de recuperación caduca en 24 horas por seguridad.',
+                      'Caduca en 24 h.',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,

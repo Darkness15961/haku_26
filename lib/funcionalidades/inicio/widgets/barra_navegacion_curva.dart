@@ -164,27 +164,31 @@ class _BotonCentralPublicar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Transform.translate(
-        offset: const Offset(0, -10),
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(color: Colors.black, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+        offset: const Offset(0, -14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: PaletaRutas.terracota,
+                boxShadow: [
+                  BoxShadow(
+                    color: PaletaRutas.marronOscuro.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.black,
-            size: 30,
-          ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+          ],
         ),
       ),
     );

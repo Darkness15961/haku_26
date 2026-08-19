@@ -1,3 +1,5 @@
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+
 import '../dominio/modelos/modelo_ruta.dart';
 
 /// Fuente local de rutas (preparada para reemplazo por backend).
@@ -9,8 +11,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Camino ancestral al santuario',
       descripcion:
           'El legendario Camino Inca hasta Machu Picchu. Cuatro días de trekking entre bosques de nubes, ruinas y vistas inolvidables del Valle Sagrado.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.machuPicchu,
       categoria: CategoriaRuta.recomendadas,
       cantidadLugares: 5,
       dias: 4,
@@ -83,8 +84,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Pisac, Ollantaytambo y más',
       descripcion:
           'Recorre los pueblos vivos del Valle Sagrado: mercados, terrazas agrícolas y fortalezas incas en un circuito de dos días.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.moray,
       categoria: CategoriaRuta.recomendadas,
       cantidadLugares: 6,
       dias: 2,
@@ -97,7 +97,7 @@ class RutasDataSourceLocal {
       etiquetas: ['Cultura', 'Pueblos', 'Miradores'],
       calificacion: 4.7,
       cantidadResenas: 2180,
-      textoBoton: 'Ver en el mapa',
+      textoBoton: 'Mapa',
       tipoSitio: 'Circuito',
       puntoPartida: 'Plaza de Armas, Cusco',
       transporte: 'Colectivo / taxi / tour privado',
@@ -146,8 +146,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Centro y Sacsayhuamán',
       descripcion:
           'Camina el casco histórico cusqueño: Plaza de Armas, Qorikancha y la fortaleza de Sacsayhuamán en una jornada cultural intensa.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1589802829985-817e51171b92?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.ausangate,
       categoria: CategoriaRuta.recomendadas,
       cantidadLugares: 4,
       dias: 1,
@@ -160,7 +159,7 @@ class RutasDataSourceLocal {
       etiquetas: ['Historia', 'Ciudad', 'Arquitectura'],
       calificacion: 4.8,
       cantidadResenas: 4560,
-      textoBoton: 'Iniciar aventura',
+      textoBoton: 'Empezar',
       tipoSitio: 'Urbana',
       puntoPartida: 'Plaza de Armas',
       transporte: 'A pie (todo el circuito)',
@@ -207,8 +206,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Maravilla del Mundo',
       descripcion:
           'La ciudadela inca más famosa del mundo. Explora templos, plazas y terrazas con vistas al valle del Urubamba.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1509299349698-dd22323b5963?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.ausangate,
       categoria: CategoriaRuta.populares,
       cantidadLugares: 3,
       dias: 1,
@@ -221,7 +219,7 @@ class RutasDataSourceLocal {
       etiquetas: ['Sitio Arqueológico', 'Patrimonio', 'Mirador'],
       calificacion: 4.8,
       cantidadResenas: 2345,
-      textoBoton: 'Ver en el mapa',
+      textoBoton: 'Mapa',
       tipoSitio: 'Sitio Arqueológico',
       puntoPartida: 'Estación Poroy / Ollantaytambo',
       transporte: 'Tren a Aguas Calientes + bus CONSETUR',
@@ -261,8 +259,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Turquesa bajo el Apu',
       descripcion:
           'Ascenso hacia una laguna glaciar de aguas turquesas al pie del nevado Humantay. Una de las caminatas más fotogénicas de Cusco.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.llamaMachu,
       categoria: CategoriaRuta.naturaleza,
       cantidadLugares: 2,
       dias: 1,
@@ -316,8 +313,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Vinicunca y Ausangate',
       descripcion:
           'Trekking de alta montaña hacia Vinicunca, la montaña arcoíris. Paisajes extremos, minerales y el imponente Ausangate.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1580619305218-8423a7ef79b4?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.moray,
       categoria: CategoriaRuta.naturaleza,
       cantidadLugares: 3,
       dias: 1,
@@ -330,7 +326,7 @@ class RutasDataSourceLocal {
       etiquetas: ['Naturaleza', 'Trekking', 'Alta montaña'],
       calificacion: 4.6,
       cantidadResenas: 2740,
-      textoBoton: 'Iniciar aventura',
+      textoBoton: 'Empezar',
       tipoSitio: 'Trekking',
       puntoPartida: 'Cusipata / Phulawasipata',
       transporte: 'Tour o van privada desde Cusco',
@@ -370,8 +366,7 @@ class RutasDataSourceLocal {
       subtitulo: 'Salineras y laboratorios incas',
       descripcion:
           'Combina las terrazas circulares de Moray con las salineras de Maras en un día de paisaje y cultura andina.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1531065204914-ece6be9353f2?q=80&w=1000&auto=format&fit=crop',
+      imagenUrl: CatalogoImagenesHaku.huacachina,
       categoria: CategoriaRuta.populares,
       cantidadLugares: 2,
       dias: 1,
@@ -384,7 +379,7 @@ class RutasDataSourceLocal {
       etiquetas: ['Cultura', 'Paisaje', 'Fotografía'],
       calificacion: 4.7,
       cantidadResenas: 1650,
-      textoBoton: 'Ver ruta',
+      textoBoton: 'Ruta',
       tipoSitio: 'Circuito',
       puntoPartida: 'Urubamba o Cusco',
       transporte: 'Taxi / colectivo / bicicleta',
@@ -418,6 +413,152 @@ class RutasDataSourceLocal {
         ),
       ],
     ),
+    ModeloRuta(
+      id: 'tejidos_chinchero',
+      titulo: 'Tejidos de Chinchero',
+      subtitulo: 'Telar, lana y paleta andina',
+      descripcion:
+          'Talleres de tejedoras: urdimbre, tintes naturales y el aguayo que aún se usa en feria y fiesta.',
+      imagenUrl: CatalogoImagenesHaku.tejido,
+      categoria: CategoriaRuta.cultura,
+      hilo: HiloCultura.tejido,
+      cantidadLugares: 3,
+      dias: 1,
+      distancia: '30 km',
+      nivelDificultad: 1,
+      dificultadTexto: 'Fácil',
+      tiempoCaminata: 'Medio día',
+      mejorEpoca: 'Todo el año',
+      etiquetas: ['Tejido', 'Lana', 'Chinchero'],
+      calificacion: 4.8,
+      cantidadResenas: 412,
+      textoBoton: 'Publicar',
+      tipoSitio: 'Tejido',
+      puntoPartida: 'Plaza de Chinchero',
+      transporte: 'Colectivo Cusco–Chinchero',
+      comoLlegar:
+          'Colectivo desde Pavitos hacia Chinchero (~40 min). Los talleres están junto a la plaza y el mercado.',
+      tips: [
+        'Preguntar por tintes naturales, no solo souvenir',
+        'Llevar efectivo en soles',
+      ],
+    ),
+    ModeloRuta(
+      id: 'ceramica_san_blas',
+      titulo: 'Cerámica San Blas',
+      subtitulo: 'Barro, horno y motivo inca',
+      descripcion:
+          'Alfareros de San Blas: platos, qeros y relieves que copian la piedra y el sol.',
+      imagenUrl: CatalogoImagenesHaku.ceramica,
+      categoria: CategoriaRuta.cultura,
+      hilo: HiloCultura.ceramica,
+      cantidadLugares: 4,
+      dias: 1,
+      distancia: '2 km',
+      nivelDificultad: 1,
+      dificultadTexto: 'Fácil',
+      tiempoCaminata: '2 h',
+      mejorEpoca: 'Todo el año',
+      etiquetas: ['Cerámica', 'San Blas', 'Oficio'],
+      calificacion: 4.6,
+      cantidadResenas: 287,
+      textoBoton: 'Publicar',
+      tipoSitio: 'Cerámica',
+      puntoPartida: 'Plazoleta San Blas',
+      transporte: 'A pie desde el centro',
+      comoLlegar:
+          'Sube por Cuesta San Blas. Los talleres abren de día; toca la puerta si el patio está cerrado.',
+      tips: const [
+        'Pedir ver el horno, no solo la vitrina',
+      ],
+    ),
+    ModeloRuta(
+      id: 'fogon_san_pedro',
+      titulo: 'Fogón San Pedro',
+      subtitulo: 'Choclo, chicha y mercado',
+      descripcion:
+          'El mercado como cocina viva: caldo, queso, pan andino y el puesto que aún sirve chicha.',
+      imagenUrl: CatalogoImagenesHaku.comida,
+      categoria: CategoriaRuta.cultura,
+      hilo: HiloCultura.comida,
+      cantidadLugares: 1,
+      dias: 1,
+      distancia: '1 km',
+      nivelDificultad: 1,
+      dificultadTexto: 'Fácil',
+      tiempoCaminata: '1 h',
+      mejorEpoca: 'Todo el año',
+      etiquetas: ['Fogón', 'Mercado', 'Chicha'],
+      calificacion: 4.7,
+      cantidadResenas: 640,
+      textoBoton: 'Publicar',
+      tipoSitio: 'Fogón',
+      puntoPartida: 'Mercado San Pedro',
+      transporte: 'A pie',
+      comoLlegar:
+          'Mercado San Pedro, segundo pasillo de comidas. Temprano hay caldo; al mediodía, choclo y chicha.',
+      tips: const [
+        'Ir en ayunas si quieres probar de verdad',
+      ],
+    ),
+    ModeloRuta(
+      id: 'teatro_inti_raymi',
+      titulo: 'Inti Raymi',
+      subtitulo: 'Teatro, danza y sol',
+      descripcion:
+          'La fiesta del sol como escena viva: Qorikancha, plaza y Sacsayhuamán. Cuerpo, traje y relato inca.',
+      imagenUrl: CatalogoImagenesHaku.teatro,
+      categoria: CategoriaRuta.cultura,
+      hilo: HiloCultura.teatro,
+      cantidadLugares: 3,
+      dias: 1,
+      distancia: '5 km',
+      nivelDificultad: 2,
+      dificultadTexto: 'Moderada',
+      tiempoCaminata: '1 día',
+      mejorEpoca: '24 de junio',
+      etiquetas: ['Teatro', 'Danza', 'Inti'],
+      calificacion: 4.9,
+      cantidadResenas: 1104,
+      textoBoton: 'Publicar',
+      tipoSitio: 'Teatro',
+      puntoPartida: 'Qorikancha',
+      transporte: 'A pie + subida a Sacsayhuamán',
+      comoLlegar:
+          'Empieza en Qorikancha al amanecer del 24 de junio. Sigue a la plaza y cierra en Sacsayhuamán.',
+      tips: const [
+        'Llegar muy temprano; el aforo se llena',
+      ],
+    ),
+    ModeloRuta(
+      id: 'pintura_san_blas',
+      titulo: 'Pintura San Blas',
+      subtitulo: 'Taller, lienzo y apu',
+      descripcion:
+          'Estudios de pintura que retratan apus, mercados y el rostro quechua. Arte que documenta, no solo decora.',
+      imagenUrl: CatalogoImagenesHaku.pintura,
+      categoria: CategoriaRuta.cultura,
+      hilo: HiloCultura.pintura,
+      cantidadLugares: 3,
+      dias: 1,
+      distancia: '2 km',
+      nivelDificultad: 1,
+      dificultadTexto: 'Fácil',
+      tiempoCaminata: '2 h',
+      mejorEpoca: 'Todo el año',
+      etiquetas: ['Pintura', 'Taller', 'San Blas'],
+      calificacion: 4.5,
+      cantidadResenas: 198,
+      textoBoton: 'Publicar',
+      tipoSitio: 'Pintura',
+      puntoPartida: 'Plazoleta San Blas',
+      transporte: 'A pie',
+      comoLlegar:
+          'Galerías y patios abiertos alrededor de la plazoleta. Pregunta por el taller, no por el souvenir.',
+      tips: const [
+        'Pedir ver el proceso, no solo el cuadro colgado',
+      ],
+    ),
   ];
 
   static List<ModeloRuta> obtenerTodas() => List.unmodifiable(_rutas);
@@ -425,6 +566,9 @@ class RutasDataSourceLocal {
   static List<ModeloRuta> obtenerPorCategoria(CategoriaRuta categoria) {
     return _rutas.where((r) => r.categoria == categoria).toList();
   }
+
+  static List<ModeloRuta> obtenerCultura() =>
+      _rutas.where((r) => r.hilo != HiloCultura.camino).toList();
 
   static ModeloRuta? obtenerPorId(String id) {
     try {

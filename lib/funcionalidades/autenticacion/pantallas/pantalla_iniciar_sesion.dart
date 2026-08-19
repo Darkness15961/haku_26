@@ -132,7 +132,7 @@ class _EstadoPantallaIniciarSesion
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Continúa tu aventura',
+                        'Entrar',
                         textAlign: TextAlign.center,
                         style: TipografiaHaku.interfaz(
                           fontSize: 14,
@@ -199,7 +199,7 @@ class _EstadoPantallaIniciarSesion
                             );
                           },
                           child: Text(
-                            '¿Olvidaste tu contraseña?',
+                            '¿Olvidaste?',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -298,7 +298,7 @@ class _EstadoPantallaIniciarSesion
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            '¿No tienes cuenta? ',
+                            '¿Sin cuenta? ',
                             style: TipografiaHaku.interfaz(fontSize: 13),
                           ),
                           TextButton(
@@ -319,7 +319,7 @@ class _EstadoPantallaIniciarSesion
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
-                              'Regístrate aquí',
+                              'Crear',
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -331,7 +331,7 @@ class _EstadoPantallaIniciarSesion
                       ),
                       const SizedBox(height: 28),
                       Text(
-                        'Al continuar aceptas nuestros Términos y Condiciones',
+                        'Términos y Condiciones',
                         textAlign: TextAlign.center,
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,

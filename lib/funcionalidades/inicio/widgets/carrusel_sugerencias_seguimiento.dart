@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/feed_inicio_datasource_local.dart';
@@ -14,11 +15,13 @@ import '../proveedores/proveedor_almacen_feed.dart';
 class CarruselSugerenciasSeguimiento extends ConsumerStatefulWidget {
   final List<SugerenciaSeguimiento> sugerencias;
   final String titulo;
+  final String? subtitulo;
 
   const CarruselSugerenciasSeguimiento({
     super.key,
     required this.sugerencias,
-    this.titulo = 'Sugerencias de seguimiento',
+    this.titulo = 'Exploradores',
+    this.subtitulo,
   });
 
   @override
@@ -52,39 +55,54 @@ class _EstadoCarruselSugerenciasSeguimiento
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SizedBox(
-            height: 32,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Text(
-                  widget.titulo,
-                  textAlign: TextAlign.center,
-                  style: TipografiaHaku.titulo(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: PaletaRutas.marronOscuro,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: SvgPicture.asset(
-                    'assets/iconos/llama.svg',
-                    width: 18,
-                    height: 18,
-                    colorFilter: const ColorFilter.mode(
-                      PaletaRutas.marronCuero,
-                      BlendMode.srcIn,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 32,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      widget.titulo,
+                      textAlign: TextAlign.center,
+                      style: TipografiaHaku.titulo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.marronOscuro,
+                      ),
                     ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SvgPicture.asset(
+                        'assets/iconos/llama.svg',
+                        width: 18,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          PaletaRutas.marronCuero,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.subtitulo != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  widget.subtitulo!,
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: PaletaRutas.marronCuero,
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 128,
+          height: 168,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -127,55 +145,88 @@ class _TarjetaExplorador extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          width: 92,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 118,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-          ),
-          padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
-          child: Column(
-            children: [
-              ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: sugerencia.avatarUrl,
-                  width: 52,
-                  height: 52,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      const ColoredBox(color: Color(0xFFD4C8B8)),
-                  errorWidget: (_, __, ___) => const ColoredBox(
-                    color: Color(0xFFBBBBBB),
-                    child: Icon(Icons.person, size: 22, color: Colors.white70),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                sugerencia.nombre,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TipografiaHaku.titulo(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: PaletaRutas.marronOscuro,
-                ),
-              ),
-              const Spacer(),
-              _BotonSeguirTextil(
-                siguiendo: siguiendo,
-                indice: indice,
-                onPressed: onSeguir,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (sugerencia.portadaUrl.isNotEmpty)
+                  ImagenHaku(
+                    url: sugerencia.portadaUrl,
+                    fit: BoxFit.cover,
+                  ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.15),
+                        Colors.black.withValues(alpha: 0.75),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+                  child: Column(
+                    children: [
+                      AvatarHaku(
+                        url: sugerencia.avatarUrl,
+                        size: 48,
+                        borderWidth: 2,
+                        borderColor: Colors.white,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        sugerencia.nombre,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TipografiaHaku.titulo(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        sugerencia.bioCorta,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const Spacer(),
+                      _BotonSeguirTextil(
+                        siguiendo: siguiendo,
+                        indice: indice,
+                        onPressed: onSeguir,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

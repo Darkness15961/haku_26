@@ -144,7 +144,9 @@ class TarjetaRuta extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${ruta.cantidadLugares} lugares',
+                                  ruta.hilo == HiloCultura.camino
+                                      ? '${ruta.cantidadLugares} lugares'
+                                      : ruta.hilo.etiqueta,
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
                                     color: Colors.white.withValues(alpha: 0.92),

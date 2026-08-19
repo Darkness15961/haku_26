@@ -51,7 +51,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Coordenadas copiadas: ${p.lat.toStringAsFixed(4)}, ${p.lng.toStringAsFixed(4)}',
+          'Copiado',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: Colors.black,
@@ -148,7 +148,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  'Simulación HAKU',
+                                  'Mapa',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
@@ -226,8 +226,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                           const SizedBox(height: 8),
                           Text(
                             ruta.comoLlegar.isEmpty
-                                ? 'Sigue las paradas del mapa simulado. '
-                                    'Próximamente: navegación GPS real.'
+                                ? 'Sigue las paradas.'
                                 : ruta.comoLlegar,
                             style: TipografiaHaku.interfaz(
                               fontSize: 13,
@@ -238,7 +237,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                           if (ruta.transporte.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             Text(
-                              'Transporte: ${ruta.transporte}',
+                              ruta.transporte,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -248,7 +247,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                           ],
                           const SizedBox(height: 10),
                           Text(
-                            'Seleccionado: ${sel.nombre}\n'
+                            '${sel.nombre}\n'
                             '${sel.lat.toStringAsFixed(4)}, ${sel.lng.toStringAsFixed(4)}',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
@@ -292,7 +291,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                     ],
                     const SizedBox(height: 18),
                     BotonPrimarioRuta(
-                      texto: 'Copiar punto seleccionado',
+                      texto: 'Copiar',
                       icono: Icons.copy_rounded,
                       onPressed: () => _copiarCoords(sel),
                     ),

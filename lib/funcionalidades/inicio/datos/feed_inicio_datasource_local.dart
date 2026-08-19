@@ -1,3 +1,5 @@
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+
 /// Datos de demo para el feed de Inicio (sugerencias + publicaciones).
 class FeedInicioDataSourceLocal {
   static final List<SugerenciaSeguimiento> sugerencias = [
@@ -5,65 +7,55 @@ class FeedInicioDataSourceLocal {
       id: 's1',
       nombre: 'Andina Trek',
       usuario: '@andinatrek',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       bioCorta: 'Guías del Valle Sagrado',
       bio:
           'Guío treks en el Valle Sagrado hace 8 años. Rutas lentas, buen ritmo y respeto por las comunidades.',
-      portadaUrl:
-          'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=900&q=80',
+      portadaUrl: CatalogoImagenesHaku.portadasExploradores[0],
       provincia: 'Urubamba',
     ),
     SugerenciaSeguimiento.demo(
       id: 's2',
       nombre: 'Luna Quechua',
       usuario: '@lunaquechua',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       bioCorta: 'Fotografía de altura',
       bio:
           'Fotógrafa de altura. Busco niebla, color y rostros en los apus. Workshops los fines de semana.',
-      portadaUrl:
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80',
+      portadaUrl: CatalogoImagenesHaku.portadasExploradores[1],
       provincia: 'Cusco',
     ),
     SugerenciaSeguimiento.demo(
       id: 's3',
       nombre: 'Cusco Walks',
       usuario: '@cuscowalks',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       bioCorta: 'Rutas urbanas y miradores',
       bio:
           'Caminatas urbanas, miradores y comida de barrio. Si llegas a Cusco, te armo un recorrido a pie.',
-      portadaUrl:
-          'https://images.unsplash.com/photo-1548013146-72479768bada?w=900&q=80',
+      portadaUrl: CatalogoImagenesHaku.portadasExploradores[2],
       provincia: 'Cusco',
     ),
     SugerenciaSeguimiento.demo(
       id: 's4',
       nombre: 'Nevado Lab',
       usuario: '@nevadolab',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       bioCorta: 'Ciencia y montaña',
       bio:
           'Glaciares, ciencia ciudadana y salidas a nevados. Documentamos lo que el hielo todavía nos deja ver.',
-      portadaUrl:
-          'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80',
+      portadaUrl: CatalogoImagenesHaku.portadasExploradores[3],
       provincia: 'Quispicanchi',
     ),
     SugerenciaSeguimiento.demo(
       id: 's5',
       nombre: 'Pacha Stories',
       usuario: '@pachastories',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       bioCorta: 'Relatos del Ande',
       bio:
           'Relatos orales del Ande. Recojo historias de mercados, fiestas y caminos que no salen en la guía.',
-      portadaUrl:
-          'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=900&q=80',
+      portadaUrl: CatalogoImagenesHaku.portadasExploradores[4],
       provincia: 'Calca',
     ),
   ];
@@ -73,76 +65,76 @@ class FeedInicioDataSourceLocal {
       id: 'p1',
       autor: 'María Quispe',
       usuario: '@mariaq',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       hace: '2h',
       texto:
-          'Salida al amanecer en Sacsayhuamán. El silencio de la piedra y la ciudad abajo… ¿alguien más madruga por estas vistas?',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1589802829985-817e51171b92?w=800&q=80',
+          'Telar en Chinchero. Lana cardada, cochinilla y un aguayo que aún huele a humo de fogón.',
+      imagenUrl: CatalogoImagenesHaku.tejido,
       likes: 128,
       comentarios: 24,
       estiloFondo: EstiloFondoPublicacion.veloNegro,
+      lugarNombre: 'Chinchero',
+      categoria: 'Tejido',
     ),
     PublicacionFeed(
       id: 'p2',
       autor: 'Diego Andes',
       usuario: '@diegoandes',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       hace: '5h',
       texto:
-          'Tip rápido: si vas a Humantay, lleva bastones. El último tramo se siente, pero la laguna lo vale todo.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80',
+          'Barro en San Blas. Platos, qeros y el horno que tarda tres días en enfriarse.',
+      imagenUrl: CatalogoImagenesHaku.ceramica,
       likes: 86,
       comentarios: 31,
       estiloFondo: EstiloFondoPublicacion.veloBlanco,
+      lugarNombre: 'San Blas',
+      categoria: 'Cerámica',
     ),
     PublicacionFeed(
       id: 'p3',
       autor: 'Sofía Trek',
       usuario: '@sofiatrek',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-      hace: 'Yesterday',
+      avatarUrl: CatalogoImagenesHaku.avatar,
+      hace: 'Ayer',
       texto:
-          'Vinicunca con poca niebla. Colores absurdos. Si alguien quiere armar grupo para la próxima, avisen acá.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+          'Caldo en San Pedro. Choclo, queso y la mesa que no cierra hasta mediodía.',
+      imagenUrl: CatalogoImagenesHaku.comida,
       likes: 412,
       comentarios: 67,
       estiloFondo: EstiloFondoPublicacion.sinVelo,
+      lugarNombre: 'San Pedro',
+      categoria: 'Fogón',
     ),
     PublicacionFeed(
       id: 'p4',
       autor: 'Haku Community',
       usuario: '@haku',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       hace: '1d',
       texto:
-          'Nuevas rutas recomendadas esta semana en el Valle Sagrado. ¿Cuál es tu próxima caminata?',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800&q=80',
+          'Inti Raymi en escena. Danza, traje y sol sobre Sacsayhuamán — teatro vivo, no postal.',
+      imagenUrl: CatalogoImagenesHaku.teatro,
       likes: 540,
       comentarios: 92,
       estiloFondo: EstiloFondoPublicacion.veloNegroSuave,
+      lugarNombre: 'Sacsayhuamán',
+      categoria: 'Teatro',
     ),
     PublicacionFeed(
       id: 'p5',
       autor: 'Camila Ríos',
       usuario: '@camilarios',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&q=80',
+      avatarUrl: CatalogoImagenesHaku.avatar,
       hace: '2d',
       texto:
-          'Mercado de Pisac al mediodía: choclo, queso y una charla con artesanos. Turismo lento, el mejor.',
-      imagenUrl:
-          'https://images.unsplash.com/photo-1555881403-96d4f9e83f0c?w=900&q=80',
+          'Taller en San Blas. Apus en lienzo y mano que no tiembla — pintura que documenta, no decora.',
+      imagenUrl: CatalogoImagenesHaku.pintura,
       likes: 73,
       comentarios: 18,
       estiloFondo: EstiloFondoPublicacion.veloBlanco,
+      lugarNombre: 'San Blas',
+      categoria: 'Pintura',
     ),
   ];
 }
@@ -274,7 +266,9 @@ class SugerenciaSeguimiento {
       id: m['id'] as String? ?? '',
       nombre: m['nombre'] as String? ?? '',
       usuario: m['usuario'] as String? ?? '',
-      avatarUrl: m['avatar_url'] as String? ?? '',
+      avatarUrl: CatalogoImagenesHaku.resolverAvatar(
+        m['avatar_url'] as String?,
+      ),
       bioCorta: m['bio_corta'] as String? ?? '',
       bio: m['bio'] as String? ?? '',
       portadaUrl: m['portada_url'] as String? ?? '',
@@ -449,5 +443,75 @@ class PublicacionFeed {
         'lugar_id': lugarId,
         'lugar_nombre': lugarNombre,
         'categoria': categoria,
+      };
+}
+
+class ComentarioPublicacion {
+  final String id;
+  final String publicacionId;
+  final String autorId;
+  final String texto;
+  final DateTime creadoEn;
+
+  const ComentarioPublicacion({
+    required this.id,
+    required this.publicacionId,
+    required this.autorId,
+    required this.texto,
+    required this.creadoEn,
+  });
+
+  factory ComentarioPublicacion.desdeMapa(Map<String, dynamic> m) {
+    return ComentarioPublicacion(
+      id: m['id'] as String? ?? '',
+      publicacionId: m['publicacion_id'] as String? ?? '',
+      autorId: m['autor_id'] as String? ?? '',
+      texto: m['texto'] as String? ?? '',
+      creadoEn: DateTime.tryParse(m['creado_en'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> aMapa() => {
+        'id': id,
+        'publicacion_id': publicacionId,
+        'autor_id': autorId,
+        'texto': texto,
+        'creado_en': creadoEn.toIso8601String(),
+      };
+}
+
+class MensajeDirecto {
+  final String id;
+  final String conversacionId;
+  final String autorId;
+  final String texto;
+  final DateTime creadoEn;
+
+  const MensajeDirecto({
+    required this.id,
+    required this.conversacionId,
+    required this.autorId,
+    required this.texto,
+    required this.creadoEn,
+  });
+
+  factory MensajeDirecto.desdeMapa(Map<String, dynamic> m) {
+    return MensajeDirecto(
+      id: m['id'] as String? ?? '',
+      conversacionId: m['conversacion_id'] as String? ?? '',
+      autorId: m['autor_id'] as String? ?? '',
+      texto: m['texto'] as String? ?? '',
+      creadoEn: DateTime.tryParse(m['creado_en'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> aMapa() => {
+        'id': id,
+        'conversacion_id': conversacionId,
+        'autor_id': autorId,
+        'texto': texto,
+        'creado_en': creadoEn.toIso8601String(),
       };
 }

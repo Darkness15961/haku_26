@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/pantallas/pantalla_mensajes_inicio.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
@@ -228,30 +229,7 @@ class _CardExploradorAjeno extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: avatarUrl,
-              width: 72,
-              height: 72,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const ColoredBox(
-                color: Color(0xFF333333),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Icon(Icons.person, color: Colors.white70),
-                ),
-              ),
-              errorWidget: (_, __, ___) => const ColoredBox(
-                color: Color(0xFF333333),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Icon(Icons.person, color: Colors.white70),
-                ),
-              ),
-            ),
-          ),
+          AvatarHaku(url: avatarUrl, size: 72),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -472,43 +450,34 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Estadísticas',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
-        ),
-        const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TarjetaEstadisticaPerfil(
               icono: Icons.account_balance_outlined,
               valor: lugares,
-              etiqueta: 'Lugares visitados',
+              etiqueta: 'Lugares',
               indice: 0,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
               icono: Icons.explore_outlined,
               valor: rutas,
-              etiqueta: 'Rutas completadas',
+              etiqueta: 'Rutas',
               indice: 1,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
               icono: Icons.menu_book_outlined,
               valor: experiencias,
-              etiqueta: 'Experiencias vividas',
+              etiqueta: 'Posts',
               indice: 2,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
               icono: Icons.military_tech_outlined,
               valor: insignias,
-              etiqueta: 'Insignias obtenidas',
+              etiqueta: 'Insignias',
               indice: 3,
             ),
           ],
@@ -535,7 +504,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'Ver todas',
+                'Todas',
                 style: TipografiaHaku.interfaz(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -578,16 +547,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 28),
-        Text(
-          'Próximo destino sugerido',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         TarjetaDestinoSugerido(
           titulo: destinoTitulo,
           rating: 4.9,
@@ -619,7 +579,7 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Aún no tiene publicaciones',
+              'Sin posts',
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -631,49 +591,35 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Publicaciones',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.marronOscuro,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: urls.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
-            childAspectRatio: 1,
-          ),
-          itemBuilder: (context, index) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: urls[index],
-                fit: BoxFit.cover,
-                placeholder: (_, __) => ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.08),
-                ),
-                errorWidget: (_, __, ___) => ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  child: const Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.white70,
-                  ),
-                ),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: urls.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 6,
+        crossAxisSpacing: 6,
+        childAspectRatio: 1,
+      ),
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(
+            imageUrl: urls[index],
+            fit: BoxFit.cover,
+            placeholder: (_, __) => ColoredBox(
+              color: Colors.black.withValues(alpha: 0.08),
+            ),
+            errorWidget: (_, __, ___) => ColoredBox(
+              color: Colors.black.withValues(alpha: 0.12),
+              child: const Icon(
+                Icons.broken_image_outlined,
+                color: Colors.white70,
               ),
-            );
-          },
-        ),
-      ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

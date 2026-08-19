@@ -190,7 +190,7 @@ class _EstadoContenidoInicio extends State<ContenidoInicio>
     messenger?.showSnackBar(
       SnackBar(
         content: Text(
-          '¡${provincia.nombre} desbloqueada!',
+          provincia.nombre,
           style: TipografiaHaku.interfaz(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -271,19 +271,17 @@ class _EstadoContenidoInicio extends State<ContenidoInicio>
                     const LineaEncabezadoInca(altura: 2, color: Colors.white),
                     const SizedBox(height: 6),
                     Text(
-                      _sensoresActivos
-                          ? 'Inclina el celular · llega a una meta'
-                          : 'Arrastra la bolita · llega a una meta',
+                      _sensoresActivos ? 'Inclina' : 'Arrastra',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      '$progreso / $total provincias',
+                      '$progreso/$total',
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,

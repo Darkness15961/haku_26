@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../comunidad/widgets/chip_categoria_comunidad.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
@@ -14,14 +15,14 @@ import '../datos/mensajes_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 
 /// Formulario: crear grupo de mensajería (nombre, personas, ruta).
-class PantallaCrearGrupo extends StatefulWidget {
+class PantallaCrearGrupo extends ConsumerStatefulWidget {
   const PantallaCrearGrupo({super.key});
 
   @override
-  State<PantallaCrearGrupo> createState() => _EstadoPantallaCrearGrupo();
+  ConsumerState<PantallaCrearGrupo> createState() => _EstadoPantallaCrearGrupo();
 }
 
-class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
+class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
   final _nombreCtrl = TextEditingController();
   final Set<String> _invitados = {};
   String? _rutaId;
@@ -37,12 +38,12 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
 
   List<ModeloRuta> get _rutas => RutasDataSourceLocal.obtenerTodas();
 
-  void _crear() {
+  Future<void> _crear() async {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Escribe un nombre para el grupo'),
+          content: Text('Nombre'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -51,7 +52,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
     if (_invitados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invita al menos a una persona'),
+          content: Text('Invita'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -60,7 +61,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
     if (_rutaId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Elige una ruta para el grupo'),
+          content: Text('Elige ruta'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -77,14 +78,12 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
         miembroIds: _invitados.toList(),
       ),
     );
-
+    await ref.read(almacenFeedProvider.notifier).persistirSatelites();
+    if (!mounted) return;
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Grupo "$nombre" creado · ${ruta.titulo} · ${_invitados.length} invitados. '
-          'Al finalizar la ruta (solo tú) se eliminará el grupo.',
-        ),
+        content: Text('Grupo "$nombre" creado'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -111,7 +110,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                   padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
                   children: [
                     Text(
-                      'Nombre del grupo',
+                      'Nombre',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -126,7 +125,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      'Personas a invitar',
+                      'Invitar',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -149,18 +148,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                         },
                         controlAffinity: ListTileControlAffinity.trailing,
                         contentPadding: EdgeInsets.zero,
-                        secondary: ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: p.avatarUrl,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => const ColoredBox(
-                              color: Color(0xFFBBBBBB),
-                              child: SizedBox(width: 40, height: 40),
-                            ),
-                          ),
-                        ),
+                        secondary: AvatarHaku(url: p.avatarUrl, size: 40),
                         title: Text(
                           p.nombre,
                           style: TipografiaHaku.interfaz(
@@ -181,7 +169,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                     }),
                     const SizedBox(height: 16),
                     Text(
-                      'Ruta que harán',
+                      'Ruta',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -190,7 +178,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Cuando finalices la ruta como creador, el grupo se eliminará.',
+                      'Se elimina al terminar.',
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
                         color: PaletaRutas.marronOscuro.withValues(alpha: 0.65),
@@ -288,7 +276,7 @@ class _EstadoPantallaCrearGrupo extends State<PantallaCrearGrupo> {
                           ),
                         ),
                         child: Text(
-                          'Crear grupo',
+                          'Crear',
                           style: TipografiaHaku.interfaz(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -336,7 +324,7 @@ class _EstadoPantallaCrearComunidad
     if (nombre.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Escribe un nombre para la comunidad'),
+          content: Text('Nombre'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -345,7 +333,7 @@ class _EstadoPantallaCrearComunidad
     if (_categorias.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Elige al menos una categoría'),
+          content: Text('Categoría'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -353,7 +341,7 @@ class _EstadoPantallaCrearComunidad
     }
 
     final desc = _descCtrl.text.trim().isEmpty
-        ? 'Comunidad creada en Haku'
+        ? 'Comunidad'
         : _descCtrl.text.trim();
 
     await ref.read(almacenFeedProvider.notifier).crearComunidad(
@@ -367,9 +355,7 @@ class _EstadoPantallaCrearComunidad
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Comunidad "$nombre" creada · ${_categorias.length} categorías',
-        ),
+        content: Text('Creada'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -390,7 +376,7 @@ class _EstadoPantallaCrearComunidad
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _EncabezadoSeccion(
-              titulo: 'Crear comunidad',
+              titulo: 'Comunidad',
               onBack: () => Navigator.of(context).pop(),
             ),
             Expanded(
@@ -399,7 +385,7 @@ class _EstadoPantallaCrearComunidad
                   padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
                   children: [
                     Text(
-                      'Nombre de comunidad',
+                      'Nombre',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -414,7 +400,7 @@ class _EstadoPantallaCrearComunidad
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Categorías (puedes elegir varias)',
+                      'Categorías',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -444,7 +430,7 @@ class _EstadoPantallaCrearComunidad
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Descripción (opcional)',
+                      'Descripción',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -462,7 +448,7 @@ class _EstadoPantallaCrearComunidad
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Personas que invitas',
+                      'Invitar',
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -485,18 +471,7 @@ class _EstadoPantallaCrearComunidad
                         },
                         controlAffinity: ListTileControlAffinity.trailing,
                         contentPadding: EdgeInsets.zero,
-                        secondary: ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: p.avatarUrl,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => const ColoredBox(
-                              color: Color(0xFFBBBBBB),
-                              child: SizedBox(width: 40, height: 40),
-                            ),
-                          ),
-                        ),
+                        secondary: AvatarHaku(url: p.avatarUrl, size: 40),
                         title: Text(
                           p.nombre,
                           style: TipografiaHaku.interfaz(
@@ -528,7 +503,7 @@ class _EstadoPantallaCrearComunidad
                           ),
                         ),
                         child: Text(
-                          'Crear comunidad',
+                          'Crear',
                           style: TipografiaHaku.interfaz(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,

@@ -89,7 +89,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        '${lugar.exploradores} exploradores',
+                        '${lugar.exploradores}',
                         style: TipografiaHaku.interfaz(
                           fontSize: 13,
                           color: PaletaRutas.marronCuero,
@@ -129,7 +129,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Datos del lugar',
+                    'Datos',
                     style: TipografiaHaku.titulo(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -155,7 +155,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    '¿Quieres ir con otras personas?',
+                    'Salidas',
                     style: TipografiaHaku.titulo(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -176,14 +176,14 @@ class PantallaDetalleLugar extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
-                      'Ver próximas salidas',
+                      'Ver salidas',
                       style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
                     ),
                   ),
                   const SizedBox(height: 24),
                   BotonPrimarioRuta(
-                    texto: 'Descubrir este lugar',
-                    icono: Icons.explore_outlined,
+                    texto: 'Publicar',
+                    icono: Icons.add_a_photo_outlined,
                     onPressed: () async {
                       final ok = await asegurarSesion(context, ref);
                       if (!ok || !context.mounted) return;

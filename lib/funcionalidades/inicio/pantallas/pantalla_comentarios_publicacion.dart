@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
-import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 
-/// Hoja de comentarios simulados (persistencia de conteo en BD local).
+/// Hoja de comentarios persistidos en la BD local.
 class PantallaComentariosPublicacion extends ConsumerStatefulWidget {
   final PublicacionFeed publicacion;
 
@@ -24,31 +23,6 @@ class PantallaComentariosPublicacion extends ConsumerStatefulWidget {
 class _EstadoPantallaComentariosPublicacion
     extends ConsumerState<PantallaComentariosPublicacion> {
   final _ctrl = TextEditingController();
-  late final List<_ComentarioSim> _comentarios;
-
-  @override
-  void initState() {
-    super.initState();
-    final p = widget.publicacion;
-    _comentarios = [
-      _ComentarioSim(
-        autor: 'Ana Cusco',
-        texto: 'Qué hermoso lugar, ¿cómo llegaste?',
-        hace: '2h',
-      ),
-      _ComentarioSim(
-        autor: 'Luis Andes',
-        texto: 'Anotado para el fin de semana 🙌',
-        hace: '5h',
-      ),
-      if (p.comentarios > 2)
-        _ComentarioSim(
-          autor: 'María Valle',
-          texto: 'Lleva protector solar, el sol pega fuerte.',
-          hace: '1d',
-        ),
-    ];
-  }
 
   @override
   void dispose() {
@@ -61,22 +35,36 @@ class _EstadoPantallaComentariosPublicacion
     if (!ok || !mounted) return;
     final t = _ctrl.text.trim();
     if (t.isEmpty) return;
-    final nombre =
-        ref.read(sesionProvider).usuario?.nombreUsuario ?? 'Explorador HAKU';
-    setState(() {
-      _comentarios.insert(
-        0,
-        _ComentarioSim(autor: nombre, texto: t, hace: 'ahora'),
-      );
-      _ctrl.clear();
-    });
-    await ref
-        .read(almacenFeedProvider.notifier)
-        .incrementarComentarios(widget.publicacion.id);
+    _ctrl.clear();
+    await ref.read(almacenFeedProvider.notifier).agregarComentario(
+          publicacionId: widget.publicacion.id,
+          texto: t,
+        );
+  }
+
+  String _nombreDe(String autorId, EstadoAlmacenFeed feed) {
+    if (autorId == AlmacenFeedNotifier.idUsuarioLocal) {
+      final yo = feed.perfilPorId(autorId);
+      return yo?.nombre ?? 'Yo';
+    }
+    return feed.perfilPorId(autorId)?.nombre ?? autorId;
+  }
+
+  String _hace(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'ahora';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
   }
 
   @override
   Widget build(BuildContext context) {
+    final feed = ref.watch(almacenFeedProvider);
+    final comentarios = feed.comentarios
+        .where((c) => c.publicacionId == widget.publicacion.id)
+        .toList()
+      ..sort((a, b) => b.creadoEn.compareTo(a.creadoEn));
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -124,10 +112,11 @@ class _EstadoPantallaComentariosPublicacion
                   child: ListView.separated(
                     controller: scroll,
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    itemCount: _comentarios.length,
+                    itemCount: comentarios.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, i) {
-                      final c = _comentarios[i];
+                      final c = comentarios[i];
+                      final autor = _nombreDe(c.autorId, feed);
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -135,7 +124,7 @@ class _EstadoPantallaComentariosPublicacion
                             radius: 16,
                             backgroundColor: PaletaRutas.crema,
                             child: Text(
-                              c.autor.isNotEmpty ? c.autor[0] : '?',
+                              autor.isNotEmpty ? autor[0] : '?',
                               style: TipografiaHaku.interfaz(
                                 fontWeight: FontWeight.w700,
                                 color: PaletaRutas.marronOscuro,
@@ -151,7 +140,7 @@ class _EstadoPantallaComentariosPublicacion
                                   TextSpan(
                                     children: [
                                       TextSpan(
-                                        text: '${c.autor}  ',
+                                        text: '$autor  ',
                                         style: TipografiaHaku.interfaz(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
@@ -168,7 +157,7 @@ class _EstadoPantallaComentariosPublicacion
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  c.hace,
+                                  _hace(c.creadoEn),
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
                                     color: PaletaRutas.marronCuero,
@@ -194,7 +183,7 @@ class _EstadoPantallaComentariosPublicacion
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _enviar(),
                             decoration: InputDecoration(
-                              hintText: 'Escribe un comentario…',
+                              hintText: 'Comentario',
                               hintStyle: TipografiaHaku.interfaz(
                                 color: PaletaRutas.marronCuero,
                               ),
@@ -230,18 +219,6 @@ class _EstadoPantallaComentariosPublicacion
       ),
     );
   }
-}
-
-class _ComentarioSim {
-  final String autor;
-  final String texto;
-  final String hace;
-
-  const _ComentarioSim({
-    required this.autor,
-    required this.texto,
-    required this.hace,
-  });
 }
 
 Future<void> abrirComentariosPublicacion(

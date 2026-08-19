@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -77,7 +78,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
           ),
           TextField(
             controller: _punto,
-            decoration: const InputDecoration(labelText: 'Punto de encuentro'),
+            decoration: const InputDecoration(labelText: 'Encuentro'),
           ),
           TextField(
             controller: _desc,
@@ -91,7 +92,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
             min: 2,
             max: 8,
             divisions: 6,
-            activeColor: PaletaRutas.verdeBosque,
+            activeColor: PaletaRutas.terracota,
             onChanged: (v) => setState(() => _minimo = v.round()),
           ),
           Text('Máximo: $_maximo'),
@@ -100,13 +101,13 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
             min: 4,
             max: 20,
             divisions: 16,
-            activeColor: PaletaRutas.verdeBosque,
+            activeColor: PaletaRutas.terracota,
             onChanged: (v) => setState(() => _maximo = v.round()),
           ),
           const SizedBox(height: 20),
           BotonPrimarioRuta(
             texto: 'Crear salida',
-            onPressed: () {
+            onPressed: () async {
               final lugar =
                   LugaresDataSourceLocal.instancia.porId(_lugarId)!;
               SalidasDataSourceLocal.instancia.crear(
@@ -121,8 +122,11 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
                   cupos: _maximo,
                   inscritos: 1,
                   minimo: _minimo,
+                  inscritoIds: const [AlmacenFeedNotifier.idUsuarioLocal],
                 ),
               );
+              await ref.read(almacenFeedProvider.notifier).persistirSatelites();
+              if (!mounted) return;
               Navigator.pop(context);
             },
           ),

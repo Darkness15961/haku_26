@@ -12,6 +12,8 @@ class ModeloSalida {
   final String dificultad;
   final String grupo;
   final String comunidadId;
+  final List<String> inscritoIds;
+  final List<String> checkinIds;
 
   const ModeloSalida({
     required this.id,
@@ -27,11 +29,21 @@ class ModeloSalida {
     this.dificultad = 'Moderada',
     this.grupo = '',
     this.comunidadId = '',
+    this.inscritoIds = const [],
+    this.checkinIds = const [],
   });
 
   bool get llena => inscritos >= cupos;
 
-  ModeloSalida copyWith({int? inscritos}) {
+  bool unido(String usuarioId) => inscritoIds.contains(usuarioId);
+
+  bool presente(String usuarioId) => checkinIds.contains(usuarioId);
+
+  ModeloSalida copyWith({
+    int? inscritos,
+    List<String>? inscritoIds,
+    List<String>? checkinIds,
+  }) {
     return ModeloSalida(
       id: id,
       lugarId: lugarId,
@@ -46,6 +58,52 @@ class ModeloSalida {
       dificultad: dificultad,
       grupo: grupo,
       comunidadId: comunidadId,
+      inscritoIds: inscritoIds ?? this.inscritoIds,
+      checkinIds: checkinIds ?? this.checkinIds,
+    );
+  }
+
+  Map<String, dynamic> aMapa() => {
+        'id': id,
+        'lugar_id': lugarId,
+        'lugar_nombre': lugarNombre,
+        'organizador_nombre': organizador,
+        'fecha': fecha.toIso8601String(),
+        'hora': hora,
+        'punto_encuentro': puntoEncuentro,
+        'cupos': cupos,
+        'inscritos': inscritos,
+        'minimo': minimo,
+        'dificultad': dificultad,
+        'grupo': grupo,
+        'comunidad_id': comunidadId,
+        'inscrito_ids': inscritoIds,
+        'checkin_ids': checkinIds,
+      };
+
+  factory ModeloSalida.desdeMapa(Map<String, dynamic> m) {
+    final inscritoIds = [
+      for (final x in (m['inscrito_ids'] as List<dynamic>? ?? [])) x.toString(),
+    ];
+    final checkinIds = [
+      for (final x in (m['checkin_ids'] as List<dynamic>? ?? [])) x.toString(),
+    ];
+    return ModeloSalida(
+      id: m['id'] as String? ?? '',
+      lugarId: m['lugar_id'] as String? ?? '',
+      lugarNombre: m['lugar_nombre'] as String? ?? '',
+      organizador: m['organizador_nombre'] as String? ?? '',
+      fecha: DateTime.tryParse(m['fecha'] as String? ?? '') ?? DateTime.now(),
+      hora: m['hora'] as String? ?? '',
+      puntoEncuentro: m['punto_encuentro'] as String? ?? '',
+      cupos: (m['cupos'] as num?)?.toInt() ?? 10,
+      inscritos: (m['inscritos'] as num?)?.toInt() ?? inscritoIds.length,
+      minimo: (m['minimo'] as num?)?.toInt() ?? 4,
+      dificultad: m['dificultad'] as String? ?? 'Moderada',
+      grupo: m['grupo'] as String? ?? '',
+      comunidadId: m['comunidad_id'] as String? ?? '',
+      inscritoIds: inscritoIds,
+      checkinIds: checkinIds,
     );
   }
 }
@@ -64,11 +122,13 @@ class SalidasDataSourceLocal {
       hora: '5:30 AM',
       puntoEncuentro: 'Plaza de Armas',
       cupos: 10,
-      inscritos: 7,
+      inscritos: 3,
       minimo: 4,
       dificultad: 'Moderada',
       grupo: 'Trekkers Cusco',
       comunidadId: 'com_trekkers',
+      inscritoIds: const ['s1', 's2', 'diegoandes'],
+      checkinIds: const ['s1'],
     ),
     ModeloSalida(
       id: 's2',
@@ -84,6 +144,8 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Fotógrafos Andinos',
       comunidadId: 'com_fotos',
+      inscritoIds: const ['s2', 'sofiatrek'],
+      checkinIds: const [],
     ),
   ];
 
@@ -99,16 +161,40 @@ class SalidasDataSourceLocal {
     return null;
   }
 
-  bool enrolar(String id) {
+  bool enrolar(String id, {String usuarioId = 'yo'}) {
     final i = _salidas.indexWhere((s) => s.id == id);
     if (i < 0) return false;
     final s = _salidas[i];
+    if (s.unido(usuarioId)) return false;
     if (s.llena) return false;
-    _salidas[i] = s.copyWith(inscritos: s.inscritos + 1);
+    final ids = [...s.inscritoIds, usuarioId];
+    final n = s.inscritoIds.isEmpty ? s.inscritos + 1 : ids.length;
+    _salidas[i] = s.copyWith(inscritos: n, inscritoIds: ids);
+    return true;
+  }
+
+  bool checkIn(String id, {String usuarioId = 'yo'}) {
+    final i = _salidas.indexWhere((s) => s.id == id);
+    if (i < 0) return false;
+    var s = _salidas[i];
+    if (!s.unido(usuarioId)) {
+      if (!enrolar(id, usuarioId: usuarioId)) return false;
+      s = _salidas[i];
+    }
+    if (s.presente(usuarioId)) return true;
+    _salidas[i] = s.copyWith(checkinIds: [...s.checkinIds, usuarioId]);
     return true;
   }
 
   void crear(ModeloSalida salida) {
     _salidas.insert(0, salida);
+  }
+
+  List<ModeloSalida> get snapshot => List.unmodifiable(_salidas);
+
+  void reemplazarTodas(List<ModeloSalida> lista) {
+    _salidas
+      ..clear()
+      ..addAll(lista);
   }
 }

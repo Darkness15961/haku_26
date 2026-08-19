@@ -1,7 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
@@ -45,67 +47,121 @@ class PantallaDetalleComunidad extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: PaletaRutas.marronOscuro,
+      body: FondoSuaveSeccion(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 220,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ImagenHaku(
+                      url: c.imagenUrl,
+                      fit: BoxFit.cover,
+                      respaldo: CatalogoImagenesHaku.encabezadoRutas,
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      c.nombre,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TipografiaHaku.titulo(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.72),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Salidas',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const PantallaSalidas(),
+                    SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: 'Salidas',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const PantallaSalidas(),
+                                  ),
+                                );
+                              },
+                              icon:
+                                  const Icon(Icons.hiking, color: Colors.white),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.hiking,
-                      color: PaletaRutas.marronOscuro,
+                      ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 18,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                        if (unida)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: PaletaRutas.terracota.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Unida',
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          c.nombre,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${c.miembros} miembros · ${c.provincia}',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.88),
+                          ),
+                        ),
+                      ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: LineaEncabezadoInca(altura: 2),
-            ),
-            Expanded(
-              child: FondoSuaveSeccion(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: CachedNetworkImage(
-                        imageUrl: c.imagenUrl,
-                        height: 160,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -125,15 +181,6 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                               color: Colors.white.withValues(alpha: 0.88),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '${c.miembros} miembros · ${c.provincia}',
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.75),
-                            ),
-                          ),
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
@@ -151,7 +198,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     BotonFondoTextil(
-                      texto: unida ? 'Salir de la comunidad' : 'Unirme',
+                      texto: unida ? 'Salir' : 'Unirme',
                       icono: unida
                           ? Icons.check_rounded
                           : Icons.group_add_outlined,
@@ -166,6 +213,8 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                       },
                     ),
                     const SizedBox(height: 22),
+                    const LineaEncabezadoInca(altura: 2),
+                    const SizedBox(height: 14),
                     Text(
                       'Miembros',
                       style: TipografiaHaku.titulo(
@@ -176,7 +225,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                     const SizedBox(height: 8),
                     if (miembros.isEmpty)
                       Text(
-                        'Todavía no hay perfiles vinculados.',
+                        'Aún no hay miembros visibles',
                         style: TipografiaHaku.interfaz(
                           color: PaletaRutas.marronCuero,
                         ),
@@ -199,14 +248,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                           ),
                           child: Row(
                             children: [
-                              ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: p.avatarUrl,
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
+                              AvatarHaku(url: p.avatarUrl, size: 44),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(

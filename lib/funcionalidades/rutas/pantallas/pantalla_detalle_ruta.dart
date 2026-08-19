@@ -188,7 +188,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '(${ruta.cantidadResenas} reseñas)',
+                                        '(${ruta.cantidadResenas})',
                                         style: TipografiaHaku.interfaz(
                                           fontSize: 12,
                                           color: PaletaRutas.marronCuero,
@@ -289,7 +289,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                         if (ruta.puntos.isNotEmpty) ...[
                                           const SizedBox(height: 8),
                                           Text(
-                                            '${ruta.puntos.length} paradas en el mapa',
+                                            '${ruta.puntos.length} paradas',
                                             style: TipografiaHaku.interfaz(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
@@ -337,7 +337,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                       if (ruta.distancia.isNotEmpty) ...[
                                         const SizedBox(height: 14),
                                         Text(
-                                          'Distancia: ${ruta.distancia}',
+                                          ruta.distancia,
                                           style: TipografiaHaku.interfaz(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
@@ -349,24 +349,16 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                   ),
                                 ),
                                 const SizedBox(height: 22),
-                                Text(
-                                  'Información útil',
-                                  style: TipografiaHaku.titulo(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
                                 _GrillaInfo(ruta: ruta),
                                 const SizedBox(height: 24),
                                 BotonSecundarioRuta(
-                                  texto: 'Publicar en esta ruta',
+                                  texto: 'Publicar',
                                   icono: Icons.add_a_photo_outlined,
                                   onPressed: _publicarEnRuta,
                                 ),
                                 const SizedBox(height: 12),
                                 BotonPrimarioRuta(
-                                  texto: ruta.textoBoton,
+                                  texto: 'Mapa',
                                   icono: Icons.map_outlined,
                                   onPressed: _abrirMapa,
                                 ),
@@ -411,9 +403,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                       _BotonCircular(
                         tooltip: 'Compartir',
                         icono: Icons.ios_share_rounded,
-                        onTap: () => _avisar(
-                          'Compartir: ${ruta.titulo} (simulado)',
-                        ),
+                        onTap: () => _avisar('Compartido'),
                       ),
                     ],
                   ),
@@ -453,14 +443,14 @@ class _GrillaInfo extends StatelessWidget {
       if (ruta.tiempoCaminata.isNotEmpty)
         _InfoItem(
           Icons.timer_outlined,
-          'Tiempo de caminata',
+          'Tiempo',
           ruta.tiempoCaminata,
         ),
       _InfoItem(Icons.trending_up_rounded, 'Dificultad', ruta.dificultadTexto),
       if (ruta.mejorEpoca.isNotEmpty)
         _InfoItem(
           Icons.calendar_month_outlined,
-          'Mejor época',
+          'Época',
           ruta.mejorEpoca,
         ),
     ];

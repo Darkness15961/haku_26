@@ -7,7 +7,6 @@ import '../../comunidad/pantallas/pantalla_salidas.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
 import 'pantalla_detalle_lugar.dart';
@@ -44,14 +43,6 @@ class PantallaInicioDescubrir extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                '¿No sabes dónde ir?',
-                style: TipografiaHaku.interfaz(
-                  fontSize: 15,
-                  color: PaletaRutas.marronCuero,
-                ),
-              ),
               const SizedBox(height: 14),
               BotonPrimarioRuta(
                 texto: 'Sorpréndeme',
@@ -63,7 +54,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                '¿Qué te provoca?',
+                'Intereses',
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -103,7 +94,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                'Encontramos algo para ti',
+                'Para ti',
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -113,7 +104,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               ...paraTi.map((l) => _CardLugarDescubrir(lugar: l)),
               const SizedBox(height: 18),
               Text(
-                'La comunidad acaba de descubrir',
+                'Nuevos',
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -122,14 +113,14 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               const SizedBox(height: 10),
               if (recientes.isEmpty)
                 Text(
-                  'Sé el primero en documentar un lugar nuevo.',
+                  'Vacío',
                   style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
                 )
               else
                 ...recientes.map((l) => _CardReciente(lugar: l)),
               const SizedBox(height: 18),
               Text(
-                '¿Quieres descubrirlo acompañado?',
+                'Salidas',
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -146,19 +137,8 @@ class PantallaInicioDescubrir extends ConsumerWidget {
                 },
               ),
               const SizedBox(height: 22),
-              const LineaEncabezadoInca(altura: 2),
-              const SizedBox(height: 16),
-              Text(
-                '¿Conoces un lugar que HAKU todavía no conoce?',
-                textAlign: TextAlign.center,
-                style: TipografiaHaku.titulo(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
               BotonSecundarioRuta(
-                texto: 'Registrar lugar',
+                texto: 'Registrar',
                 icono: Icons.add_location_alt_outlined,
                 onPressed: () => abrirRegistrarLugarFlow(context, ref),
               ),
@@ -221,7 +201,7 @@ class _CardLugarDescubrir extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '★ ${lugar.calificacion} · ${lugar.exploradores} visitas recientes',
+                        '★ ${lugar.calificacion} · ${lugar.exploradores}',
                         style: TipografiaHaku.interfaz(fontSize: 12),
                       ),
                     ],
@@ -262,7 +242,7 @@ class _CardReciente extends StatelessWidget {
           style: TipografiaHaku.titulo(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
-          'Descubierto hace $dias días · ${lugar.fotos} fotos · ${lugar.exploradores} personas',
+          '$dias d · ${lugar.fotos} fotos · ${lugar.exploradores}',
           style: TipografiaHaku.interfaz(fontSize: 12, color: PaletaRutas.marronCuero),
         ),
         trailing: TextButton(

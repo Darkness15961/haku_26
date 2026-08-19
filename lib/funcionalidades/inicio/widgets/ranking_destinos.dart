@@ -12,7 +12,7 @@ class RankingDestinos extends StatelessWidget {
   const RankingDestinos({
     super.key,
     required this.destinos,
-    this.titulo = 'Top destinos del mes',
+    this.titulo = 'Top',
   });
 
   @override
