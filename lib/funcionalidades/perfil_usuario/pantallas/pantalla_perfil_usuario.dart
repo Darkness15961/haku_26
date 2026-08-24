@@ -59,7 +59,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
         : _publicacionesDemo;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -135,6 +135,9 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
             ),
             Expanded(
               child: FondoSuaveSeccion(
+                color: PaletaRutas.ink,
+                opacidadImagen: 0,
+                opacidadVelo: 0,
                 child: SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPad),
                   child: Column(

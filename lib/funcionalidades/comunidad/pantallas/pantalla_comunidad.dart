@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
-import '../../inicio/dominio/modelos/provincia.dart';
+import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/pantallas/pantalla_crear_grupo_comunidad.dart';
 import '../../inicio/pantallas/pantalla_mensajes_inicio.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/salidas_datasource_local.dart';
 import '../dominio/modelo_comunidad.dart';
 import '../util/provincia_comunidad.dart';
@@ -16,7 +15,7 @@ import '../widgets/mapa_comunidades_cusco.dart';
 import 'pantalla_detalle_comunidad.dart';
 import 'pantalla_salidas.dart';
 
-/// Comunidades como agrupaciones sobre el mapa de Cusco.
+/// Comunidad: feed crudo (publicaciones) + mapa / grupos.
 class PantallaComunidad extends ConsumerStatefulWidget {
   final bool mostrarAtras;
 
@@ -64,7 +63,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom +
-        (widget.mostrarAtras ? 24 : 110);
+        (widget.mostrarAtras ? 24 : 88);
     final store = ref.watch(almacenFeedProvider);
     final todas = store.comunidades;
     final visibles = _filtrar(todas, store.comunidadIds);
@@ -72,203 +71,283 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final salidas = SalidasDataSourceLocal.instancia.todas().length;
     final enZona = _enProvincia(visibles, _provinciaId);
     final prov = _provinciaId != null ? provinciaPorId(_provinciaId!) : null;
+    final publicaciones = store.listo
+        ? store.publicaciones
+        : FeedInicioDataSourceLocal.publicaciones;
+    final listaComunidades = _provinciaId == null ? visibles : enZona;
 
     return Scaffold(
-      backgroundColor: PaletaRutas.crema,
-      body: FondoSuaveSeccion(
-        opacidadImagen: 0.28,
-        opacidadVelo: 0.35,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _CabeceraMapaComunidad(
-                mostrarAtras: widget.mostrarAtras,
-                total: visibles.length,
-                unidas: store.comunidadIds.length,
-                salidas: salidas,
-                soloUnidas: _soloUnidas,
-                onToggleUnidas: () => setState(() => _soloUnidas = !_soloUnidas),
-                onCrear: _crearGrupo,
-                onSalidas: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PantallaSalidas(),
-                    ),
-                  );
-                },
-                onMensajes: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PantallaMensajesInicio(),
-                    ),
-                  );
-                },
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: LineaEncabezadoInca(altura: 2),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                flex: 5,
-                child: cargando
-                    ? const Center(child: CircularProgressIndicator())
-                    : MapaComunidadesCusco(
-                        comunidades: visibles,
-                        unidas: store.comunidadIds,
-                        provinciaSeleccionadaId: _provinciaId,
-                        onProvincia: (id) => setState(() => _provinciaId = id),
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
+                child: Row(
+                  children: [
+                    if (widget.mostrarAtras)
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: PaletaRutas.piedra,
+                        ),
                       ),
-              ),
-              Expanded(
-                flex: 4,
-                child: _PanelAgrupaciones(
-                  provincia: prov,
-                  comunidades: _provinciaId == null ? visibles : enZona,
-                  unidas: store.comunidadIds,
-                  bottom: bottom,
-                  onLimpiarProvincia: () => setState(() => _provinciaId = null),
-                  onAbrir: _abrir,
-                  onCrear: _crearGrupo,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Comunidad',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                          Text(
+                            'Publicaciones y grupos en Cusco',
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 12,
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Mensajes',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const PantallaMensajesInicio(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Salidas',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const PantallaSalidas(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.hiking,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    _ChipStat(valor: '${publicaciones.length}', label: 'Posts'),
+                    const SizedBox(width: 8),
+                    _ChipStat(valor: '${visibles.length}', label: 'Grupos'),
+                    const SizedBox(width: 8),
+                    _ChipStat(valor: '$salidas', label: 'Salidas'),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _crearGrupo,
+                      child: Text(
+                        'Crear',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: PaletaRutas.oro,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+                child: Row(
+                  children: [
+                    Text(
+                      'Publicaciones',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(width: 18, height: 2, color: PaletaRutas.oro),
+                  ],
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: PublicacionEstiloThreads(
+                      publicacion: publicaciones[i],
+                      indice: i,
+                    ),
+                  );
+                },
+                childCount: publicaciones.length,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                child: Row(
+                  children: [
+                    Text(
+                      'En el mapa',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const Spacer(),
+                    FilterChip(
+                      label: Text(
+                        'Mías',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _soloUnidas
+                              ? PaletaRutas.ink
+                              : PaletaRutas.piedra,
+                        ),
+                      ),
+                      selected: _soloUnidas,
+                      onSelected: (_) =>
+                          setState(() => _soloUnidas = !_soloUnidas),
+                      selectedColor: PaletaRutas.oro,
+                      backgroundColor: PaletaRutas.carbon,
+                      checkmarkColor: PaletaRutas.ink,
+                      side: BorderSide(
+                        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 220,
+                child: cargando
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: PaletaRutas.oro,
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: MapaComunidadesCusco(
+                            comunidades: visibles,
+                            unidas: store.comunidadIds,
+                            provinciaSeleccionadaId: _provinciaId,
+                            onProvincia: (id) =>
+                                setState(() => _provinciaId = id),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        prov != null
+                            ? '${prov.nombre} · ${listaComunidades.length}'
+                            : 'Todas las comunidades',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
+                        ),
+                      ),
+                    ),
+                    if (_provinciaId != null)
+                      TextButton(
+                        onPressed: () => setState(() => _provinciaId = null),
+                        child: Text(
+                          'Ver todo',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 12,
+                            color: PaletaRutas.oroSuave,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (listaComunidades.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 8, 24, bottom),
+                  child: Text(
+                    'Todavía no hay comunidades aquí',
+                    textAlign: TextAlign.center,
+                    style: TipografiaHaku.interfaz(
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) {
+                    final c = listaComunidades[i];
+                    final esUltima = i == listaComunidades.length - 1;
+                    return Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        esUltima ? bottom : 8,
+                      ),
+                      child: _FilaComunidadDark(
+                        comunidad: c,
+                        unida: store.comunidadIds.contains(c.id),
+                        onTap: () => _abrir(c),
+                      ),
+                    );
+                  },
+                  childCount: listaComunidades.length,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CabeceraMapaComunidad extends StatelessWidget {
-  const _CabeceraMapaComunidad({
-    required this.mostrarAtras,
-    required this.total,
-    required this.unidas,
-    required this.salidas,
-    required this.soloUnidas,
-    required this.onToggleUnidas,
-    required this.onCrear,
-    required this.onSalidas,
-    required this.onMensajes,
-  });
-
-  final bool mostrarAtras;
-  final int total;
-  final int unidas;
-  final int salidas;
-  final bool soloUnidas;
-  final VoidCallback onToggleUnidas;
-  final VoidCallback onCrear;
-  final VoidCallback onSalidas;
-  final VoidCallback onMensajes;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (mostrarAtras)
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: PaletaRutas.marronOscuro,
-                  ),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Comunidades',
-                      style: TipografiaHaku.titulo(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: PaletaRutas.marronOscuro,
-                      ),
-                    ),
-                    Text(
-                      'Grupos en el mapa de Cusco',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 12,
-                        color: PaletaRutas.marronCuero,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Mensajes',
-                onPressed: onMensajes,
-                icon: const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: PaletaRutas.marronOscuro,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Salidas',
-                onPressed: onSalidas,
-                icon: const Icon(Icons.hiking, color: PaletaRutas.marronOscuro),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _MiniStat(valor: '$total', label: 'Comunidades'),
-              const SizedBox(width: 8),
-              _MiniStat(valor: '$unidas', label: 'Mías'),
-              const SizedBox(width: 8),
-              _MiniStat(valor: '$salidas', label: 'Salidas'),
-              const Spacer(),
-              FilterChip(
-                label: Text(
-                  'Mis comunidades',
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: soloUnidas ? Colors.white : PaletaRutas.marronOscuro,
-                  ),
-                ),
-                selected: soloUnidas,
-                onSelected: (_) => onToggleUnidas(),
-                selectedColor: PaletaRutas.terracota,
-                backgroundColor: PaletaRutas.crema,
-                checkmarkColor: Colors.white,
-                side: BorderSide(
-                  color: PaletaRutas.terracota.withValues(alpha: 0.4),
-                ),
-              ),
-              const SizedBox(width: 6),
-              FilledButton(
-                onPressed: onCrear,
-                style: FilledButton.styleFrom(
-                  backgroundColor: PaletaRutas.terracota,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                ),
-                child: Text(
-                  'Crear',
-                  style: TipografiaHaku.interfaz(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.valor, required this.label});
+class _ChipStat extends StatelessWidget {
+  const _ChipStat({required this.valor, required this.label});
 
   final String valor;
   final String label;
@@ -278,10 +357,10 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: PaletaRutas.pergamino.withValues(alpha: 0.9),
+        color: PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: PaletaRutas.terracota.withValues(alpha: 0.25),
+          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.55),
         ),
       ),
       child: Row(
@@ -290,9 +369,9 @@ class _MiniStat extends StatelessWidget {
           Text(
             valor,
             style: TipografiaHaku.titulo(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: PaletaRutas.terracota,
+              color: PaletaRutas.oro,
             ),
           ),
           const SizedBox(width: 4),
@@ -301,7 +380,7 @@ class _MiniStat extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: PaletaRutas.marronCuero,
+              color: PaletaRutas.plomoClaro,
             ),
           ),
         ],
@@ -310,127 +389,68 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-class _PanelAgrupaciones extends StatelessWidget {
-  const _PanelAgrupaciones({
-    required this.provincia,
-    required this.comunidades,
-    required this.unidas,
-    required this.bottom,
-    required this.onLimpiarProvincia,
-    required this.onAbrir,
-    required this.onCrear,
+class _FilaComunidadDark extends StatelessWidget {
+  const _FilaComunidadDark({
+    required this.comunidad,
+    required this.unida,
+    required this.onTap,
   });
 
-  final Provincia? provincia;
-  final List<ComunidadHaku> comunidades;
-  final Set<String> unidas;
-  final double bottom;
-  final VoidCallback onLimpiarProvincia;
-  final ValueChanged<ComunidadHaku> onAbrir;
-  final VoidCallback onCrear;
+  final ComunidadHaku comunidad;
+  final bool unida;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final titulo = provincia != null
-        ? '${provincia!.nombre} · ${comunidades.length} comunidades'
-        : 'Todas las comunidades';
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      decoration: BoxDecoration(
-        color: PaletaRutas.marronOscuro.withValues(alpha: 0.92),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    titulo,
-                    style: TipografiaHaku.titulo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+    return Material(
+      color: PaletaRutas.carbon,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      comunidad.nombre,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
                     ),
-                  ),
-                ),
-                if (provincia != null)
-                  TextButton(
-                    onPressed: onLimpiarProvincia,
-                    child: Text(
-                      'Ver mapa completo',
+                    const SizedBox(height: 2),
+                    Text(
+                      comunidad.provincia,
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.crema,
+                        color: PaletaRutas.plomoClaro,
                       ),
                     ),
+                  ],
+                ),
+              ),
+              if (unida)
+                Text(
+                  'Unida',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.oro,
                   ),
-              ],
-            ),
+                ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: PaletaRutas.plomo,
+              ),
+            ],
           ),
-          Expanded(
-            child: comunidades.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.map_outlined,
-                            size: 40,
-                            color: Colors.white.withValues(alpha: 0.4),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            provincia != null
-                                ? 'Sin comunidades en esta zona'
-                                : 'Todavía no hay comunidades',
-                            textAlign: TextAlign.center,
-                            style: TipografiaHaku.interfaz(
-                              color: Colors.white.withValues(alpha: 0.75),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton(
-                            onPressed: onCrear,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: PaletaRutas.terracota),
-                            ),
-                            child: const Text('Crear comunidad'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(12, 0, 12, bottom + 8),
-                    itemCount: comunidades.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) {
-                      final c = comunidades[i];
-                      return FilaAgrupacionComunidad(
-                        comunidad: c,
-                        unida: unidas.contains(c.id),
-                        onTap: () => onAbrir(c),
-                      );
-                    },
-                  ),
-          ),
-        ],
+        ),
       ),
     );
   }

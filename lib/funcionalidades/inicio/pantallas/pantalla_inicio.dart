@@ -6,6 +6,7 @@ import '../../comunidad/indice.dart';
 import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
+import '../../rutas/widgets/estilos_rutas.dart';
 import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/barra_navegacion_curva.dart';
 import 'pantalla_feed_inicio.dart';
@@ -31,13 +32,13 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
   static const List<ItemBarraNavegacion> _itemsNavegacion = [
     ItemBarraNavegacion(
-      iconoNormal: Icons.home_outlined,
-      iconoActivo: Icons.home_rounded,
-      etiqueta: 'Inicio',
+      iconoNormal: Icons.auto_awesome_outlined,
+      iconoActivo: Icons.auto_awesome,
+      etiqueta: 'Descubre',
     ),
     ItemBarraNavegacion(
-      iconoNormal: Icons.compass_calibration_outlined,
-      iconoActivo: Icons.compass_calibration_rounded,
+      iconoNormal: Icons.search_rounded,
+      iconoActivo: Icons.search_rounded,
       etiqueta: 'Explora',
     ),
     ItemBarraNavegacion(
@@ -101,7 +102,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       extendBody: true,
       body: IndexedStack(
         index: _indiceSeleccionado,

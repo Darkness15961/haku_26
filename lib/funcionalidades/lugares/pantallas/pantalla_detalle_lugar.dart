@@ -1,7 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/pantallas/pantalla_salidas.dart';
 import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
@@ -28,9 +28,6 @@ class PantallaDetalleLugar extends ConsumerWidget {
     }
 
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final img = lugar.imagenUrl.startsWith('assets/')
-        ? null
-        : lugar.imagenUrl;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -43,9 +40,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
             backgroundColor: PaletaRutas.marronOscuro,
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
-              background: img == null
-                  ? Image.asset(lugar.imagenUrl, fit: BoxFit.cover)
-                  : CachedNetworkImage(imageUrl: img, fit: BoxFit.cover),
+              background: ImagenHaku(url: lugar.imagenUrl, fit: BoxFit.cover),
             ),
           ),
           SliverToBoxAdapter(

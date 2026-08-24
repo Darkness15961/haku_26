@@ -101,6 +101,8 @@ class ModeloRuta {
   final String transporte;
   final List<String> tips;
   final HiloCultura hilo;
+  /// Provincia del Cusco a la que pertenece el lugar / experiencia.
+  final String provincia;
 
   const ModeloRuta({
     required this.id,
@@ -128,6 +130,7 @@ class ModeloRuta {
     this.transporte = '',
     this.tips = const [],
     this.hilo = HiloCultura.camino,
+    this.provincia = 'Cusco',
   });
 
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
@@ -170,6 +173,7 @@ class ModeloRuta {
         (h) => h.name == json['hilo'],
         orElse: () => HiloCultura.camino,
       ),
+      provincia: json['provincia'] as String? ?? 'Cusco',
     );
   }
 
@@ -200,6 +204,7 @@ class ModeloRuta {
       'transporte': transporte,
       'tips': tips,
       'hilo': hilo.name,
+      'provincia': provincia,
     };
   }
 
@@ -229,6 +234,7 @@ class ModeloRuta {
     String? transporte,
     List<String>? tips,
     HiloCultura? hilo,
+    String? provincia,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
@@ -256,6 +262,7 @@ class ModeloRuta {
       transporte: transporte ?? this.transporte,
       tips: tips ?? this.tips,
       hilo: hilo ?? this.hilo,
+      provincia: provincia ?? this.provincia,
     );
   }
 }

@@ -164,6 +164,71 @@ class SemillaAlmacenHaku {
         lugarNombre: 'Cusco',
         categoria: 'Ciudad',
       ),
+      _post(
+        id: 'p6',
+        autorId: 'sofiatrek',
+        texto:
+            'Cruzamos el puente Q\'eswachaka al amanecer. El cañón abajo parece otro mundo.',
+        imagen: CatalogoImagenesHaku.detalleRutaB,
+        likes: 156,
+        comentarios: 28,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 14)),
+        lugarId: 'canon_qeswachaka',
+        lugarNombre: 'Cañón Q\'eswachaka',
+        categoria: 'Aventura',
+      ),
+      _post(
+        id: 'p7',
+        autorId: 'mariaq',
+        texto:
+            'Tour nocturno en Almudena: historias, silencio y una brisa fría que te despierta.',
+        imagen: CatalogoImagenesHaku.detalleRutaB,
+        likes: 94,
+        comentarios: 19,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 20)),
+        lugarId: 'cementerio_almudena_noche',
+        lugarNombre: 'Tour nocturno Cementerio Almudena',
+        categoria: 'Misterioso',
+      ),
+      _post(
+        id: 'p8',
+        autorId: 'camilarios',
+        texto:
+            'Maras de noche con trípode: la Vía Láctea se refleja en los pozos de sal.',
+        imagen: CatalogoImagenesHaku.moray,
+        likes: 201,
+        comentarios: 34,
+        creadoEn: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
+        lugarId: 'astro_foto_maras',
+        lugarNombre: 'Astrofoto en Maras',
+        categoria: 'Foto',
+      ),
+      _post(
+        id: 'p9',
+        autorId: 'diegoandes',
+        texto:
+            'Sibinacocha al amanecer: agua turquesa, viento fuerte y cero señal. Vale cada paso.',
+        imagen: CatalogoImagenesHaku.ausangate,
+        likes: 118,
+        comentarios: 22,
+        creadoEn: DateTime.now().subtract(const Duration(days: 1, hours: 8)),
+        lugarId: 'laguna_sibinacocha',
+        lugarNombre: 'Laguna Sibinacocha',
+        categoria: 'Naturaleza',
+      ),
+      _post(
+        id: 'p10',
+        autorId: 'haku',
+        texto:
+            'Salineras bajo luna llena: los pozos brillan como espejos rotados hacia el cielo.',
+        imagen: CatalogoImagenesHaku.moray,
+        likes: 267,
+        comentarios: 41,
+        creadoEn: DateTime.now().subtract(const Duration(days: 2, hours: 4)),
+        lugarId: 'salineras_luna_llena',
+        lugarNombre: 'Salineras en luna llena',
+        categoria: 'Mágico',
+      ),
       ..._postsUsuarioLocal(),
     ];
 
@@ -253,16 +318,16 @@ class SemillaAlmacenHaku {
         'diegoandes',
         'sofiatrek',
       ],
-      'likes_publicacion_ids': <String>['p1', 'p3', 'p4'],
+      'likes_publicacion_ids': <String>['p1', 'p3', 'p4', 'p6', 'p10'],
       'likes_clip_ids': <String>[],
-      'guardados_publicacion_ids': <String>['p2', 'p5', 'yo_p1'],
+      'guardados_publicacion_ids': <String>['p2', 'p5', 'p7', 'yo_p1'],
       'favoritos_clip_ids': <String>[],
       'favoritos_ruta_ids': <String>[
-        'machu_picchu',
-        'laguna_humantay',
-        'vinicunca',
-        'maras_moray',
-        'valle_sagrado',
+        'lugar_canon_qeswachaka',
+        'lugar_cementerio_almudena_noche',
+        'lugar_laguna_humantay',
+        'lugar_qoricancha_noche',
+        'lugar_salineras_luna_llena',
       ],
       'comunidad_ids': <String>['com_trekkers', 'com_fotos', 'com_fogon'],
     };
@@ -271,7 +336,7 @@ class SemillaAlmacenHaku {
   static Map<String, dynamic> _metricasDemo() => {
         'documentados': 14,
         'experiencias_publicadas': 8,
-        'salidas_enroladas': 3,
+        'salidas_enroladas': 5,
       };
 
   static List<Map<String, dynamic>> _comentariosDemo() {
@@ -292,11 +357,18 @@ class SemillaAlmacenHaku {
         'creado_en': ahora.subtract(const Duration(hours: 5)).toIso8601String(),
       },
       {
-        'id': 'cm_yo1_1',
-        'publicacion_id': 'yo_p1',
-        'autor_id': 'mariaq',
-        'texto': 'Moray a esa hora está vacío. Buen tip.',
-        'creado_en': ahora.subtract(const Duration(hours: 3)).toIso8601String(),
+        'id': 'cm_p6_1',
+        'publicacion_id': 'p6',
+        'autor_id': 'diegoandes',
+        'texto': '¿Van en combi o van privado?',
+        'creado_en': ahora.subtract(const Duration(hours: 10)).toIso8601String(),
+      },
+      {
+        'id': 'cm_p7_1',
+        'publicacion_id': 'p7',
+        'autor_id': 'sofiatrek',
+        'texto': 'Me dieron escalofríos en el pasillo 3. Recomendado.',
+        'creado_en': ahora.subtract(const Duration(hours: 16)).toIso8601String(),
       },
     ];
   }
@@ -561,6 +633,45 @@ class SemillaAlmacenHaku {
     doc['metricas_usuario'] ??= _metricasDemo();
     doc['comentarios'] ??= _comentariosDemo();
     doc['lugares_creados'] ??= <Map<String, dynamic>>[];
+    if (inter['descubre_lugares_v4'] != true) {
+      final pubsPatch = [
+        for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      final pubIds = pubsPatch.map((p) => p['id']?.toString()).toSet();
+      for (final e in (seed['publicaciones'] as List<dynamic>? ?? [])) {
+        if (e is! Map) continue;
+        final id = e['id']?.toString() ?? '';
+        if (!{'p6', 'p7', 'p8', 'p9', 'p10'}.contains(id)) continue;
+        if (pubIds.contains(id)) continue;
+        pubsPatch.add(Map<String, dynamic>.from(e));
+      }
+      doc['publicaciones'] = pubsPatch;
+
+      final salidasPatch = [
+        for (final e in (doc['salidas'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      final salidaIds = salidasPatch.map((s) => s['id']?.toString()).toSet();
+      for (final e in (seed['salidas'] as List<dynamic>? ?? [])) {
+        if (e is! Map) continue;
+        final id = e['id']?.toString() ?? '';
+        if (!{'s3', 's4', 's5', 's6', 's7', 's8'}.contains(id)) continue;
+        if (salidaIds.contains(id)) continue;
+        salidasPatch.add(Map<String, dynamic>.from(e));
+      }
+      doc['salidas'] = salidasPatch;
+
+      final favs = [
+        for (final x in (inter['favoritos_ruta_ids'] as List<dynamic>? ?? []))
+          x.toString(),
+      ];
+      for (final id in _interaccionesDemo()['favoritos_ruta_ids'] as List) {
+        if (!favs.contains(id)) favs.add(id.toString());
+      }
+      inter['favoritos_ruta_ids'] = favs;
+      inter['descubre_lugares_v4'] = true;
+    }
     if (doc['salidas'] is! List || (doc['salidas'] as List).isEmpty) {
       doc['salidas'] = seed['salidas'];
     } else {
@@ -938,13 +1049,139 @@ class SemillaAlmacenHaku {
         'hora': '7:00 AM',
         'punto_encuentro': 'Cristo Blanco',
         'cupos': 8,
-        'inscritos': 2,
+        'inscritos': 3,
         'minimo': 3,
         'dificultad': 'Fácil',
         'grupo': 'Fotógrafos Andinos',
         'comunidad_id': 'com_fotos',
         'inscrito_ids': ['s2', 'sofiatrek'],
         'checkin_ids': <String>[],
+      },
+      {
+        'id': 's3',
+        'lugar_id': 'cementerio_almudena_noche',
+        'lugar_nombre': 'Tour nocturno Cementerio Almudena',
+        'organizador_nombre': 'Lucía',
+        'fecha': DateTime.now().add(const Duration(days: 2)).toIso8601String(),
+        'hora': '8:00 PM',
+        'punto_encuentro': 'Plaza San Francisco',
+        'cupos': 12,
+        'inscritos': 5,
+        'minimo': 4,
+        'dificultad': 'Fácil',
+        'grupo': 'Misterios Cusco',
+        'comunidad_id': 'com_fogon',
+        'inscrito_ids': ['mariaq', 's1', 's3', 'yo', 'camilarios'],
+        'checkin_ids': <String>[],
+      },
+      {
+        'id': 's4',
+        'lugar_id': 'canon_qeswachaka',
+        'lugar_nombre': 'Cañón Q\'eswachaka',
+        'organizador_nombre': 'Diego',
+        'fecha': DateTime.now().add(const Duration(days: 4)).toIso8601String(),
+        'hora': '6:00 AM',
+        'punto_encuentro': 'Terminal Oropesa',
+        'cupos': 15,
+        'inscritos': 7,
+        'minimo': 5,
+        'dificultad': 'Moderada',
+        'grupo': 'Trekkers Cusco',
+        'comunidad_id': 'com_trekkers',
+        'inscrito_ids': [
+          'diegoandes',
+          's2',
+          's3',
+          'sofiatrek',
+          's1',
+          'yo',
+          'haku',
+        ],
+        'checkin_ids': ['diegoandes'],
+      },
+      {
+        'id': 's5',
+        'lugar_id': 'astro_foto_maras',
+        'lugar_nombre': 'Astrofoto en Maras',
+        'organizador_nombre': 'Camila',
+        'fecha': DateTime.now().add(const Duration(days: 6)).toIso8601String(),
+        'hora': '9:00 PM',
+        'punto_encuentro': 'Plaza de Armas',
+        'cupos': 8,
+        'inscritos': 4,
+        'minimo': 3,
+        'dificultad': 'Fácil',
+        'grupo': 'Fotógrafos Andinos',
+        'comunidad_id': 'com_fotos',
+        'inscrito_ids': ['camilarios', 'mariaq', 's2', 'yo'],
+        'checkin_ids': <String>[],
+      },
+      {
+        'id': 's6',
+        'lugar_id': 'laguna_sibinacocha',
+        'lugar_nombre': 'Laguna Sibinacocha',
+        'organizador_nombre': 'Carlos',
+        'fecha': DateTime.now().add(const Duration(days: 8)).toIso8601String(),
+        'hora': '4:30 AM',
+        'punto_encuentro': 'Cusco centro',
+        'cupos': 6,
+        'inscritos': 2,
+        'minimo': 4,
+        'dificultad': 'Exigente',
+        'grupo': 'Trekkers Cusco',
+        'comunidad_id': 'com_trekkers',
+        'inscrito_ids': ['s1', 'diegoandes'],
+        'checkin_ids': <String>[],
+      },
+      {
+        'id': 's7',
+        'lugar_id': 'salineras_luna_llena',
+        'lugar_nombre': 'Salineras en luna llena',
+        'organizador_nombre': 'Sofía',
+        'fecha': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+        'hora': '7:30 PM',
+        'punto_encuentro': 'Maras plaza',
+        'cupos': 10,
+        'inscritos': 6,
+        'minimo': 4,
+        'dificultad': 'Fácil',
+        'grupo': 'Fotógrafos Andinos',
+        'comunidad_id': 'com_fotos',
+        'inscrito_ids': [
+          'sofiatrek',
+          'mariaq',
+          'camilarios',
+          's2',
+          'yo',
+          'haku',
+        ],
+        'checkin_ids': <String>[],
+      },
+      {
+        'id': 's8',
+        'lugar_id': 'qoricancha_noche',
+        'lugar_nombre': 'Qorikancha bajo la luna',
+        'organizador_nombre': 'María',
+        'fecha': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+        'hora': '7:00 PM',
+        'punto_encuentro': 'Entrada Qorikancha',
+        'cupos': 14,
+        'inscritos': 8,
+        'minimo': 5,
+        'dificultad': 'Fácil',
+        'grupo': 'Misterios Cusco',
+        'comunidad_id': 'com_fogon',
+        'inscrito_ids': [
+          'mariaq',
+          's1',
+          's2',
+          's3',
+          'yo',
+          'haku',
+          'camilarios',
+          'sofiatrek',
+        ],
+        'checkin_ids': ['mariaq'],
       },
     ];
   }

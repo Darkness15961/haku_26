@@ -1,11 +1,11 @@
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../inicio/widgets/publicacion_estilo_threads.dart';
+import '../../lugares/datos/lugares_datasource_local.dart';
+import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/pantallas/pantalla_rutas.dart';
@@ -23,15 +23,21 @@ class PantallaFavoritos extends ConsumerWidget {
     final store = ref.watch(almacenFeedProvider);
     final rutas = [
       for (final id in store.favoritosRutaIds)
-        if (RutasDataSourceLocal.obtenerPorId(id) != null)
-          RutasDataSourceLocal.obtenerPorId(id)!,
+        if (!id.startsWith('lugar_'))
+          if (RutasDataSourceLocal.obtenerPorId(id) != null)
+            RutasDataSourceLocal.obtenerPorId(id)!,
     ];
+    final lugares = [
+      for (final id in store.favoritosRutaIds)
+        if (id.startsWith('lugar_'))
+          LugaresDataSourceLocal.instancia.porId(id.substring('lugar_'.length)),
+    ].whereType();
     final posts = [
       for (final p in store.publicaciones)
         if (store.guardadosIds.contains(p.id)) p,
     ];
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
-    final vacio = rutas.isEmpty && posts.isEmpty;
+    final vacio = rutas.isEmpty && lugares.isEmpty && posts.isEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -97,6 +103,33 @@ class PantallaFavoritos extends ConsumerWidget {
                     : ListView(
                         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                         children: [
+                          if (lugares.isNotEmpty) ...[
+                            Text(
+                              'Lugares',
+                              style: TipografiaHaku.titulo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            for (final l in lugares) ...[
+                              _TileRuta(
+                                titulo: l.nombre,
+                                imagen: l.imagenUrl,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => PantallaDetalleLugar(
+                                        lugarId: l.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                            const SizedBox(height: 12),
+                          ],
                           if (rutas.isNotEmpty) ...[
                             Text(
                               'Rutas',
@@ -176,21 +209,12 @@ class _TileRuta extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: imagen.startsWith('http')
-                    ? CachedNetworkImage(
-                        imageUrl: imagen,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(imagen),
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const ColoredBox(color: Color(0xFF333333)),
-                      ),
+                child: ImagenHaku(
+                  url: imagen,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -9,6 +9,7 @@ import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
+import '../widgets/mapa_explora_lugares.dart';
 import 'pantalla_detalle_lugar.dart';
 import 'pantalla_registrar_lugar.dart';
 
@@ -23,7 +24,7 @@ class PantallaExploraLugares extends ConsumerStatefulWidget {
 
 class _EstadoPantallaExploraLugares
     extends ConsumerState<PantallaExploraLugares> {
-  bool _modoMapa = false;
+  bool _modoMapa = true;
   bool _soloPocoExplorados = true;
   CategoriaLugar? _filtroCat;
 
@@ -76,8 +77,11 @@ class _EstadoPantallaExploraLugares
     final totalFotos = todos.fold<int>(0, (s, l) => s + l.fotos);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: FondoSuaveSeccion(
+        color: PaletaRutas.ink,
+        opacidadImagen: 0,
+        opacidadVelo: 0,
         child: SafeArea(
           bottom: false,
           child: CustomScrollView(
@@ -200,7 +204,7 @@ class _EstadoPantallaExploraLugares
                         child: Column(
                           children: [
                             Expanded(
-                              child: _MapaExplora(
+                              child: MapaExploraLugares(
                                 lugares: lugares,
                                 onTap: (id) => abrirDetalleLugar(context, id),
                               ),
@@ -301,18 +305,17 @@ class _HeroExplora extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            SizedBox(
-              height: 200,
-              width: double.infinity,
-              child: Image.asset(
+        child: SizedBox(
+          height: 200,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
                 'public/image/fondo_explora.jpg',
                 fit: BoxFit.cover,
               ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -324,12 +327,11 @@ class _HeroExplora extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Row(
                     children: [
                       SvgPicture.asset(
@@ -404,6 +406,7 @@ class _HeroExplora extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -834,113 +837,6 @@ class _Segmento extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _MapaExplora extends StatelessWidget {
-  const _MapaExplora({required this.lugares, required this.onTap});
-  final List<ModeloLugar> lugares;
-  final ValueChanged<String> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (lugares.isEmpty) {
-      return ColoredBox(
-        color: PaletaRutas.pergamino,
-        child: Center(
-          child: Text(
-            'Sin lugares',
-            style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
-          ),
-        ),
-      );
-    }
-    final lats = lugares.map((l) => l.latitud);
-    final lngs = lugares.map((l) => l.longitud);
-    final minLat = lats.reduce((a, b) => a < b ? a : b);
-    final maxLat = lats.reduce((a, b) => a > b ? a : b);
-    final minLng = lngs.reduce((a, b) => a < b ? a : b);
-    final maxLng = lngs.reduce((a, b) => a > b ? a : b);
-    final dLat = (maxLat - minLat).abs() < 0.0001 ? 0.08 : (maxLat - minLat);
-    final dLng = (maxLng - minLng).abs() < 0.0001 ? 0.08 : (maxLng - minLng);
-
-    return LayoutBuilder(
-      builder: (context, box) {
-        final w = box.maxWidth;
-        final h = box.maxHeight;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'public/image/laberinto_explora.webp',
-              fit: BoxFit.cover,
-              opacity: const AlwaysStoppedAnimation(0.35),
-            ),
-            ColoredBox(color: PaletaRutas.pergamino.withValues(alpha: 0.55)),
-            ...lugares.map((l) {
-              final nx = ((l.longitud - minLng) / dLng).clamp(0.0, 1.0);
-              final ny = (1 - (l.latitud - minLat) / dLat).clamp(0.0, 1.0);
-              final hueco =
-                  l.nivelExploracion == NivelExploracion.pocoExplorado ||
-                      l.nivelExploracion == NivelExploracion.nuevoEnHaku;
-              return Positioned(
-                left: 20 + nx * (w - 100),
-                top: 20 + ny * (h - 100),
-                child: GestureDetector(
-                  onTap: () => onTap(l.id),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: hueco
-                              ? PaletaRutas.terracota
-                              : PaletaRutas.marronOscuro,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.location_on,
-                          size: 22,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: PaletaRutas.terracota.withValues(alpha: 0.4),
-                          ),
-                        ),
-                        child: Text(
-                          l.nombre,
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: PaletaRutas.marronOscuro,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        );
-      },
     );
   }
 }

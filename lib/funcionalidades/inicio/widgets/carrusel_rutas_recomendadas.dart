@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
-/// Carrusel horizontal de rutas destacadas (fotos grandes).
+/// Texto bajo la tarjeta del carrusel.
+enum EstiloPieCarrusel {
+  /// Nombre + provincia.
+  provincia,
+  /// Nombre + subtítulo de experiencia.
+  experiencia,
+  /// Nombre + tipo (Restaurante, Cerámica…) y provincia.
+  tipoYProvincia,
+}
+
+/// Carrusel horizontal — imagen dominante + pie con nombre.
 class CarruselRutasRecomendadas extends StatelessWidget {
   final List<ModeloRuta> rutas;
   final ValueChanged<ModeloRuta>? onTapRuta;
@@ -15,100 +24,86 @@ class CarruselRutasRecomendadas extends StatelessWidget {
   final double? altura;
   final double? anchoTarjeta;
   final String? subtitulo;
+  final EstiloPieCarrusel estiloPie;
 
   const CarruselRutasRecomendadas({
     super.key,
     required this.rutas,
     this.onTapRuta,
     this.onVerTodas,
-    this.titulo = 'Rutas recomendadas',
+    this.titulo = 'Cusco',
     this.iconoAsset,
     this.altura,
     this.anchoTarjeta,
     this.subtitulo,
+    this.estiloPie = EstiloPieCarrusel.provincia,
   });
 
   @override
   Widget build(BuildContext context) {
+    final h = altura ?? 300;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
+          padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
+          child: Row(
             children: [
-              SizedBox(
-                height: 32,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(
-                      titulo,
-                      textAlign: TextAlign.center,
-                      style: TipografiaHaku.titulo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SvgPicture.asset(
-                        iconoAsset ?? 'assets/iconos/montania.svg',
-                        width: 18,
-                        height: 18,
-                      ),
-                    ),
-                    if (onVerTodas != null)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: onVerTodas,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Ver todas',
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: PaletaRutas.marronCuero,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (subtitulo != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  subtitulo!,
-                  textAlign: TextAlign.center,
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 12,
-                    color: PaletaRutas.marronCuero,
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.piedra,
                   ),
                 ),
-              ],
+              ),
+              if (onVerTodas != null)
+                TextButton(
+                  onPressed: onVerTodas,
+                  style: TextButton.styleFrom(
+                    foregroundColor: PaletaRutas.oroSuave,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Text(
+                    'Ver todo',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: PaletaRutas.oroSuave,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        if (subtitulo != null) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+            child: Text(
+              subtitulo!,
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                color: PaletaRutas.plomoClaro,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
         SizedBox(
-          height: altura ?? 280,
+          height: h,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: rutas.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final ruta = rutas[index];
-              return _TarjetaRutaCarrusel(
+              return _TarjetaCarrusel(
                 ruta: ruta,
-                ancho: anchoTarjeta ?? 210,
+                ancho: anchoTarjeta ?? 176,
+                estiloPie: estiloPie,
                 onTap: () => onTapRuta?.call(ruta),
               );
             },
@@ -119,16 +114,34 @@ class CarruselRutasRecomendadas extends StatelessWidget {
   }
 }
 
-class _TarjetaRutaCarrusel extends StatelessWidget {
+class _TarjetaCarrusel extends StatelessWidget {
   final ModeloRuta ruta;
   final VoidCallback? onTap;
   final double ancho;
+  final EstiloPieCarrusel estiloPie;
 
-  const _TarjetaRutaCarrusel({
+  const _TarjetaCarrusel({
     required this.ruta,
+    required this.estiloPie,
     this.onTap,
     this.ancho = 176,
   });
+
+  String get _pieSecundario {
+    switch (estiloPie) {
+      case EstiloPieCarrusel.provincia:
+        return ruta.provincia;
+      case EstiloPieCarrusel.experiencia:
+        return ruta.subtitulo.isNotEmpty
+            ? ruta.subtitulo
+            : 'Viaje de aventura';
+      case EstiloPieCarrusel.tipoYProvincia:
+        final tipo = (ruta.tipoSitio != null && ruta.tipoSitio!.isNotEmpty)
+            ? ruta.tipoSitio!
+            : (ruta.etiquetas.isNotEmpty ? ruta.etiquetas.first : 'Descubrimiento');
+        return ruta.provincia.isNotEmpty ? '$tipo · ${ruta.provincia}' : tipo;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,132 +149,114 @@ class _TarjetaRutaCarrusel extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
           width: ancho,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: ImagenHaku(url: ruta.imagenUrl, fit: BoxFit.cover),
+                ),
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                ImagenHaku(
-                  url: ruta.imagenUrl,
-                  fit: BoxFit.cover,
+              const SizedBox(height: 8),
+              Text(
+                ruta.titulo,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
+                  height: 1.15,
                 ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x22000000),
-                        Color(0x00000000),
-                        Color(0xCC000000),
-                      ],
-                      stops: [0, 0.4, 1],
-                    ),
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _pieSecundario,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: PaletaRutas.plomoClaro,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: ruta.hilo == HiloCultura.camino
-                                ? PaletaRutas.marronOscuro.withValues(alpha: 0.72)
-                                : PaletaRutas.terracota.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            ruta.hilo == HiloCultura.camino
-                                ? ruta.dificultadTexto.toUpperCase()
-                                : ruta.hilo.etiqueta.toUpperCase(),
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        ruta.titulo,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TipografiaHaku.titulo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        ruta.hilo == HiloCultura.camino
-                            ? '${ruta.dias} días · ${ruta.distancia}'
-                            : ruta.subtitulo,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                      if (ruta.etiquetas.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: ruta.etiquetas.take(2).map((e) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                e,
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
-                  ),
+              ),
+              if (ruta.calificacion > 0) ...[
+                const SizedBox(height: 6),
+                _ValoracionSitio(
+                  calificacion: ruta.calificacion,
+                  resenas: ruta.cantidadResenas,
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Valoración estilo discovery: número + puntos oro + reseñas.
+class _ValoracionSitio extends StatelessWidget {
+  const _ValoracionSitio({
+    required this.calificacion,
+    required this.resenas,
+  });
+
+  final double calificacion;
+  final int resenas;
+
+  @override
+  Widget build(BuildContext context) {
+    final textoNota = calificacion.toStringAsFixed(1).replaceAll('.', ',');
+    return Row(
+      children: [
+        Text(
+          textoNota,
+          style: TipografiaHaku.interfaz(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: PaletaRutas.piedra,
+          ),
+        ),
+        const SizedBox(width: 6),
+        ...List.generate(5, (i) {
+          final lleno = calificacion >= i + 0.75;
+          final medio = !lleno && calificacion >= i + 0.25;
+          return Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: lleno
+                    ? PaletaRutas.oro
+                    : medio
+                        ? PaletaRutas.oro.withValues(alpha: 0.45)
+                        : PaletaRutas.plomoOscuro,
+              ),
+            ),
+          );
+        }),
+        if (resenas > 0) ...[
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              '($resenas)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TipografiaHaku.interfaz(
+                fontSize: 10,
+                color: PaletaRutas.plomo,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

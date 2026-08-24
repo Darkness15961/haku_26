@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart';
 
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
-/// Splash tipo Netflix: video a pantalla completa + marca HAKU encima.
+/// Splash — montaña andina + marca HAKU.
 class PantallaCargaInicial extends StatefulWidget {
   final Widget siguientePantalla;
 
@@ -18,61 +19,32 @@ class PantallaCargaInicial extends StatefulWidget {
 
 class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     with SingleTickerProviderStateMixin {
-  static const _rutaVideo = 'assets/videos/inicio_haku.mp4';
-  static const _duracionAlternativa = Duration(seconds: 3);
+  static const _duracion = Duration(milliseconds: 2200);
 
-  VideoPlayerController? _controladorVideo;
   Timer? _temporizador;
-  bool _videoDisponible = false;
   bool _navegacionRealizada = false;
-  late final AnimationController _fadeLogo;
+  late final AnimationController _entrada;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
-    _fadeLogo = AnimationController(
+    _entrada = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..forward();
-    _prepararVideo();
-  }
-
-  Future<void> _prepararVideo() async {
-    final controlador = VideoPlayerController.asset(_rutaVideo);
-    _controladorVideo = controlador;
-
-    try {
-      await controlador.initialize();
-      await controlador.setLooping(false);
-      await controlador.setVolume(0.85);
-
-      if (!mounted) return;
-
-      setState(() => _videoDisponible = true);
-      controlador.addListener(_verificarFinDelVideo);
-      await controlador.play();
-
-      // Tope máximo por si el video es muy largo (estilo intro corta).
-      _temporizador = Timer(const Duration(seconds: 12), _continuar);
-    } catch (_) {
-      _temporizador = Timer(_duracionAlternativa, _continuar);
-    }
-  }
-
-  void _verificarFinDelVideo() {
-    final controlador = _controladorVideo;
-    if (controlador != null &&
-        controlador.value.isInitialized &&
-        controlador.value.duration > Duration.zero &&
-        controlador.value.position >=
-            controlador.value.duration - const Duration(milliseconds: 200)) {
-      _continuar();
-    }
+    );
+    _fade = CurvedAnimation(parent: _entrada, curve: Curves.easeOutCubic);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _entrada, curve: Curves.easeOutCubic));
+    _entrada.forward();
+    _temporizador = Timer(_duracion, _continuar);
   }
 
   void _continuar() {
     if (!mounted || _navegacionRealizada) return;
-
     _navegacionRealizada = true;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
@@ -80,7 +52,7 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
         transitionsBuilder: (_, anim, __, child) {
           return FadeTransition(opacity: anim, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 700),
+        transitionDuration: const Duration(milliseconds: 550),
       ),
     );
   }
@@ -88,74 +60,91 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
   @override
   void dispose() {
     _temporizador?.cancel();
-    _fadeLogo.dispose();
-    _controladorVideo?.removeListener(_verificarFinDelVideo);
-    _controladorVideo?.dispose();
+    _entrada.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controlador = _controladorVideo;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: PaletaRutas.ink,
         body: Stack(
           fit: StackFit.expand,
           children: [
-            if (_videoDisponible &&
-                controlador != null &&
-                controlador.value.isInitialized)
-              FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: controlador.value.size.width,
-                  height: controlador.value.size.height,
-                  child: VideoPlayer(controlador),
-                ),
-              )
-            else
-              const ColoredBox(color: Colors.black),
-            // Velo suave para legibilidad del logo.
+            ImagenHaku(
+              url: CatalogoImagenesHaku.splashFondo,
+              fit: BoxFit.cover,
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.35),
-                    Colors.black.withValues(alpha: 0.15),
-                    Colors.black.withValues(alpha: 0.55),
+                    PaletaRutas.ink.withValues(alpha: 0.55),
+                    PaletaRutas.ink.withValues(alpha: 0.2),
+                    PaletaRutas.ink.withValues(alpha: 0.88),
                   ],
+                  stops: const [0.0, 0.45, 1.0],
                 ),
               ),
             ),
             Center(
               child: FadeTransition(
-                opacity: _fadeLogo,
-                child: Text(
-                  'HAKU',
-                  textAlign: TextAlign.center,
-                  style: TipografiaHaku.logo(
-                    fontSize: 64,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ).copyWith(
-                    letterSpacing: 10,
-                    shadows: const [
-                      Shadow(
-                        color: Color(0xCC000000),
-                        blurRadius: 18,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
+                opacity: _fade,
+                child: SlideTransition(
+                  position: _slide,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'HAKU',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                            letterSpacing: 10,
+                            height: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: 48,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: PaletaRutas.oro.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-            // Tap para saltar intro.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.paddingOf(context).bottom + 28,
+              child: FadeTransition(
+                opacity: _fade,
+                child: Text(
+                  'Toca para entrar',
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PaletaRutas.plomo,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+            ),
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,

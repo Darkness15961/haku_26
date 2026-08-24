@@ -1,27 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Paleta vintage de la sección Rutas.
+/// Paleta visual-oro-piedra-minimal.
+///
+/// Oro Cusco + plomo de piedra + negro cálido — tonos mates, nunca puros.
 abstract final class PaletaRutas {
-  static const pergamino = Color(0xFFEADCC2);
-  static const arena = Color(0xFFD8C29A);
-  static const beigeEnvejecido = Color(0xFFC8B18A);
-  static const verdeOliva = Color(0xFF6E8B4A);
-  static const verdeBosque = Color(0xFF3F5E3B);
-  static const azulLago = Color(0xFF3D7184);
-  static const terracota = Color(0xFFB45E3B);
-  static const marronCuero = Color(0xFF8A5A3C);
-  static const marronOscuro = Color(0xFF3B2E22);
-  static const crema = Color(0xFFF6F0E2);
+  // —— Núcleo (oro / plomo / negro) ——
+  /// Oro Cusco mate (acento; no dorado brillante).
+  static const oro = Color(0xFFB8953F);
+  static const oroSuave = Color(0xFFC9B07A);
+  static const oroOscuro = Color(0xFF8A6F38);
+
+  /// Piedra / plomo andino.
+  static const piedra = Color(0xFFF0EDE8);
+  static const plomoClaro = Color(0xFFC8C2B8);
+  static const plomo = Color(0xFF7A746C);
+  static const plomoOscuro = Color(0xFF4A4640);
+
+  /// Negro cálido (no negro puro).
+  static const ink = Color(0xFF141210);
+  static const carbon = Color(0xFF1F1C18);
+
+  // —— Alias legacy (misma familia, la app no se rompe) ——
+  static const pergamino = Color(0xFFE6E1D8);
+  static const arena = plomoClaro;
+  static const beigeEnvejecido = Color(0xFF9A9288);
+  static const verdeOliva = oroSuave;
+  static const verdeBosque = plomoOscuro;
+  static const azulLago = Color(0xFF6B6864);
+  static const terracota = oro;
+  static const marronCuero = plomo;
+  static const marronOscuro = ink;
+  static const crema = piedra;
 }
 
-/// Tipografías del producto Haku (mismas que Perfil / commit base).
+/// Tipografías — minimal: logo manuscrito, títulos serif, UI limpia.
 abstract final class TipografiaHaku {
-  /// Logo / marca — Caveat (manuscrita; alternativa a Edu VIC WA NT Hand).
   static TextStyle logo({
     double fontSize = 28,
     FontWeight fontWeight = FontWeight.w600,
-    Color color = PaletaRutas.marronOscuro,
+    Color color = PaletaRutas.piedra,
   }) {
     return GoogleFonts.caveat(
       fontSize: fontSize,
@@ -30,11 +48,10 @@ abstract final class TipografiaHaku {
     );
   }
 
-  /// Títulos — Crimson Pro.
   static TextStyle titulo({
     double fontSize = 26,
     FontWeight fontWeight = FontWeight.w600,
-    Color color = PaletaRutas.marronOscuro,
+    Color color = PaletaRutas.piedra,
     double? height,
     FontStyle? fontStyle,
     double? letterSpacing,
@@ -49,11 +66,10 @@ abstract final class TipografiaHaku {
     );
   }
 
-  /// Interfaz y cuerpo — Quicksand.
   static TextStyle interfaz({
     double fontSize = 14,
     FontWeight fontWeight = FontWeight.w500,
-    Color color = PaletaRutas.marronOscuro,
+    Color color = PaletaRutas.piedra,
     double? height,
     double? letterSpacing,
   }) {

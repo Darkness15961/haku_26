@@ -407,6 +407,11 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
             lugarId: m['lugar_id'] as String?,
             lugarNombre: m['lugar_nombre'] as String?,
             categoria: m['categoria'] as String?,
+            verificado: (m['verificado'] as bool?) == true ||
+                PublicacionFeed.esAutorVerificado(
+                  autorId,
+                  autor?.usuario ?? '@$autorId',
+                ),
           );
         })
         .toList();

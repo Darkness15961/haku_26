@@ -95,6 +95,7 @@ class FeedInicioDataSourceLocal {
       id: 'p3',
       autor: 'Sofía',
       usuario: '@sofiatrek',
+      autorId: 'sofiatrek',
       avatarUrl: CatalogoImagenesHaku.avatar,
       hace: 'Ayer',
       texto:
@@ -105,11 +106,13 @@ class FeedInicioDataSourceLocal {
       estiloFondo: EstiloFondoPublicacion.sinVelo,
       lugarNombre: 'Ausangate',
       categoria: 'Nevado',
+      verificado: true,
     ),
     PublicacionFeed(
       id: 'p4',
       autor: 'Haku',
       usuario: '@haku',
+      autorId: 'haku',
       avatarUrl: CatalogoImagenesHaku.avatar,
       hace: '1d',
       texto:
@@ -120,6 +123,7 @@ class FeedInicioDataSourceLocal {
       estiloFondo: EstiloFondoPublicacion.veloNegroSuave,
       lugarNombre: 'Machu Picchu',
       categoria: 'Patrimonio',
+      verificado: true,
     ),
     PublicacionFeed(
       id: 'p5',
@@ -393,6 +397,8 @@ class PublicacionFeed {
   final String? lugarId;
   final String? lugarNombre;
   final String? categoria;
+  /// Cuenta verificada (oficial HAKU u explorador validado).
+  final bool verificado;
 
   const PublicacionFeed({
     required this.id,
@@ -410,9 +416,26 @@ class PublicacionFeed {
     this.lugarId,
     this.lugarNombre,
     this.categoria,
+    this.verificado = false,
   });
 
-  PublicacionFeed copyWith({int? likes, int? comentarios}) {
+  /// Regla de verificación: flag explícito o cuentas oficiales conocidas.
+  bool get esVerificado {
+    if (verificado) return true;
+    return PublicacionFeed.esAutorVerificado(autorId, usuario);
+  }
+
+  static bool esAutorVerificado(String autorId, String usuario) {
+    final id = autorId.toLowerCase().trim();
+    final u = usuario.toLowerCase().replaceAll('@', '').trim();
+    const oficiales = {
+      'haku',
+      'sofiatrek',
+    };
+    return oficiales.contains(id) || oficiales.contains(u);
+  }
+
+  PublicacionFeed copyWith({int? likes, int? comentarios, bool? verificado}) {
     return PublicacionFeed(
       id: id,
       autorId: autorId,
@@ -429,6 +452,7 @@ class PublicacionFeed {
       lugarId: lugarId,
       lugarNombre: lugarNombre,
       categoria: categoria,
+      verificado: verificado ?? this.verificado,
     );
   }
 
@@ -443,6 +467,7 @@ class PublicacionFeed {
         'lugar_id': lugarId,
         'lugar_nombre': lugarNombre,
         'categoria': categoria,
+        'verificado': verificado,
       };
 }
 

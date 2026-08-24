@@ -19,28 +19,29 @@ class AplicacionHaku extends StatelessWidget {
       title: 'HAKU',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: PaletaRutas.verdeBosque,
-          primary: PaletaRutas.verdeBosque,
-          secondary: PaletaRutas.verdeOliva,
-          surface: Colors.white,
-          brightness: Brightness.light,
+        brightness: Brightness.dark,
+        colorScheme: const ColorScheme.dark(
+          primary: PaletaRutas.oro,
+          secondary: PaletaRutas.oroSuave,
+          surface: PaletaRutas.carbon,
+          onPrimary: PaletaRutas.ink,
+          onSurface: PaletaRutas.piedra,
         ),
-        scaffoldBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: PaletaRutas.ink,
         useMaterial3: true,
-        iconTheme: const IconThemeData(color: PaletaRutas.verdeBosque),
+        iconTheme: const IconThemeData(color: PaletaRutas.piedra),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
+          backgroundColor: PaletaRutas.oro,
+          foregroundColor: PaletaRutas.ink,
         ),
         snackBarTheme: const SnackBarThemeData(
-          backgroundColor: Colors.black,
-          contentTextStyle: TextStyle(color: Colors.white),
+          backgroundColor: PaletaRutas.carbon,
+          contentTextStyle: TextStyle(color: PaletaRutas.piedra),
         ),
       ),
       builder: (context, contenido) {
         return ColoredBox(
-          color: Colors.white,
+          color: PaletaRutas.ink,
           child: contenido ?? const SizedBox.shrink(),
         );
       },
