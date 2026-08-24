@@ -9,7 +9,7 @@ class SemillaAlmacenHaku {
       ...FeedInicioDataSourceLocal.sugerencias.map(_perfilDeExplorador),
       _perfil(
         id: 'mariaq',
-        nombre: 'María Quispe',
+        nombre: 'María',
         usuario: '@mariaq',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Amaneceres en piedra',
@@ -19,7 +19,7 @@ class SemillaAlmacenHaku {
       ),
       _perfil(
         id: 'diegoandes',
-        nombre: 'Diego Andes',
+        nombre: 'Diego',
         usuario: '@diegoandes',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Tips de trekking',
@@ -29,7 +29,7 @@ class SemillaAlmacenHaku {
       ),
       _perfil(
         id: 'sofiatrek',
-        nombre: 'Sofía Trek',
+        nombre: 'Sofía',
         usuario: '@sofiatrek',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Montaña de colores',
@@ -39,7 +39,7 @@ class SemillaAlmacenHaku {
       ),
       _perfil(
         id: 'haku',
-        nombre: 'Haku Community',
+        nombre: 'Haku',
         usuario: '@haku',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'La comunidad HAKU',
@@ -49,7 +49,7 @@ class SemillaAlmacenHaku {
       ),
       _perfil(
         id: 'camilarios',
-        nombre: 'Camila Ríos',
+        nombre: 'Camila',
         usuario: '@camilarios',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Turismo lento',
@@ -59,8 +59,8 @@ class SemillaAlmacenHaku {
       ),
       _perfil(
         id: 'yo',
-        nombre: 'Camila Quispe',
-        usuario: '@camila.haku',
+        nombre: 'Lucía',
+        usuario: '@lucia.haku',
         avatar: CatalogoImagenesHaku.avatar,
         bioCorta: 'Mapa vivo de Cusco',
         bio: 'Cusco.',
@@ -103,66 +103,66 @@ class SemillaAlmacenHaku {
         id: 'p1',
         autorId: 'mariaq',
         texto:
-            'Telar en Chinchero. Lana cardada, cochinilla y un aguayo que aún huele a humo de fogón.',
-        imagen: CatalogoImagenesHaku.tejido,
+            'Llama en el camino a Machu Picchu. Ella no tiene prisa; nosotros sí.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
         likes: 128,
         comentarios: 24,
         creadoEn: DateTime.now().subtract(const Duration(hours: 2)),
-        lugarId: 'chinchero',
-        lugarNombre: 'Chinchero',
-        categoria: 'Tejido',
+        lugarId: 'machu_picchu',
+        lugarNombre: 'Machu Picchu',
+        categoria: 'Naturaleza',
       ),
       _post(
         id: 'p2',
         autorId: 'diegoandes',
         texto:
-            'Barro en San Blas. Platos, qeros y el horno que tarda tres días en enfriarse.',
-        imagen: CatalogoImagenesHaku.ceramica,
+            'Moray al mediodía. Los círculos cambian de color según el andén.',
+        imagen: CatalogoImagenesHaku.moray,
         likes: 86,
         comentarios: 31,
         creadoEn: DateTime.now().subtract(const Duration(hours: 5)),
-        lugarId: 'san_blas',
-        lugarNombre: 'San Blas',
-        categoria: 'Cerámica',
+        lugarId: 'moray',
+        lugarNombre: 'Moray',
+        categoria: 'Lugares',
       ),
       _post(
         id: 'p3',
         autorId: 'sofiatrek',
         texto:
-            'Caldo en San Pedro. Choclo, queso y la mesa que no cierra hasta mediodía.',
-        imagen: CatalogoImagenesHaku.comida,
+            'Ausangate entre nubes. El apu no salió completo y igual valió la subida.',
+        imagen: CatalogoImagenesHaku.ausangate,
         likes: 412,
         comentarios: 67,
         creadoEn: DateTime.now().subtract(const Duration(days: 1)),
-        lugarId: 'san_pedro',
-        lugarNombre: 'San Pedro',
-        categoria: 'Fogón',
+        lugarId: 'ausangate',
+        lugarNombre: 'Ausangate',
+        categoria: 'Nevado',
       ),
       _post(
         id: 'p4',
         autorId: 'haku',
         texto:
-            'Inti Raymi en escena. Danza, traje y sol sobre Sacsayhuamán — teatro vivo, no postal.',
-        imagen: CatalogoImagenesHaku.teatro,
+            'Machu Picchu desde la terraza. Primera visita y ya quiero volver.',
+        imagen: CatalogoImagenesHaku.machuPicchu,
         likes: 540,
         comentarios: 92,
         creadoEn: DateTime.now().subtract(const Duration(days: 1)),
         lugarId: 'machu_picchu',
-        lugarNombre: 'Sacsayhuamán',
-        categoria: 'Teatro',
+        lugarNombre: 'Machu Picchu',
+        categoria: 'Patrimonio',
       ),
       _post(
         id: 'p5',
         autorId: 'camilarios',
         texto:
-            'Taller en San Blas. Apus en lienzo y mano que no tiembla — pintura que documenta, no decora.',
-        imagen: CatalogoImagenesHaku.pintura,
+            'Luz de tarde en Cusco. Piedra fría, callejón estrecho y ganas de quedarse.',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
         likes: 73,
         comentarios: 18,
         creadoEn: DateTime.now().subtract(const Duration(days: 2)),
-        lugarId: 'san_blas',
-        lugarNombre: 'San Blas',
-        categoria: 'Pintura',
+        lugarId: 'cusco',
+        lugarNombre: 'Cusco',
+        categoria: 'Ciudad',
       ),
       ..._postsUsuarioLocal(),
     ];
@@ -191,48 +191,53 @@ class SemillaAlmacenHaku {
         id: 'yo_p1',
         autorId: 'yo',
         texto:
-            'Aprendí a urdir en Chinchero. Tres horas y todavía no entiendo cómo leen el patrón de memoria.',
-        imagen: CatalogoImagenesHaku.tejido,
+            'Llama en el camino. Nos miró fijo y seguimos subiendo a Machu Picchu.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
         likes: 64,
         comentarios: 11,
         creadoEn: DateTime.now().subtract(const Duration(hours: 8)),
-        lugarId: 'chinchero',
-        lugarNombre: 'Chinchero',
-        categoria: 'Tejido',
+        lugarId: 'machu_picchu',
+        lugarNombre: 'Machu Picchu',
+        categoria: 'Naturaleza',
       ),
       _post(
         id: 'yo_p2',
         autorId: 'yo',
         texto:
-            'Primera vez modelando barro. San Blas, horno compartido y manos negras de arcilla.',
-        imagen: CatalogoImagenesHaku.ceramica,
+            'Moray vacío a esa hora. Los andenes se ven mejor sin gente.',
+        imagen: CatalogoImagenesHaku.moray,
         likes: 91,
         comentarios: 19,
         creadoEn: DateTime.now().subtract(const Duration(days: 2)),
-        lugarNombre: 'San Blas',
-        categoria: 'Cerámica',
+        lugarId: 'moray',
+        lugarNombre: 'Moray',
+        categoria: 'Lugares',
       ),
       _post(
         id: 'yo_p3',
         autorId: 'yo',
         texto:
-            'Fogón en San Pedro: choclo, queso y caldo. Turismo lento, el que más me gusta.',
-        imagen: CatalogoImagenesHaku.comida,
+            'Ausangate nublado. Igual se siente el frío del apu.',
+        imagen: CatalogoImagenesHaku.ausangate,
         likes: 203,
         comentarios: 34,
         creadoEn: DateTime.now().subtract(const Duration(days: 4)),
-        lugarNombre: 'San Pedro',
-        categoria: 'Fogón',
+        lugarId: 'ausangate',
+        lugarNombre: 'Ausangate',
+        categoria: 'Nevado',
       ),
       _post(
         id: 'yo_p4',
         autorId: 'yo',
         texto:
-            'Fogón en el mercado: choclo + queso. Turismo lento, el que más me gusta.',
-        imagen: CatalogoImagenesHaku.comida,
+            'Callejón en Cusco al atardecer. Piedra y silencio.',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
         likes: 47,
         comentarios: 8,
         creadoEn: DateTime.now().subtract(const Duration(days: 6)),
+        lugarId: 'cusco',
+        lugarNombre: 'Cusco',
+        categoria: 'Ciudad',
       ),
     ];
   }
@@ -331,9 +336,9 @@ class SemillaAlmacenHaku {
       pubsTocadas = true;
     }
     const lugaresSemilla = {
-      'yo_p1': ('chinchero', 'Chinchero'),
-      'yo_p2': ('san_blas', 'San Blas'),
-      'yo_p3': ('san_pedro', 'San Pedro'),
+      'yo_p1': ('machu_picchu', 'Machu Picchu'),
+      'yo_p2': ('moray', 'Moray'),
+      'yo_p3': ('ausangate', 'Ausangate'),
     };
     for (final p in pubs) {
       final id = p['id']?.toString();
@@ -366,47 +371,77 @@ class SemillaAlmacenHaku {
     );
     inter.putIfAbsent('comunidad_ids', () => <String>[]);
     inter.putIfAbsent('favoritos_ruta_ids', () => <String>[]);
-    if (inter['cultura_feed_v3'] != true) {
-      const culturaFeed = {
+    if (inter['feed_imagenes_coherentes_v1'] != true) {
+      const feedCoherente = {
         'p1': {
           'texto':
-              'Telar en Chinchero. Lana cardada, cochinilla y un aguayo que aún huele a humo de fogón.',
-          'imagen_url': CatalogoImagenesHaku.tejido,
-          'lugar_id': 'chinchero',
-          'lugar_nombre': 'Chinchero',
-          'categoria': 'Tejido',
+              'Llama en el camino a Machu Picchu. Ella no tiene prisa; nosotros sí.',
+          'imagen_url': CatalogoImagenesHaku.llamaMachu,
+          'lugar_id': 'machu_picchu',
+          'lugar_nombre': 'Machu Picchu',
+          'categoria': 'Naturaleza',
         },
         'p2': {
           'texto':
-              'Barro en San Blas. Platos, qeros y el horno que tarda tres días en enfriarse.',
-          'imagen_url': CatalogoImagenesHaku.ceramica,
-          'lugar_id': 'san_blas',
-          'lugar_nombre': 'San Blas',
-          'categoria': 'Cerámica',
+              'Moray al mediodía. Los círculos cambian de color según el andén.',
+          'imagen_url': CatalogoImagenesHaku.moray,
+          'lugar_id': 'moray',
+          'lugar_nombre': 'Moray',
+          'categoria': 'Lugares',
         },
         'p3': {
           'texto':
-              'Caldo en San Pedro. Choclo, queso y la mesa que no cierra hasta mediodía.',
-          'imagen_url': CatalogoImagenesHaku.comida,
-          'lugar_id': 'san_pedro',
-          'lugar_nombre': 'San Pedro',
-          'categoria': 'Fogón',
+              'Ausangate entre nubes. El apu no salió completo y igual valió la subida.',
+          'imagen_url': CatalogoImagenesHaku.ausangate,
+          'lugar_id': 'ausangate',
+          'lugar_nombre': 'Ausangate',
+          'categoria': 'Nevado',
         },
         'p4': {
           'texto':
-              'Inti Raymi en escena. Danza, traje y sol sobre Sacsayhuamán — teatro vivo, no postal.',
-          'imagen_url': CatalogoImagenesHaku.teatro,
+              'Machu Picchu desde la terraza. Primera visita y ya quiero volver.',
+          'imagen_url': CatalogoImagenesHaku.machuPicchu,
           'lugar_id': 'machu_picchu',
-          'lugar_nombre': 'Sacsayhuamán',
-          'categoria': 'Teatro',
+          'lugar_nombre': 'Machu Picchu',
+          'categoria': 'Patrimonio',
         },
         'p5': {
           'texto':
-              'Taller en San Blas. Apus en lienzo y mano que no tiembla — pintura que documenta, no decora.',
-          'imagen_url': CatalogoImagenesHaku.pintura,
-          'lugar_id': 'san_blas',
-          'lugar_nombre': 'San Blas',
-          'categoria': 'Pintura',
+              'Luz de tarde en Cusco. Piedra fría, callejón estrecho y ganas de quedarse.',
+          'imagen_url': CatalogoImagenesHaku.encabezadoRutas,
+          'lugar_id': 'cusco',
+          'lugar_nombre': 'Cusco',
+          'categoria': 'Ciudad',
+        },
+        'yo_p1': {
+          'texto':
+              'Llama en el camino. Nos miró fijo y seguimos subiendo a Machu Picchu.',
+          'imagen_url': CatalogoImagenesHaku.llamaMachu,
+          'lugar_id': 'machu_picchu',
+          'lugar_nombre': 'Machu Picchu',
+          'categoria': 'Naturaleza',
+        },
+        'yo_p2': {
+          'texto':
+              'Moray vacío a esa hora. Los andenes se ven mejor sin gente.',
+          'imagen_url': CatalogoImagenesHaku.moray,
+          'lugar_id': 'moray',
+          'lugar_nombre': 'Moray',
+          'categoria': 'Lugares',
+        },
+        'yo_p3': {
+          'texto': 'Ausangate nublado. Igual se siente el frío del apu.',
+          'imagen_url': CatalogoImagenesHaku.ausangate,
+          'lugar_id': 'ausangate',
+          'lugar_nombre': 'Ausangate',
+          'categoria': 'Nevado',
+        },
+        'yo_p4': {
+          'texto': 'Callejón en Cusco al atardecer. Piedra y silencio.',
+          'imagen_url': CatalogoImagenesHaku.encabezadoRutas,
+          'lugar_id': 'cusco',
+          'lugar_nombre': 'Cusco',
+          'categoria': 'Ciudad',
         },
       };
       final pubsPatch = [
@@ -415,12 +450,15 @@ class SemillaAlmacenHaku {
       ];
       var tocadas = false;
       for (final p in pubsPatch) {
-        final patch = culturaFeed[p['id']?.toString()];
+        final patch = feedCoherente[p['id']?.toString()];
         if (patch == null) continue;
         p.addAll(patch);
         tocadas = true;
       }
       if (tocadas) doc['publicaciones'] = pubsPatch;
+      inter['feed_imagenes_coherentes_v1'] = true;
+    }
+    if (inter['cultura_feed_v3'] != true) {
       inter['cultura_feed_v2'] = true;
       inter['cultura_feed_v3'] = true;
     }
@@ -463,6 +501,51 @@ class SemillaAlmacenHaku {
       }
       if (perfilesPatch.isNotEmpty) doc['perfiles'] = perfilesPatch;
       inter['avatares_locales_v1'] = true;
+    }
+    if (inter['perfil_yo_lucia_v2'] != true) {
+      final perfilesPatch = [
+        for (final e in (doc['perfiles'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      for (final p in perfilesPatch) {
+        if (p['id']?.toString() != 'yo') continue;
+        p['nombre'] = 'Lucía';
+        p['usuario'] = '@lucia.haku';
+      }
+      if (perfilesPatch.isNotEmpty) doc['perfiles'] = perfilesPatch;
+      inter['perfil_yo_lucia_v2'] = true;
+      inter['perfil_yo_mamani_v1'] = true;
+    }
+    if (inter['sin_apellidos_quispe_v1'] != true) {
+      final perfilesPatch = [
+        for (final e in (doc['perfiles'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      for (final p in perfilesPatch) {
+        final nombre = (p['nombre'] as String? ?? '').trim();
+        if (nombre.isEmpty) continue;
+        final limpio = _nombreSinApellidoDemo(nombre);
+        if (limpio != nombre) p['nombre'] = limpio;
+      }
+      if (perfilesPatch.isNotEmpty) doc['perfiles'] = perfilesPatch;
+      inter['sin_apellidos_quispe_v1'] = true;
+    }
+    if (inter['comida_no_fogon_v1'] != true) {
+      final coms = [
+        for (final e in (doc['comunidades'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      for (final c in coms) {
+        final nombre = (c['nombre'] as String? ?? '').toLowerCase();
+        if (c['id']?.toString() == 'com_fogon' ||
+            nombre.contains('fogón') ||
+            nombre.contains('fogon')) {
+          c['nombre'] = 'Comida andina';
+          c['descripcion'] = 'Mercados, choclo, queso y mesa de barrio.';
+        }
+      }
+      if (coms.isNotEmpty) doc['comunidades'] = coms;
+      inter['comida_no_fogon_v1'] = true;
     }
     if (inter['demo_usuario_v1'] != true) {
       final demo = _interaccionesDemo();
@@ -514,7 +597,7 @@ class SemillaAlmacenHaku {
     const desc = {
       CategoriaLugar.naturaleza: 'Lagunas, bosques y apus.',
       CategoriaLugar.cultura: 'Sitios, fiestas y saberes.',
-      CategoriaLugar.gastronomia: 'Mercados, fogón y sabor local.',
+      CategoriaLugar.gastronomia: 'Mercados y sabor local.',
       CategoriaLugar.aventura: 'Treks exigentes y altura.',
       CategoriaLugar.caminata: 'Caminos, andinismo y ritmo.',
       CategoriaLugar.fotografia: 'Luz, niebla y retrato andino.',
@@ -571,9 +654,9 @@ class SemillaAlmacenHaku {
       ),
       _comunidad(
         id: 'com_fogon',
-        nombre: 'Fogón Andino',
-        descripcion: 'Mercados, choclo, queso y fogón de barrio.',
-        imagen: CatalogoImagenesHaku.comida,
+        nombre: 'Comida andina',
+        descripcion: 'Mercados, choclo, queso y mesa de barrio.',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
         creadorId: 'camilarios',
         provincia: 'Calca',
         categorias: const [
@@ -655,6 +738,31 @@ class SemillaAlmacenHaku {
         ],
       ),
     ];
+  }
+
+  /// Quita apellidos de demo (Quispe, Mamani, etc.) y deja solo el nombre.
+  static String _nombreSinApellidoDemo(String nombre) {
+    const apellidos = {
+      'quispe',
+      'mamani',
+      'rios',
+      'ríos',
+      'andes',
+      'trek',
+      'community',
+    };
+    final partes = nombre
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (partes.length < 2) return nombre.trim();
+    final filtradas = [
+      for (final p in partes)
+        if (!apellidos.contains(p.toLowerCase())) p,
+    ];
+    if (filtradas.isEmpty) return partes.first;
+    return filtradas.first;
   }
 
   static List<Map<String, dynamic>> _miembrosComunidad() {

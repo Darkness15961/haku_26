@@ -135,7 +135,7 @@ class _EstadoPantallaRegistrarLugar
         foregroundColor: PaletaRutas.marronOscuro,
         elevation: 0,
         title: Text(
-          'Registrar lugar',
+          'Agregar lugar',
           style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),

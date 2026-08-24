@@ -226,7 +226,7 @@ class _EstadoPantallaExploraLugares
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Hueco en el mapa',
+                          'Aún no hay lugares aquí',
                           style: TipografiaHaku.titulo(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -239,7 +239,7 @@ class _EstadoPantallaExploraLugares
                           style: FilledButton.styleFrom(
                             backgroundColor: PaletaRutas.terracota,
                           ),
-                          child: const Text('Registrar lugar'),
+                          child: const Text('Agregar lugar'),
                         ),
                       ],
                     ),
@@ -354,7 +354,7 @@ class _HeroExplora extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '$huecos huecos · $totalLugares lugares · $totalFotos fotos',
+                    '$huecos por explorar · $totalLugares lugares · $totalFotos fotos',
                     style: TipografiaHaku.interfaz(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -389,7 +389,7 @@ class _HeroExplora extends StatelessWidget {
                           foregroundColor: Colors.white,
                         ),
                         icon: const Icon(Icons.add_location_alt_outlined),
-                        tooltip: 'Registrar',
+                        tooltip: 'Agregar lugar',
                       ),
                       IconButton(
                         onPressed: onRutas,
@@ -544,9 +544,9 @@ class _LeyendaMapa extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _punto(PaletaRutas.terracota, 'Hueco'),
+          _punto(PaletaRutas.terracota, 'Por explorar'),
           const SizedBox(width: 16),
-          _punto(PaletaRutas.marronOscuro, 'Documentado'),
+          _punto(PaletaRutas.marronOscuro, 'Con fotos'),
         ],
       ),
     );
@@ -659,7 +659,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Por documentar',
+                        'Poco explorado',
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -784,7 +784,7 @@ class _CeldaLugar extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${lugar.fotos} fotos · ${lugar.exploradores} gente',
+                        '${lugar.fotos} fotos · ${lugar.exploradores} exploradores',
                         style: TipografiaHaku.interfaz(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,

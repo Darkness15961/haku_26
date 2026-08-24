@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 
 /// Carrusel horizontal de rutas destacadas (fotos grandes).
 class CarruselRutasRecomendadas extends StatelessWidget {
@@ -94,11 +93,6 @@ class CarruselRutasRecomendadas extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40),
-                child: LineaEncabezadoInca(altura: 2),
-              ),
             ],
           ),
         ),

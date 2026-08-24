@@ -187,7 +187,7 @@ class _CabeceraMapaComunidad extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Agrupaciones',
+                      'Comunidades',
                       style: TipografiaHaku.titulo(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -195,7 +195,7 @@ class _CabeceraMapaComunidad extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Comunidades distribuidas en el mapa de Cusco',
+                      'Grupos en el mapa de Cusco',
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
                         color: PaletaRutas.marronCuero,
@@ -222,15 +222,15 @@ class _CabeceraMapaComunidad extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              _MiniStat(valor: '$total', label: 'Grupos'),
+              _MiniStat(valor: '$total', label: 'Comunidades'),
               const SizedBox(width: 8),
-              _MiniStat(valor: '$unidas', label: 'Unidas'),
+              _MiniStat(valor: '$unidas', label: 'Mías'),
               const SizedBox(width: 8),
               _MiniStat(valor: '$salidas', label: 'Salidas'),
               const Spacer(),
               FilterChip(
                 label: Text(
-                  'Mis grupos',
+                  'Mis comunidades',
                   style: TipografiaHaku.interfaz(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -332,8 +332,8 @@ class _PanelAgrupaciones extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final titulo = provincia != null
-        ? '${provincia!.nombre} · ${comunidades.length} agrupaciones'
-        : 'Todas las agrupaciones';
+        ? '${provincia!.nombre} · ${comunidades.length} comunidades'
+        : 'Todas las comunidades';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -396,8 +396,8 @@ class _PanelAgrupaciones extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             provincia != null
-                                ? 'Sin agrupaciones en esta zona'
-                                : 'Aún no hay agrupaciones visibles',
+                                ? 'Sin comunidades en esta zona'
+                                : 'Todavía no hay comunidades',
                             textAlign: TextAlign.center,
                             style: TipografiaHaku.interfaz(
                               color: Colors.white.withValues(alpha: 0.75),
@@ -410,7 +410,7 @@ class _PanelAgrupaciones extends StatelessWidget {
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: PaletaRutas.terracota),
                             ),
-                            child: const Text('Crear agrupación'),
+                            child: const Text('Crear comunidad'),
                           ),
                         ],
                       ),

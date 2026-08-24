@@ -73,7 +73,7 @@ class PantallaFavoritos extends ConsumerWidget {
                         padding: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
                         children: [
                           Text(
-                            'Vacío',
+                            'Todavía no hay nada',
                             textAlign: TextAlign.center,
                             style: TipografiaHaku.titulo(
                               fontSize: 18,

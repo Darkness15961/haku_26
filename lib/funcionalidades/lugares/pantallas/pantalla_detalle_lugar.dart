@@ -199,7 +199,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   BotonSecundarioRuta(
-                    texto: 'Quiero ir',
+                    texto: 'Ver salidas',
                     icono: Icons.groups_outlined,
                     onPressed: () {
                       Navigator.of(context).push(

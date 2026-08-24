@@ -31,28 +31,15 @@ class PantallaExploradoresDeslizables extends ConsumerStatefulWidget {
 
 class _EstadoPantallaExploradoresDeslizables
     extends ConsumerState<PantallaExploradoresDeslizables> {
-  late final PageController _page;
-  late int _indice;
+  late final int _indice;
 
   @override
   void initState() {
     super.initState();
     _indice = widget.indiceInicial.clamp(0, widget.exploradores.length - 1);
-    _page = PageController(initialPage: _indice);
-  }
-
-  @override
-  void dispose() {
-    _page.dispose();
-    super.dispose();
   }
 
   SugerenciaSeguimiento get _base => widget.exploradores[_indice];
-
-  SugerenciaSeguimiento get _actual {
-    final live = ref.watch(almacenFeedProvider).perfilPorId(_base.id);
-    return live ?? _base;
-  }
 
   Future<void> _toggleSeguir(String id) async {
     final ok = await asegurarSesion(context, ref);
@@ -72,12 +59,13 @@ class _EstadoPantallaExploradoresDeslizables
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: FondoSuaveSeccion(
-          child: SafeArea(
+    final feed = ref.watch(almacenFeedProvider);
+    final persona = feed.perfilPorId(_base.id) ?? _base;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: FondoSuaveSeccion(
+        child: SafeArea(
           child: Column(
             children: [
               Padding(
@@ -85,40 +73,40 @@ class _EstadoPantallaExploradoresDeslizables
                 child: Column(
                   children: [
                     Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: PaletaRutas.marronOscuro,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        _actual.usuario,
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.titulo(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Compartir',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Perfil'),
-                            behavior: SnackBarBehavior.floating,
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: PaletaRutas.marronOscuro,
                           ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.ios_share_rounded,
-                        color: PaletaRutas.marronOscuro,
-                      ),
-                    ),
-                  ],
+                        ),
+                        Expanded(
+                          child: Text(
+                            persona.usuario,
+                            textAlign: TextAlign.center,
+                            style: TipografiaHaku.titulo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Compartir',
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Perfil'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.ios_share_rounded,
+                            color: PaletaRutas.marronOscuro,
+                          ),
+                        ),
+                      ],
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12),
@@ -128,26 +116,15 @@ class _EstadoPantallaExploradoresDeslizables
                 ),
               ),
               Expanded(
-                child: PageView.builder(
-                  controller: _page,
-                  itemCount: widget.exploradores.length,
-                  onPageChanged: (i) => setState(() => _indice = i),
-                  itemBuilder: (context, i) {
-                    final feed = ref.watch(almacenFeedProvider);
-                    final base = widget.exploradores[i];
-                    final s = feed.perfilPorId(base.id) ?? base;
-                    return _PerfilTikTok(
-                      persona: s,
-                      siguiendo: feed.siguiendoIds.contains(s.id),
-                      onSeguir: () => _toggleSeguir(s.id),
-                      onMensaje: () => _escribir(s),
-                    );
-                  },
+                child: _PerfilTikTok(
+                  persona: persona,
+                  siguiendo: feed.siguiendoIds.contains(persona.id),
+                  onSeguir: () => _toggleSeguir(persona.id),
+                  onMensaje: () => _escribir(persona),
                 ),
               ),
             ],
           ),
-        ),
         ),
       ),
     );
@@ -310,7 +287,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
               child: Text(
                 _tab == 1
                     ? 'Sin favoritos'
-                    : 'Sin posts',
+                    : 'Sin publicaciones',
                 style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
               ),
             ),

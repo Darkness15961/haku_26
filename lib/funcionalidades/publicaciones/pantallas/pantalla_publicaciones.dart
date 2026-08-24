@@ -388,7 +388,7 @@ class _EstadoPantallaPublicaciones
                             const SizedBox(height: 14),
                             _CardOpcion(
                               icono: Icons.notes_rounded,
-                              titulo: 'Descripcion',
+                              titulo: 'Descripción',
                               subtitulo: _descripcion.text.trim().isEmpty
                                   ? 'Qué viste'
                                   : _descripcion.text.trim(),

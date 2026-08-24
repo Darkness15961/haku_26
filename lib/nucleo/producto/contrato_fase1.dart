@@ -5,8 +5,8 @@
 class ContratoFase1 {
   ContratoFase1._();
 
-  static const titulo = 'Construyendo la comunidad turística';
+  static const titulo = 'Cusco en publicaciones';
 
   static const objetivo =
-      'Cada gesto del usuario deja un registro. El producto es la captura, no el catálogo.';
+      'Lo que publicas es HAKU: fotos, salidas, grupos y cultura.';
 }

@@ -165,7 +165,7 @@ class _EmptyRutas extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Vacío',
+              'Todavía no hay nada',
               textAlign: TextAlign.center,
               style: TipografiaHaku.titulo(
                 fontSize: 20,

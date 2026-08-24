@@ -131,7 +131,7 @@ class _EstadoPantallaMensajesInicio
                         Expanded(
                           child: _AccionMensajes(
                             icono: Icons.diversity_3_outlined,
-                            etiqueta: 'Comunidad',
+                            etiqueta: 'Crear comunidad',
                             onTap: _abrirCrearComunidad,
                           ),
                         ),

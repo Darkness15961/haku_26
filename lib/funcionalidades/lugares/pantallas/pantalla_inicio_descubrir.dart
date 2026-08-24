@@ -113,7 +113,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               const SizedBox(height: 10),
               if (recientes.isEmpty)
                 Text(
-                  'Vacío',
+                  'Todavía no hay nada',
                   style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
                 )
               else
@@ -138,7 +138,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
               ),
               const SizedBox(height: 22),
               BotonSecundarioRuta(
-                texto: 'Registrar',
+                texto: 'Agregar',
                 icono: Icons.add_location_alt_outlined,
                 onPressed: () => abrirRegistrarLugarFlow(context, ref),
               ),
@@ -302,7 +302,7 @@ class _CardSalidaTeaser extends StatelessWidget {
                 ),
               ),
               Text(
-                'Enrolarme',
+                'Me apunto',
                 style: TipografiaHaku.interfaz(
                   fontWeight: FontWeight.w800,
                   color: PaletaRutas.terracota,

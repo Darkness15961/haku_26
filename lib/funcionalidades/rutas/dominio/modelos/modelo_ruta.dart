@@ -26,7 +26,7 @@ extension HiloCulturaX on HiloCultura {
       case HiloCultura.ceramica:
         return 'Cerámica';
       case HiloCultura.comida:
-        return 'Fogón';
+        return 'Comida';
       case HiloCultura.teatro:
         return 'Teatro';
       case HiloCultura.pintura:

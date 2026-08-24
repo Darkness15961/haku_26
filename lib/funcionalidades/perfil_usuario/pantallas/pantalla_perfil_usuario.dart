@@ -45,7 +45,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
     final bottomPad = MediaQuery.paddingOf(context).bottom + 110;
     final sesion = ref.watch(sesionProvider);
     final store = ref.watch(almacenFeedProvider);
-    final nombre = sesion.usuario?.nombreUsuario ?? 'Camila Quispe';
+    final nombre = sesion.usuario?.nombreUsuario ?? 'Lucía';
     final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
     final bio = sesion.usuario?.bio ?? 'Cusco';
     final misPosts = store.publicaciones
@@ -306,7 +306,7 @@ class _PortadaPerfil extends StatelessWidget {
             ),
           ),
           child: Text(
-            '$posts aportes · Cusco',
+            '$posts publicaciones · Cusco',
             style: TipografiaHaku.interfaz(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -446,7 +446,7 @@ class _ContenidoPerfil extends ConsumerWidget {
             TarjetaEstadisticaPerfil(
               icono: Icons.photo_camera_outlined,
               valor: '$nPosts',
-              etiqueta: 'Posts',
+              etiqueta: 'Publicaciones',
               indice: 2,
             ),
             const SizedBox(width: 8),
@@ -613,13 +613,13 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.grid_on_outlined,
       nombre: 'Tejedora',
-      descripcion: '1 post',
+      descripcion: '1 publicación',
       color: const Color(0xFF9C3B2E),
       desbloqueada: posts >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.restaurant_outlined,
-      nombre: 'Fogón',
+      nombre: 'Comida',
       descripcion: '1 lugar',
       color: const Color(0xFF6B4F1E),
       desbloqueada: lugares >= 1,
@@ -648,13 +648,13 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.photo_camera_outlined,
       nombre: 'Fotógrafo',
-      descripcion: '1 post',
+      descripcion: '1 publicación',
       color: const Color(0xFF1E4D6B),
       desbloqueada: posts >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.place_outlined,
-      nombre: 'Documentalista',
+      nombre: 'Cartógrafo',
       descripcion: '3 lugares',
       color: const Color(0xFF6B4F1E),
       desbloqueada: lugares >= 3,
@@ -662,7 +662,7 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.people_outline,
       nombre: 'Conector',
-      descripcion: '3 follows',
+      descripcion: '3 seguidos',
       color: const Color(0xFF4A3B6B),
       desbloqueada: siguiendo >= 3,
     ),
@@ -775,7 +775,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Vacío',
+              'Todavía no hay nada',
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

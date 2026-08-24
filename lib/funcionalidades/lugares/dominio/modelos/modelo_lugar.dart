@@ -68,11 +68,11 @@ extension NivelExploracionX on NivelExploracion {
       case NivelExploracion.muyConocido:
         return 'Muy conocido';
       case NivelExploracion.enCrecimiento:
-        return 'En crecimiento';
+        return 'Con más fotos';
       case NivelExploracion.pocoExplorado:
         return 'Poco explorado';
       case NivelExploracion.nuevoEnHaku:
-        return 'Nuevo en HAKU';
+        return 'Nuevo';
     }
   }
 }

@@ -14,7 +14,7 @@ class LugaresDataSourceLocal {
       id: 'laguna_humantay',
       nombre: 'Laguna Humantay',
       descripcion:
-          'Laguna turquesa al pie del nevado Humantay. Información enriquecida por la comunidad HAKU.',
+          'Laguna turquesa al pie del nevado Humantay. Contenido de exploradores en HAKU.',
       imagenUrl: CatalogoImagenesHaku.ausangate,
       galeria: const [
         CatalogoImagenesHaku.ausangate,
@@ -92,7 +92,7 @@ class LugaresDataSourceLocal {
     ModeloLugar(
       id: 'machu_picchu',
       nombre: 'Machu Picchu',
-      descripcion: 'Ciudadela inca. Muy documentada; aún se puede enriquecer.',
+      descripcion: 'Ciudadela inca. Muy visitada — siempre hay un ángulo nuevo.',
       imagenUrl: 'assets/destinos/machu_picchu.jpg',
       categoria: CategoriaLugar.cultura,
       provincia: 'Urubamba',
@@ -110,7 +110,7 @@ class LugaresDataSourceLocal {
     ModeloLugar(
       id: 'laguna_oculta',
       nombre: 'Laguna Escondida de Calca',
-      descripcion: 'Poco explorada. Ideal para documentar.',
+      descripcion: 'Poco explorada. Ideal para tu primera publicación.',
       imagenUrl: CatalogoImagenesHaku.huacachina,
       categoria: CategoriaLugar.magico,
       provincia: 'Calca',

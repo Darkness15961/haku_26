@@ -32,8 +32,8 @@ class UsuarioSesion {
   /// Usuario demo al iniciar con Google.
   static const demoGoogle = UsuarioSesion(
     id: AlmacenFeedNotifier.idUsuarioLocal,
-    nombreUsuario: 'Camila Quispe',
-    correo: 'camila.quispe@gmail.com',
+    nombreUsuario: 'Lucía',
+    correo: 'lucia@haku.app',
     avatarUrl: CatalogoImagenesHaku.avatar,
     bio: 'Cusco.',
     provincia: 'Cusco',
@@ -106,14 +106,16 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     try {
       final m = jsonDecode(raw) as Map<String, dynamic>;
       final u = UsuarioSesion.desdeMapa(m);
-      final esLegacyGoogle = u.nombreUsuario == 'Explorador Google' ||
+      final nombreLegacy = u.nombreUsuario.trim();
+      final esLegacyNombre = nombreLegacy == 'Explorador Google' ||
+          _tieneApellidoDemo(nombreLegacy) ||
           (u.avatarUrl == null || u.avatarUrl!.isEmpty);
-      final base = esLegacyGoogle ? UsuarioSesion.demoGoogle : u;
+      final base = esLegacyNombre ? UsuarioSesion.demoGoogle : u;
       state = EstadoSesion(
         autenticado: true,
         usuario: UsuarioSesion(
           id: AlmacenFeedNotifier.idUsuarioLocal,
-          nombreUsuario: esLegacyGoogle
+          nombreUsuario: esLegacyNombre
               ? UsuarioSesion.demoGoogle.nombreUsuario
               : u.nombreUsuario,
           correo: u.correo.isNotEmpty
@@ -127,7 +129,7 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
         ),
         listo: true,
       );
-      if (esLegacyGoogle) await _persistir();
+      if (esLegacyNombre) await _persistir();
     } catch (_) {
       state = state.copyWith(listo: true);
     }
@@ -199,6 +201,23 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     state = const EstadoSesion(listo: true);
     await _persistir();
   }
+}
+
+bool _tieneApellidoDemo(String nombre) {
+  final n = nombre.toLowerCase();
+  const apellidos = [
+    'quispe',
+    'mamani',
+    'ríos',
+    'rios',
+    'andes',
+    ' trek',
+    'community',
+  ];
+  for (final a in apellidos) {
+    if (n.contains(a.trim())) return true;
+  }
+  return false;
 }
 
 final sesionProvider =

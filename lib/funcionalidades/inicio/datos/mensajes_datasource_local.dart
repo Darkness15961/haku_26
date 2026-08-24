@@ -39,7 +39,7 @@ class MensajesDataSourceLocal {
   static const List<ChatConversacion> chats = [
     ChatConversacion(
       id: 'mariaq',
-      nombre: 'María Quispe',
+      nombre: 'María',
       usuario: '@mariaq',
       avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: '¿Salimos mañana a Sacsayhuamán?',
@@ -57,7 +57,7 @@ class MensajesDataSourceLocal {
     ),
     ChatConversacion(
       id: 'diegoandes',
-      nombre: 'Diego Andes',
+      nombre: 'Diego',
       usuario: '@diegoandes',
       avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: 'Lleva bastones para Humantay 👍',
@@ -66,7 +66,7 @@ class MensajesDataSourceLocal {
     ),
     ChatConversacion(
       id: 'sofiatrek',
-      nombre: 'Sofía Trek',
+      nombre: 'Sofía',
       usuario: '@sofiatrek',
       avatarUrl: CatalogoImagenesHaku.avatar,
       ultimoMensaje: 'Vinicunca quedó brutal.',

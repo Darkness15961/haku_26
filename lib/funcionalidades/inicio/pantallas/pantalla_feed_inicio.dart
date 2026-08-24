@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
-import '../../lugares/datos/lugares_datasource_local.dart';
-import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
@@ -11,15 +9,11 @@ import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/banner_acciones_rapidas.dart';
 import '../widgets/carrusel_rutas_recomendadas.dart';
-import '../widgets/carrusel_sugerencias_seguimiento.dart';
-import '../widgets/franja_stats_comunidad.dart';
-import '../widgets/mosaico_hilos_cultura.dart';
 import '../widgets/portada_inicio_cultura.dart';
 import '../widgets/publicacion_estilo_threads.dart';
 import 'pantalla_busqueda_inicio.dart';
@@ -65,29 +59,11 @@ class PantallaFeedInicio extends ConsumerWidget {
     );
   }
 
-  ModeloRuta? _rutaPorHilo(List<ModeloRuta> culturales, HiloCultura hilo) {
-    for (final r in culturales) {
-      if (r.hilo == hilo) return r;
-    }
-    return culturales.isNotEmpty ? culturales.first : null;
-  }
-
-  int _contarHuecos() {
-    return LugaresDataSourceLocal.instancia.todos().where((l) {
-      return l.nivelExploracion == NivelExploracion.pocoExplorado ||
-          l.nivelExploracion == NivelExploracion.nuevoEnHaku;
-    }).length;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 110;
     final culturales = RutasDataSourceLocal.obtenerCultura();
-    final destacada = culturales.isNotEmpty ? culturales.first : null;
     final feed = ref.watch(almacenFeedProvider);
-    final sugerencias = feed.listo
-        ? feed.exploradores
-        : FeedInicioDataSourceLocal.sugerencias;
     final publicaciones = feed.listo
         ? feed.publicaciones
         : FeedInicioDataSourceLocal.publicaciones;
@@ -117,25 +93,12 @@ class PantallaFeedInicio extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'HAKU',
-                            style: TipografiaHaku.logo(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            'Cultura y territorio',
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: PaletaRutas.marronCuero,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'HAKU',
+                        style: TipografiaHaku.logo(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
@@ -187,22 +150,6 @@ class PantallaFeedInicio extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: PortadaInicioCultura(
                   rutas: culturales,
-                  destacada: destacada,
-                  onDestacada: destacada == null
-                      ? null
-                      : () => _abrirDetalleRuta(context, destacada),
-                  onHilo: (h) {
-                    final r = _rutaPorHilo(culturales, h);
-                    if (r != null) _abrirDetalleRuta(context, r);
-                  },
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: FranjaStatsComunidad(
-                  aportes: publicaciones.length,
-                  hilos: culturales.length,
-                  huecos: _contarHuecos(),
-                  exploradores: sugerencias.length,
                 ),
               ),
               SliverToBoxAdapter(
@@ -216,16 +163,7 @@ class PantallaFeedInicio extends ConsumerWidget {
                       ),
                     );
                   },
-                  onAportar: () => _publicar(context, ref),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: MosaicoHilosCultura(
-                  rutas: culturales,
-                  onHilo: (h) {
-                    final r = _rutaPorHilo(culturales, h);
-                    if (r != null) _abrirDetalleRuta(context, r);
-                  },
+                  onCompartir: () => _publicar(context, ref),
                 ),
               ),
               SliverToBoxAdapter(
@@ -233,9 +171,8 @@ class PantallaFeedInicio extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: CarruselRutasRecomendadas(
                     rutas: culturales,
-                    titulo: 'Explora cultura',
-                    subtitulo: 'Hilos documentados por la comunidad',
-                    iconoAsset: 'assets/iconos/ceramica.svg',
+                    titulo: 'Descubrimientos semanales',
+                    iconoAsset: 'assets/iconos/montania.svg',
                     altura: 300,
                     anchoTarjeta: 220,
                     onVerTodas: () {
@@ -252,68 +189,23 @@ class PantallaFeedInicio extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Aportes',
-                                  style: TipografiaHaku.titulo(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Fotos y relatos de la comunidad',
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 12,
-                                    color: PaletaRutas.marronCuero,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          FilledButton.icon(
-                            onPressed: () => _publicar(context, ref),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: PaletaRutas.terracota,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(22),
-                              ),
-                            ),
-                            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                            label: Text(
-                              'Aportar',
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const LineaEncabezadoInca(altura: 2),
-                    ],
+                  child: Text(
+                    'Publicaciones',
+                    style: TipografiaHaku.titulo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
+                    final esUltima = i == publicaciones.length - 1;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
+                      padding: EdgeInsets.only(
+                        bottom: esUltima ? bottomPad : 14,
+                      ),
                       child: PublicacionEstiloThreads(
                         publicacion: publicaciones[i],
                         indice: i,
@@ -321,16 +213,6 @@ class PantallaFeedInicio extends ConsumerWidget {
                     );
                   },
                   childCount: publicaciones.length,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 8, 0, bottomPad),
-                  child: CarruselSugerenciasSeguimiento(
-                    sugerencias: sugerencias,
-                    titulo: 'Exploradores',
-                    subtitulo: 'Gente que documenta Cusco contigo',
-                  ),
                 ),
               ),
             ],

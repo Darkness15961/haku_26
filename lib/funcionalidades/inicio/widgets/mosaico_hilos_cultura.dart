@@ -4,7 +4,6 @@ import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 
 /// Mosaico visual de los 5 hilos de cultura viva.
 class MosaicoHilosCultura extends StatelessWidget {
@@ -38,20 +37,11 @@ class MosaicoHilosCultura extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Cultura viva',
+            'Cultura',
             textAlign: TextAlign.center,
             style: TipografiaHaku.titulo(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Toca un hilo para explorarlo',
-            textAlign: TextAlign.center,
-            style: TipografiaHaku.interfaz(
-              fontSize: 12,
-              color: PaletaRutas.marronCuero,
             ),
           ),
           const SizedBox(height: 12),
@@ -119,8 +109,6 @@ class MosaicoHilosCultura extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          const LineaEncabezadoInca(altura: 2),
         ],
       ),
     );

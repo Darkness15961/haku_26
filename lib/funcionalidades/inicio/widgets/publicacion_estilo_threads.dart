@@ -63,7 +63,6 @@ class _EstadoPublicacionEstiloThreads
     final likes = post.likes;
     final guardado = feed.guardadosIds.contains(p.id);
     final imagen = post.imagenUrl ?? CatalogoImagenesHaku.respaldo;
-    final esCultural = (post.categoria ?? '').isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -85,19 +84,6 @@ class _EstadoPublicacionEstiloThreads
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (esCultural)
-                Container(
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        PaletaRutas.terracota,
-                        PaletaRutas.marronCuero,
-                        PaletaRutas.terracota,
-                      ],
-                    ),
-                  ),
-                ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
               child: Row(

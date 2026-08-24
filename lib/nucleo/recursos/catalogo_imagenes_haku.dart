@@ -18,9 +18,10 @@ abstract final class CatalogoImagenesHaku {
   /// Avatar por defecto (logo empaquetado).
   static const avatar = logo;
 
+  /// Aliases antiguos (preferir destinos reales + texto coherente).
   static const tejido = llamaMachu;
   static const ceramica = moray;
-  static const comida = fondoPublicaciones;
+  static const comida = encabezadoRutas;
   static const teatro = machuPicchu;
   static const pintura = ausangate;
 

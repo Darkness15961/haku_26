@@ -539,7 +539,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
             ),
             const SizedBox(height: 10),
             BotonPrimarioRuta(
-              texto: s.llena ? 'Cupos llenos' : 'Enrolarme',
+              texto: s.llena ? 'Cupos llenos' : 'Me apunto',
               habilitado: !s.llena,
               onPressed: s.llena
                   ? null

@@ -109,7 +109,7 @@ class _EstadoMapaComunidadesCusco extends State<MapaComunidadesCusco> {
               children: [
                 _LeyendaItem(
                   color: PaletaRutas.terracota,
-                  texto: 'Agrupación',
+                  texto: 'Comunidad',
                 ),
                 const SizedBox(width: 12),
                 _LeyendaItem(

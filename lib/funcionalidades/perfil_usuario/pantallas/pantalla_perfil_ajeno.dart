@@ -470,7 +470,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
             TarjetaEstadisticaPerfil(
               icono: Icons.menu_book_outlined,
               valor: experiencias,
-              etiqueta: 'Posts',
+              etiqueta: 'Publicaciones',
               indice: 2,
             ),
             const SizedBox(width: 8),
@@ -579,7 +579,7 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Sin posts',
+              'Sin publicaciones',
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

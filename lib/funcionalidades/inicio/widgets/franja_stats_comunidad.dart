@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/linea_encabezado_inca.dart';
 
 /// Franja de métricas vivas de la comunidad HAKU.
 class FranjaStatsComunidad extends StatelessWidget {
@@ -42,55 +41,37 @@ class FranjaStatsComunidad extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-              child: Row(
-                children: [
-                  _Stat(
-                    valor: '$aportes',
-                    etiqueta: 'Aportes',
-                    icono: Icons.photo_camera_outlined,
-                  ),
-                  _divisor(),
-                  _Stat(
-                    valor: '$hilos',
-                    etiqueta: 'Hilos',
-                    icono: Icons.auto_stories_outlined,
-                  ),
-                  _divisor(),
-                  _Stat(
-                    valor: '$huecos',
-                    etiqueta: 'Huecos',
-                    icono: Icons.explore_outlined,
-                    acento: PaletaRutas.terracota,
-                  ),
-                  _divisor(),
-                  _Stat(
-                    valor: '$exploradores',
-                    etiqueta: 'Gente',
-                    icono: Icons.groups_outlined,
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: Row(
+            children: [
+              _Stat(
+                valor: '$aportes',
+                etiqueta: 'Fotos',
+                icono: Icons.photo_camera_outlined,
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: LineaEncabezadoInca(altura: 2),
-            ),
-          ],
+              _Stat(
+                valor: '$hilos',
+                etiqueta: 'Cultura',
+                icono: Icons.auto_stories_outlined,
+              ),
+              _Stat(
+                valor: '$huecos',
+                etiqueta: 'Lugares',
+                icono: Icons.explore_outlined,
+                acento: PaletaRutas.terracota,
+              ),
+              _Stat(
+                valor: '$exploradores',
+                etiqueta: 'Exploradores',
+                icono: Icons.groups_outlined,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
-  Widget _divisor() => Container(
-        width: 1,
-        height: 36,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        color: PaletaRutas.marronCuero.withValues(alpha: 0.2),
-      );
 }
 
 class _Stat extends StatelessWidget {
