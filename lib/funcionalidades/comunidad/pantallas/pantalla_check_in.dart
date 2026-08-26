@@ -7,7 +7,7 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../datos/salidas_datasource_local.dart';
 
-/// Check-in mínimo antes de la salida.
+/// Confirmar asistencia antes de la salida.
 class PantallaCheckIn extends ConsumerStatefulWidget {
   const PantallaCheckIn({super.key, required this.salidaId});
   final String salidaId;
@@ -34,7 +34,7 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok ? 'Check-in' : 'Error',
+          ok ? 'Asistencia confirmada' : 'No se pudo confirmar',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: PaletaRutas.terracota,
@@ -58,7 +58,7 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
         backgroundColor: Colors.white,
         foregroundColor: PaletaRutas.marronOscuro,
         title: Text(
-          'Check-in',
+          'Confirmar asistencia',
           style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),
@@ -81,7 +81,7 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${s?.checkinIds.length ?? 0} / ${ids.length}',
+                'Presentes: ${s?.checkinIds.length ?? 0} / ${ids.length}',
                 style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 16),
@@ -102,7 +102,9 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
                 ),
               ),
               BotonPrimarioRuta(
-                texto: s?.presente(_yo) == true ? 'Listo' : 'Check-in',
+                texto: s?.presente(_yo) == true
+                    ? 'Ya confirmaste'
+                    : 'Confirmar asistencia',
                 icono: Icons.how_to_reg,
                 habilitado: s?.presente(_yo) != true,
                 onPressed: s?.presente(_yo) == true ? null : _marcar,
@@ -110,7 +112,7 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
               if ((s?.checkinIds.length ?? 0) >= (s?.minimo ?? 4)) ...[
                 const SizedBox(height: 10),
                 Text(
-                  'Mínimo listo',
+                  'Cupo mínimo alcanzado',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(
                     fontWeight: FontWeight.w800,

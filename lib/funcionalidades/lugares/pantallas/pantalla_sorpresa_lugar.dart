@@ -9,9 +9,57 @@ import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
 import '../widgets/boton_ver_salidas_lugar.dart';
 
-/// Ficha de lugar — Conoce más (Descubre / Explora).
-class PantallaDetalleLugar extends ConsumerWidget {
-  const PantallaDetalleLugar({super.key, required this.lugarId});
+/// Frase épica según el destino (destino / oportunidad / llamado).
+String mensajeDestinoSorpresa(ModeloLugar lugar) {
+  final c = lugar.categoria;
+  final n = lugar.nivelExploracion;
+  final nombre = lugar.nombre;
+
+  if (n == NivelExploracion.nuevoEnHaku ||
+      n == NivelExploracion.pocoExplorado) {
+    return 'Pocos han cruzado este umbral. Hoy $nombre te espera en silencio.';
+  }
+
+  switch (c) {
+    case CategoriaLugar.misterioso:
+    case CategoriaLugar.magico:
+      return 'Hay secretos que el Cusco solo entrega a quien se atreve. Este es el tuyo.';
+    case CategoriaLugar.naturaleza:
+      return 'Los apus abrieron un sendero. $nombre late ahora frente a ti.';
+    case CategoriaLugar.aventura:
+    case CategoriaLugar.caminata:
+      return 'El camino eligió tu nombre. La oportunidad se llama $nombre.';
+    case CategoriaLugar.fotografia:
+      return 'La luz de este instante no se repite. Captúrala en $nombre.';
+    case CategoriaLugar.gastronomia:
+      return 'Hay mesas que saben a destino. Hoy te invita $nombre.';
+    case CategoriaLugar.cultura:
+      return 'La piedra recuerda. Hoy te llama desde $nombre.';
+  }
+}
+
+String subtituloDestino(ModeloLugar lugar) {
+  switch (lugar.categoria) {
+    case CategoriaLugar.misterioso:
+    case CategoriaLugar.magico:
+      return 'Un llamado que no llega dos veces';
+    case CategoriaLugar.naturaleza:
+      return 'Cuando el paisaje te elige';
+    case CategoriaLugar.aventura:
+    case CategoriaLugar.caminata:
+      return 'Tu próxima huella empieza aquí';
+    case CategoriaLugar.fotografia:
+      return 'Una ventana que se abre ahora';
+    case CategoriaLugar.gastronomia:
+      return 'Sabor que marca el viaje';
+    case CategoriaLugar.cultura:
+      return 'Memoria viva del valle';
+  }
+}
+
+/// Revelación de Sorpréndeme — destino épico + ficha limpia.
+class PantallaSorpresaLugar extends ConsumerWidget {
+  const PantallaSorpresaLugar({super.key, required this.lugarId});
 
   final String lugarId;
 
@@ -27,7 +75,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
         ),
         body: Center(
           child: Text(
-            'Lugar no encontrado',
+            'Destino no encontrado',
             style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
           ),
         ),
@@ -35,16 +83,15 @@ class PantallaDetalleLugar extends ConsumerWidget {
     }
 
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final desc = lugar.descripcion.trim().isEmpty
-        ? 'Un rincón de ${lugar.provincia} por descubrir con calma.'
-        : lugar.descripcion.trim();
+    final frase = mensajeDestinoSorpresa(lugar);
+    final eco = subtituloDestino(lugar);
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 320,
             pinned: true,
             backgroundColor: PaletaRutas.ink,
             foregroundColor: PaletaRutas.piedra,
@@ -63,14 +110,14 @@ class PantallaDetalleLugar extends ConsumerWidget {
                           Color(0x00141210),
                           Color(0xF2141210),
                         ],
-                        stops: [0, 0.4, 1],
+                        stops: [0, 0.35, 1],
                       ),
                     ),
                   ),
                   Positioned(
                     left: 20,
                     right: 20,
-                    bottom: 24,
+                    bottom: 28,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -84,12 +131,12 @@ class PantallaDetalleLugar extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            lugar.nivelExploracion.etiqueta.toUpperCase(),
+                            'DESTINO',
                             style: TipografiaHaku.interfaz(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: PaletaRutas.ink,
-                              letterSpacing: 0.6,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ),
@@ -97,7 +144,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                         Text(
                           lugar.nombre,
                           style: TipografiaHaku.titulo(
-                            fontSize: 28,
+                            fontSize: 30,
                             fontWeight: FontWeight.w800,
                             color: PaletaRutas.piedra,
                             height: 1.05,
@@ -105,12 +152,11 @@ class PantallaDetalleLugar extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${lugar.categoria.etiqueta} · ${lugar.provincia}'
-                          '${lugar.distrito.isEmpty ? '' : ' / ${lugar.distrito}'}',
+                          eco,
                           style: TipografiaHaku.interfaz(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: PaletaRutas.plomoClaro,
+                            color: PaletaRutas.oroSuave,
                           ),
                         ),
                       ],
@@ -122,135 +168,133 @@ class PantallaDetalleLugar extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 28 + bottom),
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 28 + bottom),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: PaletaRutas.carbon,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: PaletaRutas.oro.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome,
+                              size: 16,
+                              color: PaletaRutas.oro.withValues(alpha: 0.9),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'El llamado',
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: PaletaRutas.oro,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          frase,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '${lugar.categoria.etiqueta} · ${lugar.provincia}'
+                    '${lugar.distrito.isEmpty ? '' : ' / ${lugar.distrito}'}',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(
                         Icons.star_rounded,
-                        size: 20,
+                        size: 18,
                         color: PaletaRutas.oro,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         lugar.calificacion.toStringAsFixed(1),
                         style: TipografiaHaku.interfaz(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: PaletaRutas.piedra,
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Icon(
-                        Icons.people_outline,
-                        size: 18,
-                        color: PaletaRutas.plomoClaro,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${lugar.exploradores} exploradores',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PaletaRutas.plomoClaro,
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${lugar.fotos} fotos',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.oroSuave,
+                        decoration: BoxDecoration(
+                          color: PaletaRutas.carbon,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: PaletaRutas.plomoOscuro,
+                          ),
+                        ),
+                        child: Text(
+                          lugar.nivelExploracion.etiqueta,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.oroSuave,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Sobre este lugar',
-                    style: TipografiaHaku.titulo(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: PaletaRutas.piedra,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    desc,
+                    lugar.descripcion,
                     style: TipografiaHaku.interfaz(
                       fontSize: 14,
-                      height: 1.5,
+                      height: 1.45,
                       color: PaletaRutas.piedra.withValues(alpha: 0.92),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Datos del camino',
-                    style: TipografiaHaku.titulo(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: PaletaRutas.piedra,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _ChipDato(Icons.trending_up, lugar.dificultad),
+                      _ChipOscuro(Icons.trending_up, lugar.dificultad),
                       if (lugar.tiempoEstimado.isNotEmpty)
-                        _ChipDato(
+                        _ChipOscuro(
                           Icons.timer_outlined,
                           lugar.tiempoEstimado,
                         ),
                       if (lugar.altitud.isNotEmpty)
-                        _ChipDato(
+                        _ChipOscuro(
                           Icons.landscape_outlined,
                           lugar.altitud,
                         ),
                       if (lugar.acceso.isNotEmpty)
-                        _ChipDato(Icons.directions_walk, lugar.acceso),
-                      if (lugar.distanciaKm > 0)
-                        _ChipDato(
-                          Icons.near_me_outlined,
-                          '${lugar.distanciaKm.toStringAsFixed(0)} km',
-                        ),
+                        _ChipOscuro(Icons.directions_walk, lugar.acceso),
                     ],
                   ),
-                  if (lugar.galeria.isNotEmpty) ...[
-                    const SizedBox(height: 22),
-                    Text(
-                      'Galería',
-                      style: TipografiaHaku.titulo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 96,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: lugar.galeria.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (_, i) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: ImagenHaku(
-                              url: lugar.galeria[i],
-                              width: 120,
-                              height: 96,
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 28),
                   FilledButton.icon(
                     onPressed: () async {
@@ -275,7 +319,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
                     ),
                     icon: const Icon(Icons.add_a_photo_outlined),
                     label: Text(
-                      'Publicar',
+                      'Documentar este destino',
                       style: TipografiaHaku.interfaz(
                         fontWeight: FontWeight.w800,
                         color: PaletaRutas.ink,
@@ -287,6 +331,27 @@ class PantallaDetalleLugar extends ConsumerWidget {
                     lugarId: lugar.id,
                     lugarNombre: lugar.nombre,
                   ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      final ds = ref.read(lugaresDataSourceProvider);
+                      final intereses = ref.read(interesesUsuarioProvider);
+                      final otro = ds.sorpresa(intereses: intereses);
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              PantallaSorpresaLugar(lugarId: otro.id),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Otro destino',
+                      style: TipografiaHaku.interfaz(
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -297,8 +362,8 @@ class PantallaDetalleLugar extends ConsumerWidget {
   }
 }
 
-class _ChipDato extends StatelessWidget {
-  const _ChipDato(this.icono, this.texto);
+class _ChipOscuro extends StatelessWidget {
+  const _ChipOscuro(this.icono, this.texto);
   final IconData icono;
   final String texto;
 
@@ -320,7 +385,7 @@ class _ChipDato extends StatelessWidget {
             texto,
             style: TipografiaHaku.interfaz(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: PaletaRutas.piedra,
             ),
           ),
@@ -330,10 +395,10 @@ class _ChipDato extends StatelessWidget {
   }
 }
 
-void abrirDetalleLugar(BuildContext context, String lugarId) {
+void abrirSorpresaLugar(BuildContext context, String lugarId) {
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => PantallaDetalleLugar(lugarId: lugarId),
+      builder: (_) => PantallaSorpresaLugar(lugarId: lugarId),
     ),
   );
 }

@@ -6,12 +6,16 @@ class ModeloSalida {
   final DateTime fecha;
   final String hora;
   final String puntoEncuentro;
+  /// Cupos abiertos para quien se enrola (público).
   final int cupos;
   final int inscritos;
   final int minimo;
   final String dificultad;
+  /// Nombre del grupo; vacío si la crea una persona.
   final String grupo;
   final String comunidadId;
+  /// Cupos reservados solo para miembros del grupo (0 si es personal).
+  final int cuposGrupo;
   final List<String> inscritoIds;
   final List<String> checkinIds;
 
@@ -29,11 +33,16 @@ class ModeloSalida {
     this.dificultad = 'Moderada',
     this.grupo = '',
     this.comunidadId = '',
+    this.cuposGrupo = 0,
     this.inscritoIds = const [],
     this.checkinIds = const [],
   });
 
-  bool get llena => inscritos >= cupos;
+  bool get esDeGrupo => grupo.trim().isNotEmpty;
+
+  int get cuposTotales => cupos + cuposGrupo;
+
+  bool get llena => inscritos >= cuposTotales;
 
   bool unido(String usuarioId) => inscritoIds.contains(usuarioId);
 
@@ -43,21 +52,27 @@ class ModeloSalida {
     int? inscritos,
     List<String>? inscritoIds,
     List<String>? checkinIds,
+    int? cupos,
+    int? cuposGrupo,
+    String? grupo,
+    String? comunidadId,
+    String? organizador,
   }) {
     return ModeloSalida(
       id: id,
       lugarId: lugarId,
       lugarNombre: lugarNombre,
-      organizador: organizador,
+      organizador: organizador ?? this.organizador,
       fecha: fecha,
       hora: hora,
       puntoEncuentro: puntoEncuentro,
-      cupos: cupos,
+      cupos: cupos ?? this.cupos,
       inscritos: inscritos ?? this.inscritos,
       minimo: minimo,
       dificultad: dificultad,
-      grupo: grupo,
-      comunidadId: comunidadId,
+      grupo: grupo ?? this.grupo,
+      comunidadId: comunidadId ?? this.comunidadId,
+      cuposGrupo: cuposGrupo ?? this.cuposGrupo,
       inscritoIds: inscritoIds ?? this.inscritoIds,
       checkinIds: checkinIds ?? this.checkinIds,
     );
@@ -77,6 +92,7 @@ class ModeloSalida {
         'dificultad': dificultad,
         'grupo': grupo,
         'comunidad_id': comunidadId,
+        'cupos_grupo': cuposGrupo,
         'inscrito_ids': inscritoIds,
         'checkin_ids': checkinIds,
       };
@@ -88,6 +104,7 @@ class ModeloSalida {
     final checkinIds = [
       for (final x in (m['checkin_ids'] as List<dynamic>? ?? [])) x.toString(),
     ];
+    final grupo = m['grupo'] as String? ?? '';
     return ModeloSalida(
       id: m['id'] as String? ?? '',
       lugarId: m['lugar_id'] as String? ?? '',
@@ -100,8 +117,10 @@ class ModeloSalida {
       inscritos: (m['inscritos'] as num?)?.toInt() ?? inscritoIds.length,
       minimo: (m['minimo'] as num?)?.toInt() ?? 4,
       dificultad: m['dificultad'] as String? ?? 'Moderada',
-      grupo: m['grupo'] as String? ?? '',
+      grupo: grupo,
       comunidadId: m['comunidad_id'] as String? ?? '',
+      cuposGrupo: (m['cupos_grupo'] as num?)?.toInt() ??
+          (grupo.trim().isNotEmpty ? 4 : 0),
       inscritoIds: inscritoIds,
       checkinIds: checkinIds,
     );
@@ -127,6 +146,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Moderada',
       grupo: 'Trekkers Cusco',
       comunidadId: 'com_trekkers',
+      cuposGrupo: 4,
       inscritoIds: const ['s1', 's2', 'diegoandes'],
       checkinIds: const ['s1'],
     ),
@@ -144,6 +164,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Fotógrafos Andinos',
       comunidadId: 'com_fotos',
+      cuposGrupo: 3,
       inscritoIds: const ['s2', 'sofiatrek'],
       checkinIds: const [],
     ),
@@ -161,6 +182,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Misterios Cusco',
       comunidadId: 'com_fogon',
+      cuposGrupo: 4,
       inscritoIds: const ['mariaq', 's1', 's3', 'yo', 'camilarios'],
       checkinIds: const [],
     ),
@@ -178,6 +200,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Moderada',
       grupo: 'Trekkers Cusco',
       comunidadId: 'com_trekkers',
+      cuposGrupo: 5,
       inscritoIds: const ['diegoandes', 's2', 's3', 'sofiatrek', 's1', 'yo', 'haku'],
       checkinIds: const ['diegoandes'],
     ),
@@ -195,6 +218,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Fotógrafos Andinos',
       comunidadId: 'com_fotos',
+      cuposGrupo: 3,
       inscritoIds: const ['camilarios', 'mariaq', 's2', 'yo'],
       checkinIds: const [],
     ),
@@ -212,6 +236,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Exigente',
       grupo: 'Trekkers Cusco',
       comunidadId: 'com_trekkers',
+      cuposGrupo: 3,
       inscritoIds: const ['s1', 'diegoandes'],
       checkinIds: const [],
     ),
@@ -229,6 +254,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Fotógrafos Andinos',
       comunidadId: 'com_fotos',
+      cuposGrupo: 4,
       inscritoIds: const ['sofiatrek', 'mariaq', 'camilarios', 's2', 'yo', 'haku'],
       checkinIds: const [],
     ),
@@ -246,6 +272,7 @@ class SalidasDataSourceLocal {
       dificultad: 'Fácil',
       grupo: 'Misterios Cusco',
       comunidadId: 'com_fogon',
+      cuposGrupo: 4,
       inscritoIds: const ['mariaq', 's1', 's2', 's3', 'yo', 'haku', 'camilarios', 'sofiatrek'],
       checkinIds: const ['mariaq'],
     ),

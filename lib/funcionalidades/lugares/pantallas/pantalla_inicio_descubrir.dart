@@ -11,6 +11,7 @@ import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
 import 'pantalla_detalle_lugar.dart';
 import 'pantalla_registrar_lugar.dart';
+import 'pantalla_sorpresa_lugar.dart';
 
 /// Inicio = descubrir: Sorpréndeme, intereses, para ti, recientes, salidas, registrar.
 class PantallaInicioDescubrir extends ConsumerWidget {
@@ -49,7 +50,7 @@ class PantallaInicioDescubrir extends ConsumerWidget {
                 icono: Icons.auto_awesome,
                 onPressed: () {
                   final l = ds.sorpresa(intereses: intereses);
-                  abrirDetalleLugar(context, l.id);
+                  abrirSorpresaLugar(context, l.id);
                 },
               ),
               const SizedBox(height: 22),

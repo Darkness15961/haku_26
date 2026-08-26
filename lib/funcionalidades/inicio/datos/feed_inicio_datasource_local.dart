@@ -399,6 +399,10 @@ class PublicacionFeed {
   final String? categoria;
   /// Cuenta verificada (oficial HAKU u explorador validado).
   final bool verificado;
+  /// `normal` | `invitacion_salida`
+  final String tipo;
+  /// Si es invitación a salida de grupo.
+  final String? salidaId;
 
   const PublicacionFeed({
     required this.id,
@@ -417,7 +421,12 @@ class PublicacionFeed {
     this.lugarNombre,
     this.categoria,
     this.verificado = false,
+    this.tipo = 'normal',
+    this.salidaId,
   });
+
+  bool get esInvitacionSalida =>
+      tipo == 'invitacion_salida' && (salidaId?.isNotEmpty ?? false);
 
   /// Regla de verificación: flag explícito o cuentas oficiales conocidas.
   bool get esVerificado {
@@ -435,7 +444,13 @@ class PublicacionFeed {
     return oficiales.contains(id) || oficiales.contains(u);
   }
 
-  PublicacionFeed copyWith({int? likes, int? comentarios, bool? verificado}) {
+  PublicacionFeed copyWith({
+    int? likes,
+    int? comentarios,
+    bool? verificado,
+    String? tipo,
+    String? salidaId,
+  }) {
     return PublicacionFeed(
       id: id,
       autorId: autorId,
@@ -453,6 +468,8 @@ class PublicacionFeed {
       lugarNombre: lugarNombre,
       categoria: categoria,
       verificado: verificado ?? this.verificado,
+      tipo: tipo ?? this.tipo,
+      salidaId: salidaId ?? this.salidaId,
     );
   }
 
@@ -468,6 +485,8 @@ class PublicacionFeed {
         'lugar_nombre': lugarNombre,
         'categoria': categoria,
         'verificado': verificado,
+        'tipo': tipo,
+        'salida_id': salidaId,
       };
 }
 

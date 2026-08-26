@@ -5,7 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 
-/// Mapa interactivo estilo Google Maps con marcadores de lugares.
+/// Mapa interactivo con marcadores de lugares.
 class MapaExploraLugares extends StatefulWidget {
   const MapaExploraLugares({
     super.key,
@@ -24,6 +24,7 @@ class MapaExploraLugares extends StatefulWidget {
 
 class _EstadoMapaExploraLugares extends State<MapaExploraLugares> {
   final _controller = MapController();
+  String? _seleccionadoId;
 
   @override
   void dispose() {
@@ -40,6 +41,11 @@ class _EstadoMapaExploraLugares extends State<MapaExploraLugares> {
         widget.lugares.map((l) => l.longitud).reduce((a, b) => a + b) /
             widget.lugares.length;
     return LatLng(lat, lng);
+  }
+
+  String _nombreCorto(String nombre) {
+    if (nombre.length <= 22) return nombre;
+    return '${nombre.substring(0, 20)}…';
   }
 
   @override
@@ -66,6 +72,7 @@ class _EstadoMapaExploraLugares extends State<MapaExploraLugares> {
         interactionOptions: const InteractionOptions(
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
+        onTap: (_, __) => setState(() => _seleccionadoId = null),
       ),
       children: [
         TileLayer(
@@ -73,18 +80,27 @@ class _EstadoMapaExploraLugares extends State<MapaExploraLugares> {
               'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
           subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.haku.app',
+          retinaMode: RetinaMode.isHighDensity(context),
         ),
         MarkerLayer(
           markers: [
             for (final l in widget.lugares)
               Marker(
                 point: LatLng(l.latitud, l.longitud),
-                width: 120,
-                height: 72,
+                width: _seleccionadoId == l.id ? 148 : 40,
+                height: _seleccionadoId == l.id ? 70 : 40,
                 alignment: Alignment.topCenter,
                 child: _PinLugar(
                   lugar: l,
-                  onTap: () => widget.onTap(l.id),
+                  seleccionado: _seleccionadoId == l.id,
+                  nombreCorto: _nombreCorto(l.nombre),
+                  onTap: () {
+                    setState(() => _seleccionadoId = l.id);
+                    widget.onTap(l.id);
+                  },
+                  onSeleccionar: () {
+                    setState(() => _seleccionadoId = l.id);
+                  },
                 ),
               ),
           ],
@@ -95,10 +111,19 @@ class _EstadoMapaExploraLugares extends State<MapaExploraLugares> {
 }
 
 class _PinLugar extends StatelessWidget {
-  const _PinLugar({required this.lugar, required this.onTap});
+  const _PinLugar({
+    required this.lugar,
+    required this.seleccionado,
+    required this.nombreCorto,
+    required this.onTap,
+    required this.onSeleccionar,
+  });
 
   final ModeloLugar lugar;
+  final bool seleccionado;
+  final String nombreCorto;
   final VoidCallback onTap;
+  final VoidCallback onSeleccionar;
 
   @override
   Widget build(BuildContext context) {
@@ -108,30 +133,38 @@ class _PinLugar extends StatelessWidget {
     final colorPin = hueco ? PaletaRutas.oro : PaletaRutas.plomoOscuro;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        onSeleccionar();
+        onTap();
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: PaletaRutas.ink.withValues(alpha: 0.82),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.4)),
-            ),
-            child: Text(
-              lugar.nombre,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TipografiaHaku.interfaz(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: PaletaRutas.piedra,
+          if (seleccionado)
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: PaletaRutas.ink,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: PaletaRutas.oro),
+              ),
+              child: Text(
+                nombreCorto,
+                maxLines: 1,
+                softWrap: false,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
+                ),
               ),
             ),
+          Icon(
+            Icons.location_on,
+            size: seleccionado ? 36 : 32,
+            color: colorPin,
           ),
-          const SizedBox(height: 2),
-          Icon(Icons.location_on, size: 34, color: colorPin),
         ],
       ),
     );

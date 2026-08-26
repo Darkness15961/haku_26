@@ -412,6 +412,8 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
                   autorId,
                   autor?.usuario ?? '@$autorId',
                 ),
+            tipo: m['tipo'] as String? ?? 'normal',
+            salidaId: m['salida_id'] as String?,
           );
         })
         .toList();

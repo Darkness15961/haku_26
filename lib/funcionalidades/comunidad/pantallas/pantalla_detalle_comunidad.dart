@@ -263,7 +263,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                                     ),
                                     Text(
                                       admin
-                                          ? '${p.usuario} · admin'
+                                          ? '${p.usuario} · organizador'
                                           : p.usuario,
                                       style: TipografiaHaku.interfaz(
                                         fontSize: 12,

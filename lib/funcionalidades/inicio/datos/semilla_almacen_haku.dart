@@ -100,6 +100,96 @@ class SemillaAlmacenHaku {
 
     final publicaciones = [
       _post(
+        id: 'inv1',
+        autorId: 'diegoandes',
+        texto:
+            'Armamos salida a Q\'eswachaka. Cupos limitados — únete al grupo y conoce el puente vivo.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
+        likes: 48,
+        comentarios: 12,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 3)),
+        lugarId: 'canon_qeswachaka',
+        lugarNombre: 'Cañón Q\'eswachaka',
+        categoria: 'Aventura',
+        tipo: 'invitacion_salida',
+        salidaId: 's4',
+      ),
+      _post(
+        id: 'inv2',
+        autorId: 'mariaq',
+        texto:
+            'Tour nocturno Almudena: historias, silencio y Cusco de noche. ¿Te unes?',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
+        likes: 67,
+        comentarios: 9,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 6)),
+        lugarId: 'cementerio_almudena_noche',
+        lugarNombre: 'Tour nocturno Cementerio Almudena',
+        categoria: 'Misterioso',
+        tipo: 'invitacion_salida',
+        salidaId: 's3',
+      ),
+      _post(
+        id: 'inv3',
+        autorId: 'camilarios',
+        texto:
+            'Astrofoto en Maras. Trae trípode. Salimos en grupo pequeño — cupo cerrado.',
+        imagen: CatalogoImagenesHaku.moray,
+        likes: 91,
+        comentarios: 15,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 10)),
+        lugarId: 'astro_foto_maras',
+        lugarNombre: 'Astrofoto en Maras',
+        categoria: 'Foto',
+        tipo: 'invitacion_salida',
+        salidaId: 's5',
+      ),
+      _post(
+        id: 'inv4',
+        autorId: 'sofiatrek',
+        texto:
+            'Salineras bajo luna llena. Grupo Fotógrafos Andinos — fecha fija, cupos contados.',
+        imagen: CatalogoImagenesHaku.ausangate,
+        likes: 112,
+        comentarios: 21,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 18)),
+        lugarId: 'salineras_luna_llena',
+        lugarNombre: 'Salineras en luna llena',
+        categoria: 'Mágico',
+        tipo: 'invitacion_salida',
+        salidaId: 's7',
+      ),
+      _post(
+        id: 'inv5',
+        autorId: 'haku',
+        texto:
+            'Humantay al amanecer con Trekkers Cusco. Salida temprana, cupos cortos.',
+        imagen: CatalogoImagenesHaku.fondoExplora,
+        likes: 134,
+        comentarios: 17,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 4)),
+        lugarId: 'laguna_humantay',
+        lugarNombre: 'Laguna Humantay',
+        categoria: 'Naturaleza',
+        tipo: 'invitacion_salida',
+        salidaId: 's1',
+      ),
+      _post(
+        id: 'inv6',
+        autorId: 'diegoandes',
+        texto:
+            'Qorikancha de noche. Piedra, luna y el centro antiguo. ¿Vienes?',
+        imagen: CatalogoImagenesHaku.machuPicchu,
+        likes: 88,
+        comentarios: 11,
+        creadoEn: DateTime.now().subtract(const Duration(hours: 8)),
+        lugarId: 'qoricancha_noche',
+        lugarNombre: 'Qorikancha bajo la luna',
+        categoria: 'Misterioso',
+        tipo: 'invitacion_salida',
+        salidaId: 's8',
+      ),
+      _post(
         id: 'p1',
         autorId: 'mariaq',
         texto:
@@ -633,6 +723,50 @@ class SemillaAlmacenHaku {
     doc['metricas_usuario'] ??= _metricasDemo();
     doc['comentarios'] ??= _comentariosDemo();
     doc['lugares_creados'] ??= <Map<String, dynamic>>[];
+    if (inter['invitaciones_salida_v2'] != true) {
+      final pubsPatch = [
+        for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      final porIdSeed = {
+        for (final e in (seed['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map && (e['id']?.toString() ?? '').startsWith('inv'))
+            e['id'].toString(): Map<String, dynamic>.from(e),
+      };
+      final pubIds = pubsPatch.map((p) => p['id']?.toString()).toSet();
+      for (final entry in porIdSeed.entries) {
+        final i = pubsPatch.indexWhere((p) => p['id'] == entry.key);
+        if (i >= 0) {
+          pubsPatch[i]['imagen_url'] = entry.value['imagen_url'];
+          pubsPatch[i]['texto'] = entry.value['texto'];
+          pubsPatch[i]['lugar_id'] = entry.value['lugar_id'];
+          pubsPatch[i]['lugar_nombre'] = entry.value['lugar_nombre'];
+          pubsPatch[i]['salida_id'] = entry.value['salida_id'];
+          pubsPatch[i]['tipo'] = 'invitacion_salida';
+        } else if (!pubIds.contains(entry.key)) {
+          pubsPatch.insert(0, entry.value);
+        }
+      }
+      doc['publicaciones'] = pubsPatch;
+      inter['invitaciones_salida_v2'] = true;
+      inter['invitaciones_salida_v1'] = true;
+    }
+    if (inter['invitaciones_salida_v1'] != true) {
+      final pubsPatch = [
+        for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      final pubIds = pubsPatch.map((p) => p['id']?.toString()).toSet();
+      for (final e in (seed['publicaciones'] as List<dynamic>? ?? [])) {
+        if (e is! Map) continue;
+        final id = e['id']?.toString() ?? '';
+        if (!id.startsWith('inv')) continue;
+        if (pubIds.contains(id)) continue;
+        pubsPatch.insert(0, Map<String, dynamic>.from(e));
+      }
+      doc['publicaciones'] = pubsPatch;
+      inter['invitaciones_salida_v1'] = true;
+    }
     if (inter['descubre_lugares_v4'] != true) {
       final pubsPatch = [
         for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
@@ -1006,6 +1140,8 @@ class SemillaAlmacenHaku {
     String? lugarId,
     String? lugarNombre,
     String? categoria,
+    String tipo = 'normal',
+    String? salidaId,
   }) {
     return {
       'id': id,
@@ -1018,6 +1154,8 @@ class SemillaAlmacenHaku {
       'lugar_id': lugarId,
       'lugar_nombre': lugarNombre,
       'categoria': categoria,
+      'tipo': tipo,
+      'salida_id': salidaId,
     };
   }
 

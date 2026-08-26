@@ -12,6 +12,7 @@ import '../proveedores/proveedor_lugares.dart';
 import '../widgets/mapa_explora_lugares.dart';
 import 'pantalla_detalle_lugar.dart';
 import 'pantalla_registrar_lugar.dart';
+import 'pantalla_sorpresa_lugar.dart';
 
 /// Explora — mapa de huecos + lugares con portadas grandes.
 class PantallaExploraLugares extends ConsumerStatefulWidget {
@@ -32,7 +33,7 @@ class _EstadoPantallaExploraLugares
     final ds = ref.read(lugaresDataSourceProvider);
     final intereses = ref.read(interesesUsuarioProvider);
     final l = ds.sorpresa(intereses: intereses);
-    abrirDetalleLugar(context, l.id);
+    abrirSorpresaLugar(context, l.id);
   }
 
   List<ModeloLugar> _filtrar(List<ModeloLugar> todos) {
@@ -121,7 +122,7 @@ class _EstadoPantallaExploraLugares
                 ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                   child: Row(
                     children: [
                       _Segmento(
@@ -136,22 +137,14 @@ class _EstadoPantallaExploraLugares
                         onTap: () => setState(() => _modoMapa = true),
                       ),
                       const Spacer(),
-                      FilterChip(
-                        label: Text(
-                          'Poco',
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: _ChipFiltro(
+                          label: 'Poco explorado',
+                          selected: _soloPocoExplorados,
+                          onTap: () => setState(
+                            () => _soloPocoExplorados = !_soloPocoExplorados,
                           ),
                         ),
-                        selected: _soloPocoExplorados,
-                        onSelected: (v) =>
-                            setState(() => _soloPocoExplorados = v),
-                        selectedColor:
-                            PaletaRutas.terracota.withValues(alpha: 0.25),
-                        checkmarkColor: PaletaRutas.marronOscuro,
-                        showCheckmark: false,
-                        visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),
@@ -159,7 +152,7 @@ class _EstadoPantallaExploraLugares
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 44,
+                  height: 42,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -167,25 +160,12 @@ class _EstadoPantallaExploraLugares
                       for (final c in CategoriaLugar.values)
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(
-                              c.etiqueta,
-                              style: TipografiaHaku.interfaz(fontSize: 12),
-                            ),
+                          child: _ChipFiltro(
+                            label: c.etiqueta,
                             selected: _filtroCat == c,
-                            onSelected: (v) => setState(
-                              () => _filtroCat = v ? c : null,
+                            onTap: () => setState(
+                              () => _filtroCat = _filtroCat == c ? null : c,
                             ),
-                            selectedColor:
-                                PaletaRutas.marronOscuro.withValues(alpha: 0.88),
-                            labelStyle: TextStyle(
-                              color: _filtroCat == c
-                                  ? Colors.white
-                                  : PaletaRutas.marronOscuro,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            showCheckmark: false,
-                            visualDensity: VisualDensity.compact,
                           ),
                         ),
                     ],
@@ -234,6 +214,7 @@ class _EstadoPantallaExploraLugares
                           style: TipografiaHaku.titulo(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -241,9 +222,16 @@ class _EstadoPantallaExploraLugares
                           onPressed: () =>
                               abrirRegistrarLugarFlow(context, ref),
                           style: FilledButton.styleFrom(
-                            backgroundColor: PaletaRutas.terracota,
+                            backgroundColor: PaletaRutas.oro,
+                            foregroundColor: PaletaRutas.ink,
                           ),
-                          child: const Text('Agregar lugar'),
+                          child: Text(
+                            'Agregar lugar',
+                            style: TipografiaHaku.interfaz(
+                              fontWeight: FontWeight.w800,
+                              color: PaletaRutas.ink,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -306,7 +294,7 @@ class _HeroExplora extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: SizedBox(
-          height: 200,
+          height: 188,
           width: double.infinity,
           child: Stack(
             fit: StackFit.expand,
@@ -315,98 +303,136 @@ class _HeroExplora extends StatelessWidget {
                 'public/image/fondo_explora.jpg',
                 fit: BoxFit.cover,
               ),
-              DecoratedBox(
+              // Velo oscuro para legibilidad del texto blanco
+              const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                     colors: [
-                      PaletaRutas.marronOscuro.withValues(alpha: 0.55),
-                      PaletaRutas.terracota.withValues(alpha: 0.78),
+                      Color(0xCC141210),
+                      Color(0xE6141210),
                     ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/iconos/sol_inca.svg',
-                        width: 24,
-                        height: 24,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Explora',
-                        style: TipografiaHaku.titulo(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$huecos por explorar · $totalLugares lugares · $totalFotos fotos',
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.92),
-                    ),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: onSorpresa,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: PaletaRutas.marronOscuro,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                    Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/iconos/sol_inca.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: const ColorFilter.mode(
+                            PaletaRutas.oro,
+                            BlendMode.srcIn,
                           ),
-                          child: Text(
-                            'Sorpréndeme',
-                            style: TipografiaHaku.interfaz(
-                              fontWeight: FontWeight.w800,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Explora',
+                          style: TipografiaHaku.titulo(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$huecos por explorar · $totalLugares lugares · $totalFotos fotos',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: PaletaRutas.plomoClaro,
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: onSorpresa,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: PaletaRutas.oro,
+                              foregroundColor: PaletaRutas.ink,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Text(
+                              'Sorpréndeme',
+                              style: TipografiaHaku.interfaz(
+                                fontWeight: FontWeight.w800,
+                                color: PaletaRutas.ink,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: onRegistrar,
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.22),
-                          foregroundColor: Colors.white,
+                        const SizedBox(width: 10),
+                        _BotonIconoHero(
+                          icono: Icons.add_location_alt_outlined,
+                          tooltip: 'Agregar lugar',
+                          onTap: onRegistrar,
                         ),
-                        icon: const Icon(Icons.add_location_alt_outlined),
-                        tooltip: 'Agregar lugar',
-                      ),
-                      IconButton(
-                        onPressed: onRutas,
-                        icon: const Icon(Icons.route_outlined, color: Colors.white),
-                        tooltip: 'Cultura',
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        _BotonIconoHero(
+                          icono: Icons.route_outlined,
+                          tooltip: 'Cultura',
+                          onTap: onRutas,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
+    );
+  }
+}
+
+class _BotonIconoHero extends StatelessWidget {
+  const _BotonIconoHero({
+    required this.icono,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icono;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: PaletaRutas.carbon,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.55)),
+            ),
+            child: Icon(icono, color: PaletaRutas.oro, size: 22),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -434,6 +460,7 @@ class _CarruselRecientes extends StatelessWidget {
               style: TipografiaHaku.titulo(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
+                color: PaletaRutas.piedra,
               ),
             ),
           ),
@@ -542,14 +569,14 @@ class _LeyendaMapa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: PaletaRutas.crema,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      color: PaletaRutas.carbon,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _punto(PaletaRutas.terracota, 'Por explorar'),
-          const SizedBox(width: 16),
-          _punto(PaletaRutas.marronOscuro, 'Con fotos'),
+          _punto(PaletaRutas.oro, 'Por explorar'),
+          const SizedBox(width: 20),
+          _punto(PaletaRutas.plomoClaro, 'Con fotos'),
         ],
       ),
     );
@@ -566,8 +593,9 @@ class _LeyendaMapa extends StatelessWidget {
           Text(
             t,
             style: TipografiaHaku.interfaz(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
+              color: PaletaRutas.piedra,
             ),
           ),
         ],
@@ -820,19 +848,69 @@ class _Segmento extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? PaletaRutas.marronOscuro : PaletaRutas.crema,
+      color: selected ? PaletaRutas.oro : PaletaRutas.carbon,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: selected
+                ? null
+                : Border.all(color: PaletaRutas.plomoOscuro),
+          ),
           child: Text(
             label,
             style: TipografiaHaku.interfaz(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : PaletaRutas.marronOscuro,
+              color: selected ? PaletaRutas.ink : PaletaRutas.piedra,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChipFiltro extends StatelessWidget {
+  const _ChipFiltro({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? PaletaRutas.oro : Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? PaletaRutas.oro
+                  : PaletaRutas.plomo.withValues(alpha: 0.7),
+            ),
+          ),
+          child: Text(
+            label,
+            softWrap: false,
+            style: TipografiaHaku.interfaz(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: selected ? PaletaRutas.ink : PaletaRutas.piedra,
             ),
           ),
         ),
