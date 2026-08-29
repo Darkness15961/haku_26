@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../datos/salidas_datasource_local.dart';
 
 /// Confirmar asistencia antes de la salida.
@@ -35,9 +34,9 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
       SnackBar(
         content: Text(
           ok ? 'Asistencia confirmada' : 'No se pudo confirmar',
-          style: TipografiaHaku.interfaz(color: Colors.white),
+          style: TipografiaHaku.interfaz(color: PaletaRutas.ink),
         ),
-        backgroundColor: PaletaRutas.terracota,
+        backgroundColor: PaletaRutas.oro,
       ),
     );
   }
@@ -51,77 +50,98 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
       ...?s?.checkinIds,
     }.toList();
     if (ids.isEmpty) ids.add(_yo);
+    final bottom = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: PaletaRutas.marronOscuro,
+        backgroundColor: PaletaRutas.ink,
+        foregroundColor: PaletaRutas.piedra,
+        elevation: 0,
         title: Text(
           'Confirmar asistencia',
-          style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w700),
+          style: TipografiaHaku.titulo(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
+          ),
         ),
       ),
-      body: FondoSuaveSeccion(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Reunión',
-                style: TipografiaHaku.titulo(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottom),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Reunión',
+              style: TipografiaHaku.titulo(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.piedra,
               ),
-              Text(
-                s?.lugarNombre ?? 'Salida',
-                style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
+            ),
+            Text(
+              s?.lugarNombre ?? 'Salida',
+              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Presentes: ${s?.checkinIds.length ?? 0} / ${ids.length}',
+              style: TipografiaHaku.interfaz(
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.piedra,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Presentes: ${s?.checkinIds.length ?? 0} / ${ids.length}',
-                style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
-                  children: ids.map((id) {
-                    final ok = s?.presente(id) ?? false;
-                    return ListTile(
-                      title: Text(_nombre(id), style: TipografiaHaku.interfaz()),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                children: ids.map((id) {
+                  final ok = s?.presente(id) ?? false;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: PaletaRutas.carbon,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        _nombre(id),
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.piedra,
+                        ),
+                      ),
                       trailing: Icon(
                         ok ? Icons.check_circle : Icons.schedule,
-                        color: ok
-                            ? PaletaRutas.terracota
-                            : PaletaRutas.marronCuero,
+                        color: ok ? PaletaRutas.oro : PaletaRutas.plomo,
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            BotonPrimarioRuta(
+              texto: s?.presente(_yo) == true
+                  ? 'Ya confirmaste'
+                  : 'Confirmar asistencia',
+              icono: Icons.how_to_reg,
+              habilitado: s?.presente(_yo) != true,
+              onPressed: s?.presente(_yo) == true ? null : _marcar,
+            ),
+            if ((s?.checkinIds.length ?? 0) >= (s?.minimo ?? 4)) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Cupo mínimo alcanzado',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.interfaz(
+                  fontWeight: FontWeight.w800,
+                  color: PaletaRutas.oro,
                 ),
               ),
-              BotonPrimarioRuta(
-                texto: s?.presente(_yo) == true
-                    ? 'Ya confirmaste'
-                    : 'Confirmar asistencia',
-                icono: Icons.how_to_reg,
-                habilitado: s?.presente(_yo) != true,
-                onPressed: s?.presente(_yo) == true ? null : _marcar,
-              ),
-              if ((s?.checkinIds.length ?? 0) >= (s?.minimo ?? 4)) ...[
-                const SizedBox(height: 10),
-                Text(
-                  'Cupo mínimo alcanzado',
-                  textAlign: TextAlign.center,
-                  style: TipografiaHaku.interfaz(
-                    fontWeight: FontWeight.w800,
-                    color: PaletaRutas.terracota,
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

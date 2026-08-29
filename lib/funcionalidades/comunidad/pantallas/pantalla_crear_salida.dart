@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -149,9 +151,11 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
       return;
     }
 
+    final salidaId = 's_${DateTime.now().millisecondsSinceEpoch}';
+
     SalidasDataSourceLocal.instancia.crear(
       ModeloSalida(
-        id: 's_${DateTime.now().millisecondsSinceEpoch}',
+        id: salidaId,
         lugarId: lugar.id,
         lugarNombre: lugar.nombre,
         organizador: organizador,
@@ -169,13 +173,44 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
       ),
     );
     await ref.read(almacenFeedProvider.notifier).persistirSatelites();
+
+    final ahora = DateTime.now();
+    final textoInvitacion = _desc.text.trim().isNotEmpty
+        ? _desc.text.trim()
+        : grupo.isEmpty
+            ? 'Salida a ${lugar.nombre}. ¿Te unes?'
+            : 'Salida con $grupo a ${lugar.nombre}. Cupos limitados.';
+
+    await ref.read(almacenFeedProvider.notifier).crearPublicacion(
+          PublicacionFeed(
+            id: 'inv_$salidaId',
+            autorId: AlmacenFeedNotifier.idUsuarioLocal,
+            autor: nombrePersona,
+            usuario:
+                '@${nombrePersona.toLowerCase().replaceAll(' ', '')}',
+            avatarUrl: CatalogoImagenesHaku.resolverAvatar(
+                sesion.usuario?.avatarUrl),
+            hace: 'ahora',
+            texto: textoInvitacion,
+            imagenUrl: lugar.imagenUrl,
+            likes: 0,
+            comentarios: 0,
+            estiloFondo: EstiloFondoPublicacion.veloNegro,
+            creadoEn: ahora,
+            lugarId: lugar.id,
+            lugarNombre: lugar.nombre,
+            categoria: lugar.categoria.name,
+            tipo: 'invitacion_salida',
+            salidaId: salidaId,
+          ),
+        );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           grupo.isEmpty
-              ? 'Salida creada (organiza $organizador)'
-              : 'Salida creada con el grupo $grupo',
+              ? 'Salida creada y publicada en Comunidad'
+              : 'Salida creada con $grupo y publicada en Comunidad',
           style: TipografiaHaku.interfaz(color: Colors.white),
         ),
         backgroundColor: PaletaRutas.carbon,

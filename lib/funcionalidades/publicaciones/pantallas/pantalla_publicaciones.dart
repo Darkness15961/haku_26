@@ -10,6 +10,8 @@ import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
+import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/proveedores/proveedor_lugares.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
@@ -45,7 +47,7 @@ class _EstadoPantallaPublicaciones
   _PasoPublicacion _paso = _PasoPublicacion.elegirMedia;
   XFile? _media;
   bool _esVideo = false;
-  bool _editandoDescripcion = false;
+  bool _opcionesAvanzadas = false;
   String? _musica;
   String? _lugarId;
   String? _lugarNombre;
@@ -138,7 +140,7 @@ class _EstadoPantallaPublicaciones
               ),
               const SizedBox(height: 16),
               Text(
-                'Agregar media',
+                'Agregar contenido',
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -220,9 +222,11 @@ class _EstadoPantallaPublicaciones
         return Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.94),
+            color: PaletaRutas.carbon,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            border: Border.all(
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -234,7 +238,7 @@ class _EstadoPantallaPublicaciones
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: PaletaRutas.piedra,
                 ),
               ),
               const SizedBox(height: 14),
@@ -250,10 +254,18 @@ class _EstadoPantallaPublicaciones
                         setState(() => _categoria = cat);
                         Navigator.pop(ctx);
                       },
-                      selectedColor: Colors.white,
+                      selectedColor: PaletaRutas.oro.withValues(alpha: 0.22),
+                      backgroundColor: PaletaRutas.carbon,
+                      side: BorderSide(
+                        color: _categoria == cat
+                            ? PaletaRutas.oro
+                            : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                      ),
                       labelStyle: TipografiaHaku.interfaz(
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: _categoria == cat
+                            ? PaletaRutas.oro
+                            : PaletaRutas.plomoClaro,
                       ),
                     ),
                 ],
@@ -330,6 +342,8 @@ class _EstadoPantallaPublicaciones
     bumpMetricas(ref);
     if (!mounted) return;
     Navigator.of(context).pop();
+    ref.read(pestaniaShellInicioProvider.notifier).state = 2;
+    ref.read(pestaniaComunidadProvider.notifier).state = 0;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -365,8 +379,8 @@ class _EstadoPantallaPublicaciones
               children: [
                 _EncabezadoPublicar(
                   titulo: _paso == _PasoPublicacion.elegirMedia
-                      ? 'NUEVA PUBLICACION'
-                      : 'EDITAR PUBLICACION',
+                      ? 'NUEVA PUBLICACIÓN'
+                      : 'PUBLICAR',
                   onAtras: _atras,
                   onListo: _paso == _PasoPublicacion.editar ? _publicar : null,
                 ),
@@ -387,74 +401,76 @@ class _EstadoPantallaPublicaciones
                             ),
                             const SizedBox(height: 14),
                             _CardOpcion(
-                              icono: Icons.notes_rounded,
-                              titulo: 'Descripción',
-                              subtitulo: _descripcion.text.trim().isEmpty
-                                  ? 'Qué viste'
-                                  : _descripcion.text.trim(),
-                              onTap: () => setState(
-                                () => _editandoDescripcion =
-                                    !_editandoDescripcion,
-                              ),
-                            ),
-                            if (_editandoDescripcion) ...[
-                              const SizedBox(height: 8),
-                              _CampoDescripcion(
-                                controller: _descripcion,
-                                onChanged: (_) => setState(() {}),
-                              ),
-                            ],
-                            const SizedBox(height: 10),
-                            _CardOpcion(
-                              icono: Icons.music_note_rounded,
-                              titulo: 'Música',
-                              subtitulo: _musica ?? 'Elige un sonido',
-                              onTap: () {
-                                setState(
-                                  () => _musica = 'Sonido de los Andes',
-                                );
-                                _aviso('Musica: conectar biblioteca despues');
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            _CardOpcion(
                               icono: Icons.place_outlined,
                               titulo: 'Lugar',
-                              subtitulo: _lugarNombre ?? 'Obligatorio',
+                              subtitulo: _lugarNombre ?? 'Elige dónde fue',
                               onTap: _mostrarLugares,
                             ),
                             const SizedBox(height: 10),
-                            _CardOpcion(
-                              icono: Icons.category_outlined,
-                              titulo: 'Categoría',
-                              subtitulo: _categoria?.etiqueta ??
-                                  'Caminata, cultura, naturaleza…',
-                              onTap: _mostrarCategorias,
+                            _CampoDescripcion(
+                              controller: _descripcion,
+                              onChanged: (_) => setState(() {}),
                             ),
-                            const SizedBox(height: 10),
-                            _CardOpcion(
-                              icono: Icons.person_add_alt_1_rounded,
-                              titulo: 'Etiquetar',
-                              subtitulo: _etiquetas.isEmpty
-                                  ? 'Menciona companeros de viaje'
-                                  : _etiquetas.join(', '),
-                              onTap: () {
-                                setState(() {
-                                  if (!_etiquetas.contains('@explorador')) {
-                                    _etiquetas.add('@explorador');
-                                  }
-                                });
-                                _aviso(
-                                  'Etiquetas: conectar contactos despues',
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 22),
+                            const SizedBox(height: 18),
                             BotonPrimarioRuta(
                               texto: 'Publicar',
                               icono: Icons.send_rounded,
                               onPressed: _publicar,
                             ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () => setState(
+                                () => _opcionesAvanzadas = !_opcionesAvanzadas,
+                              ),
+                              child: Text(
+                                _opcionesAvanzadas
+                                    ? 'Ocultar opciones'
+                                    : 'Más opciones',
+                                style: TipografiaHaku.interfaz(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                ),
+                              ),
+                            ),
+                            if (_opcionesAvanzadas) ...[
+                              _CardOpcion(
+                                icono: Icons.music_note_rounded,
+                                titulo: 'Música',
+                                subtitulo: _musica ?? 'Opcional',
+                                onTap: () {
+                                  setState(
+                                    () => _musica = 'Sonido de los Andes',
+                                  );
+                                  _aviso('Música: conectar biblioteca después');
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              _CardOpcion(
+                                icono: Icons.category_outlined,
+                                titulo: 'Categoría',
+                                subtitulo: _categoria?.etiqueta ??
+                                    'Caminata, cultura, naturaleza…',
+                                onTap: _mostrarCategorias,
+                              ),
+                              const SizedBox(height: 10),
+                              _CardOpcion(
+                                icono: Icons.person_add_alt_1_rounded,
+                                titulo: 'Etiquetar',
+                                subtitulo: _etiquetas.isEmpty
+                                    ? 'Menciona compañeros'
+                                    : _etiquetas.join(', '),
+                                onTap: () {
+                                  setState(() {
+                                    if (!_etiquetas.contains('@explorador')) {
+                                      _etiquetas.add('@explorador');
+                                    }
+                                  });
+                                  _aviso(
+                                    'Etiquetas: conectar contactos despues',
+                                  );
+                                },
+                              ),
+                            ],
                           ],
                         ),
                 ),
@@ -599,7 +615,7 @@ class _PasoElegirMedia extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Elige media',
+                              'Elige foto o video',
                               textAlign: TextAlign.center,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,

@@ -10,10 +10,10 @@ import '../../favoritos/indice.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
-import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -36,8 +36,6 @@ class PantallaPerfilUsuario extends ConsumerStatefulWidget {
 class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> {
   static const _avatarUrl = CatalogoImagenesHaku.avatar;
 
-  static final _publicacionesDemo = CatalogoImagenesHaku.destinos;
-
   _SeccionPerfil _seccion = _SeccionPerfil.perfil;
 
   @override
@@ -56,7 +54,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
             for (final p in misPosts)
               if ((p.imagenUrl ?? '').isNotEmpty) p.imagenUrl!,
           ]
-        : _publicacionesDemo;
+        : <String>[];
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -89,7 +87,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                           },
                           icon: const Icon(
                             Icons.bookmark_border_rounded,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         IconButton(
@@ -108,7 +106,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                           },
                           icon: const Icon(
                             Icons.settings_outlined,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         Expanded(
@@ -118,7 +116,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                             style: TipografiaHaku.titulo(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: PaletaRutas.marronOscuro,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                         ),
@@ -295,17 +293,17 @@ class _PortadaPerfil extends StatelessWidget {
           bio,
           style: TipografiaHaku.interfaz(
             fontSize: 13,
-            color: PaletaRutas.marronCuero,
+            color: PaletaRutas.plomoClaro,
           ),
         ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: PaletaRutas.terracota.withValues(alpha: 0.15),
+            color: PaletaRutas.oro.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: PaletaRutas.terracota.withValues(alpha: 0.35),
+              color: PaletaRutas.oro.withValues(alpha: 0.35),
             ),
           ),
           child: Text(
@@ -313,7 +311,7 @@ class _PortadaPerfil extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: PaletaRutas.terracota,
+              color: PaletaRutas.oro,
             ),
           ),
         ),
@@ -372,8 +370,8 @@ class _IconoSeccion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = seleccionado
-        ? PaletaRutas.marronOscuro
-        : PaletaRutas.marronOscuro.withValues(alpha: 0.38);
+        ? PaletaRutas.oro
+        : PaletaRutas.plomoClaro;
 
     return Tooltip(
       message: tooltip,
@@ -392,7 +390,7 @@ class _IconoSeccion extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: seleccionado
-                    ? PaletaRutas.marronOscuro
+                    ? PaletaRutas.oro
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -470,14 +468,14 @@ class _ContenidoPerfil extends ConsumerWidget {
                 style: TipografiaHaku.titulo(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.marronOscuro,
+                  color: PaletaRutas.piedra,
                 ),
               ),
             ),
             TextButton(
               onPressed: () => _mostrarTodasInsignias(context, insignias),
               style: TextButton.styleFrom(
-                foregroundColor: PaletaRutas.terracota,
+                foregroundColor: PaletaRutas.oro,
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -487,7 +485,7 @@ class _ContenidoPerfil extends ConsumerWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.terracota,
+                  color: PaletaRutas.oro,
                 ),
               ),
             ),
@@ -525,20 +523,14 @@ class _ContenidoPerfil extends ConsumerWidget {
                 style: TipografiaHaku.titulo(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.marronOscuro,
+                  color: PaletaRutas.piedra,
                 ),
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PantallaRutas(),
-                  ),
-                );
-              },
+              onPressed: () => irAExplora(ref, modo: ModoExplora.rutas),
               style: TextButton.styleFrom(
-                foregroundColor: PaletaRutas.terracota,
+                foregroundColor: PaletaRutas.oro,
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -548,7 +540,7 @@ class _ContenidoPerfil extends ConsumerWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.terracota,
+                  color: PaletaRutas.oro,
                 ),
               ),
             ),
@@ -678,7 +670,7 @@ void _mostrarTodasInsignias(
 ) {
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: PaletaRutas.carbon,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
     ),
@@ -695,6 +687,7 @@ void _mostrarTodasInsignias(
                 style: TipografiaHaku.titulo(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
                 ),
               ),
               const SizedBox(height: 14),
@@ -706,12 +699,12 @@ void _mostrarTodasInsignias(
                       CircleAvatar(
                         backgroundColor: i.desbloqueada
                             ? i.color
-                            : Colors.grey.shade300,
+                            : PaletaRutas.plomoOscuro,
                         child: Icon(
                           i.icono,
                           color: i.desbloqueada
                               ? Colors.white
-                              : Colors.grey.shade600,
+                              : PaletaRutas.plomo,
                           size: 20,
                         ),
                       ),
@@ -725,15 +718,15 @@ void _mostrarTodasInsignias(
                               style: TipografiaHaku.interfaz(
                                 fontWeight: FontWeight.w700,
                                 color: i.desbloqueada
-                                    ? PaletaRutas.marronOscuro
-                                    : Colors.grey,
+                                    ? PaletaRutas.piedra
+                                    : PaletaRutas.plomo,
                               ),
                             ),
                             Text(
                               i.descripcion,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 12,
-                                color: PaletaRutas.marronCuero,
+                                color: PaletaRutas.plomoClaro,
                               ),
                             ),
                           ],
@@ -745,8 +738,8 @@ void _mostrarTodasInsignias(
                             : Icons.lock_outline,
                         size: 18,
                         color: i.desbloqueada
-                            ? PaletaRutas.terracota
-                            : Colors.grey,
+                            ? PaletaRutas.oro
+                            : PaletaRutas.plomo,
                       ),
                     ],
                   ),
@@ -774,15 +767,24 @@ class _ContenidoPublicaciones extends StatelessWidget {
             Icon(
               Icons.photo_library_outlined,
               size: 42,
-              color: PaletaRutas.marronOscuro.withValues(alpha: 0.45),
+              color: PaletaRutas.plomoClaro.withValues(alpha: 0.45),
             ),
             const SizedBox(height: 12),
             Text(
-              'Todavía no hay nada',
+              'Aún no publicaste',
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
+                color: PaletaRutas.plomoClaro.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Usa el botón + para compartir tu primera experiencia',
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                color: PaletaRutas.plomo.withValues(alpha: 0.55),
               ),
             ),
           ],

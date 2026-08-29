@@ -75,7 +75,7 @@ class _EstadoPantallaComentariosPublicacion
         maxChildSize: 0.92,
         builder: (context, scroll) {
           return Material(
-            color: Colors.white,
+            color: PaletaRutas.carbon,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: Column(
               children: [
@@ -84,7 +84,7 @@ class _EstadoPantallaComentariosPublicacion
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black26,
+                    color: PaletaRutas.plomoOscuro,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -98,12 +98,16 @@ class _EstadoPantallaComentariosPublicacion
                           style: TipografiaHaku.titulo(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: PaletaRutas.piedra,
+                        ),
                       ),
                     ],
                   ),
@@ -122,12 +126,12 @@ class _EstadoPantallaComentariosPublicacion
                         children: [
                           CircleAvatar(
                             radius: 16,
-                            backgroundColor: PaletaRutas.crema,
+                            backgroundColor: PaletaRutas.plomoOscuro,
                             child: Text(
                               autor.isNotEmpty ? autor[0] : '?',
                               style: TipografiaHaku.interfaz(
                                 fontWeight: FontWeight.w700,
-                                color: PaletaRutas.marronOscuro,
+                                color: PaletaRutas.piedra,
                               ),
                             ),
                           ),
@@ -144,12 +148,14 @@ class _EstadoPantallaComentariosPublicacion
                                         style: TipografiaHaku.interfaz(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
+                                          color: PaletaRutas.piedra,
                                         ),
                                       ),
                                       TextSpan(
                                         text: c.texto,
                                         style: TipografiaHaku.interfaz(
                                           fontSize: 13,
+                                          color: PaletaRutas.plomoClaro,
                                         ),
                                       ),
                                     ],
@@ -160,7 +166,7 @@ class _EstadoPantallaComentariosPublicacion
                                   _hace(c.creadoEn),
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
-                                    color: PaletaRutas.marronCuero,
+                                    color: PaletaRutas.plomo,
                                   ),
                                 ),
                               ],
@@ -182,16 +188,38 @@ class _EstadoPantallaComentariosPublicacion
                             controller: _ctrl,
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _enviar(),
+                            style: TipografiaHaku.interfaz(
+                              color: PaletaRutas.piedra,
+                            ),
+                            cursorColor: PaletaRutas.oro,
                             decoration: InputDecoration(
                               hintText: 'Comentario',
                               hintStyle: TipografiaHaku.interfaz(
-                                color: PaletaRutas.marronCuero,
+                                color: PaletaRutas.plomo,
                               ),
                               filled: true,
-                              fillColor: PaletaRutas.crema,
+                              fillColor: PaletaRutas.ink,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(22),
-                                borderSide: BorderSide.none,
+                                borderSide: BorderSide(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(22),
+                                borderSide: BorderSide(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(22),
+                                borderSide: const BorderSide(
+                                  color: PaletaRutas.oro,
+                                ),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -204,7 +232,8 @@ class _EstadoPantallaComentariosPublicacion
                         IconButton.filled(
                           onPressed: _enviar,
                           style: IconButton.styleFrom(
-                            backgroundColor: PaletaRutas.marronOscuro,
+                            backgroundColor: PaletaRutas.oro,
+                            foregroundColor: PaletaRutas.ink,
                           ),
                           icon: const Icon(Icons.send_rounded, size: 20),
                         ),

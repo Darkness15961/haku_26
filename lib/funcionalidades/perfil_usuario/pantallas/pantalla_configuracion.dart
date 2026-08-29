@@ -52,9 +52,9 @@ class _EstadoPantallaConfiguracion
       SnackBar(
         content: Text(
           'Listo',
-          style: TipografiaHaku.interfaz(color: Colors.white),
+          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: PaletaRutas.carbon,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -70,19 +70,29 @@ class _EstadoPantallaConfiguracion
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: PaletaRutas.carbon,
         title: Text(
           'Reiniciar',
-          style: TipografiaHaku.titulo(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TipografiaHaku.titulo(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
+          ),
         ),
         content: Text(
           'Se recarga la semilla.',
-          style: TipografiaHaku.interfaz(fontSize: 14),
+          style: TipografiaHaku.interfaz(
+            fontSize: 14,
+            color: PaletaRutas.plomoClaro,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(
+              'Cancelar',
+              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -90,7 +100,7 @@ class _EstadoPantallaConfiguracion
               'Reiniciar',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w700,
-                color: PaletaRutas.terracota,
+                color: PaletaRutas.oro,
               ),
             ),
           ),
@@ -107,9 +117,9 @@ class _EstadoPantallaConfiguracion
       SnackBar(
         content: Text(
           'Reiniciado',
-          style: TipografiaHaku.interfaz(color: Colors.white),
+          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: PaletaRutas.carbon,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -121,8 +131,11 @@ class _EstadoPantallaConfiguracion
     final bottom = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: FondoSuaveSeccion(
+        color: PaletaRutas.ink,
+        opacidadImagen: 0,
+        opacidadVelo: 0,
         child: SafeArea(
           child: Column(
             children: [
@@ -134,7 +147,7 @@ class _EstadoPantallaConfiguracion
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(
                         Icons.arrow_back_rounded,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     Expanded(
@@ -143,6 +156,7 @@ class _EstadoPantallaConfiguracion
                         style: TipografiaHaku.titulo(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                     ),
@@ -160,10 +174,10 @@ class _EstadoPantallaConfiguracion
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.88),
+                        color: PaletaRutas.carbon,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.16),
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
                         ),
                       ),
                       child: Column(
@@ -174,23 +188,44 @@ class _EstadoPantallaConfiguracion
                             style: TipografiaHaku.titulo(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                           const SizedBox(height: 10),
                           TextField(
                             controller: _nombre,
-                            style: TipografiaHaku.interfaz(color: Colors.white),
-                            cursorColor: Colors.white,
+                            style: TipografiaHaku.interfaz(
+                              color: PaletaRutas.piedra,
+                            ),
+                            cursorColor: PaletaRutas.oro,
                             decoration: InputDecoration(
                               labelText: 'Nombre',
                               labelStyle: TipografiaHaku.interfaz(
-                                color: Colors.white70,
+                                color: PaletaRutas.plomoClaro,
                               ),
                               filled: true,
-                              fillColor: Colors.white.withValues(alpha: 0.08),
+                              fillColor: PaletaRutas.ink,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: PaletaRutas.oro,
+                                ),
                               ),
                             ),
                           ),
@@ -199,7 +234,7 @@ class _EstadoPantallaConfiguracion
                             sesion.usuario?.correo ?? 'Sin sesión',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
-                              color: Colors.white70,
+                              color: PaletaRutas.plomo,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -208,13 +243,14 @@ class _EstadoPantallaConfiguracion
                             child: FilledButton(
                               onPressed: _guardarNombre,
                               style: FilledButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: PaletaRutas.marronOscuro,
+                                backgroundColor: PaletaRutas.oro,
+                                foregroundColor: PaletaRutas.ink,
                               ),
                               child: Text(
                                 'Guardar',
                                 style: TipografiaHaku.interfaz(
                                   fontWeight: FontWeight.w700,
+                                  color: PaletaRutas.ink,
                                 ),
                               ),
                             ),
@@ -264,16 +300,16 @@ class _TileConfig extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: Colors.black.withValues(alpha: 0.82),
+        color: PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
           onTap: onTap,
-          leading: Icon(icono, color: Colors.white),
+          leading: Icon(icono, color: PaletaRutas.piedra),
           title: Text(
             titulo,
             style: TipografiaHaku.interfaz(
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: PaletaRutas.piedra,
             ),
           ),
           subtitle: subtitulo.isEmpty
@@ -282,10 +318,13 @@ class _TileConfig extends StatelessWidget {
                   subtitulo,
                   style: TipografiaHaku.interfaz(
                     fontSize: 12,
-                    color: Colors.white70,
+                    color: PaletaRutas.plomoClaro,
                   ),
                 ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+          trailing: const Icon(
+            Icons.chevron_right,
+            color: PaletaRutas.plomo,
+          ),
         ),
       ),
     );

@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
+import '../../rutas/widgets/lista_rutas_explora.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelos/modelo_lugar.dart';
+import '../proveedores/proveedor_explora_ui.dart';
 import '../proveedores/proveedor_lugares.dart';
 import '../widgets/mapa_explora_lugares.dart';
 import 'pantalla_detalle_lugar.dart';
@@ -25,7 +26,6 @@ class PantallaExploraLugares extends ConsumerStatefulWidget {
 
 class _EstadoPantallaExploraLugares
     extends ConsumerState<PantallaExploraLugares> {
-  bool _modoMapa = true;
   bool _soloPocoExplorados = true;
   CategoriaLugar? _filtroCat;
 
@@ -56,6 +56,7 @@ class _EstadoPantallaExploraLugares
   @override
   Widget build(BuildContext context) {
     ref.watch(lugaresVersionProvider);
+    final modo = ref.watch(modoExploraProvider);
     final todos = ref.watch(lugaresListaProvider);
     final lugares = _filtrar(todos);
     final bottom = MediaQuery.paddingOf(context).bottom + 110;
@@ -94,23 +95,18 @@ class _EstadoPantallaExploraLugares
                   totalFotos: totalFotos,
                   onSorpresa: _sorprendeme,
                   onRegistrar: () => abrirRegistrarLugarFlow(context, ref),
-                  onRutas: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PantallaRutas(),
-                      ),
-                    );
-                  },
+                  onRutas: () => ref.read(modoExploraProvider.notifier).state =
+                      ModoExplora.rutas,
                 ),
               ),
-              if (recientes.isNotEmpty && !_modoMapa)
+              if (modo == ModoExplora.lugares && recientes.isNotEmpty)
                 SliverToBoxAdapter(
                   child: _CarruselRecientes(
                     lugares: recientes,
                     onTap: (id) => abrirDetalleLugar(context, id),
                   ),
                 ),
-              if (destacado != null && !_modoMapa)
+              if (modo == ModoExplora.lugares && destacado != null)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -126,54 +122,74 @@ class _EstadoPantallaExploraLugares
                   child: Row(
                     children: [
                       _Segmento(
-                        label: 'Mosaico',
-                        selected: !_modoMapa,
-                        onTap: () => setState(() => _modoMapa = false),
+                        label: 'Mapa',
+                        selected: modo == ModoExplora.mapa,
+                        onTap: () => ref
+                            .read(modoExploraProvider.notifier)
+                            .state = ModoExplora.mapa,
                       ),
                       const SizedBox(width: 8),
                       _Segmento(
-                        label: 'Mapa',
-                        selected: _modoMapa,
-                        onTap: () => setState(() => _modoMapa = true),
+                        label: 'Lugares',
+                        selected: modo == ModoExplora.lugares,
+                        onTap: () => ref
+                            .read(modoExploraProvider.notifier)
+                            .state = ModoExplora.lugares,
                       ),
-                      const Spacer(),
-                      Flexible(
-                        child: _ChipFiltro(
-                          label: 'Poco explorado',
-                          selected: _soloPocoExplorados,
-                          onTap: () => setState(
-                            () => _soloPocoExplorados = !_soloPocoExplorados,
-                          ),
-                        ),
+                      const SizedBox(width: 8),
+                      _Segmento(
+                        label: 'Rutas',
+                        selected: modo == ModoExplora.rutas,
+                        onTap: () => ref
+                            .read(modoExploraProvider.notifier)
+                            .state = ModoExplora.rutas,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 42,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      for (final c in CategoriaLugar.values)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                      if (modo != ModoExplora.rutas) ...[
+                        const Spacer(),
+                        Flexible(
                           child: _ChipFiltro(
-                            label: c.etiqueta,
-                            selected: _filtroCat == c,
+                            label: 'Poco explorado',
+                            selected: _soloPocoExplorados,
                             onTap: () => setState(
-                              () => _filtroCat = _filtroCat == c ? null : c,
+                              () => _soloPocoExplorados = !_soloPocoExplorados,
                             ),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),
               ),
+              if (modo != ModoExplora.rutas)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 42,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        for (final c in CategoriaLugar.values)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _ChipFiltro(
+                              label: c.etiqueta,
+                              selected: _filtroCat == c,
+                              onTap: () => setState(
+                                () => _filtroCat = _filtroCat == c ? null : c,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              if (_modoMapa)
+              if (modo == ModoExplora.rutas)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: ListaRutasExplora(bottomPadding: bottom),
+                )
+              else if (modo == ModoExplora.mapa)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
@@ -206,7 +222,7 @@ class _EstadoPantallaExploraLugares
                         Icon(
                           Icons.add_location_alt_outlined,
                           size: 48,
-                          color: PaletaRutas.marronCuero.withValues(alpha: 0.6),
+                          color: PaletaRutas.plomo.withValues(alpha: 0.8),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -343,6 +359,15 @@ class _HeroExplora extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Encuentra lugares en el mapa',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: PaletaRutas.plomoClaro,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       '$huecos por explorar · $totalLugares lugares · $totalFotos fotos',
@@ -385,7 +410,7 @@ class _HeroExplora extends StatelessWidget {
                         const SizedBox(width: 8),
                         _BotonIconoHero(
                           icono: Icons.route_outlined,
-                          tooltip: 'Cultura',
+                          tooltip: 'Itinerarios',
                           onTap: onRutas,
                         ),
                       ],
@@ -524,7 +549,7 @@ class _CarruselRecientes extends StatelessWidget {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: PaletaRutas.terracota,
+                                      color: PaletaRutas.oro,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
@@ -532,7 +557,7 @@ class _CarruselRecientes extends StatelessWidget {
                                       style: TipografiaHaku.interfaz(
                                         fontSize: 8,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: PaletaRutas.ink,
                                       ),
                                     ),
                                   ),
@@ -666,7 +691,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: PaletaRutas.terracota,
+                            color: PaletaRutas.oro,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -674,7 +699,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                             style: TipografiaHaku.interfaz(
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: PaletaRutas.ink,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -684,17 +709,17 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  color: PaletaRutas.crema,
+                  color: PaletaRutas.carbon,
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Poco explorado',
+                        lugar.nivelExploracion.etiqueta,
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: PaletaRutas.terracota,
+                          color: PaletaRutas.oro,
                         ),
                       ),
                       Text(
@@ -702,13 +727,14 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                         style: TipografiaHaku.titulo(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                       Text(
                         '${lugar.categoria.etiqueta} · ${lugar.provincia}',
                         style: TipografiaHaku.interfaz(
                           fontSize: 12,
-                          color: PaletaRutas.marronCuero,
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -791,7 +817,7 @@ class _CeldaLugar extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: PaletaRutas.terracota.withValues(alpha: 0.92),
+                          color: PaletaRutas.oro.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -799,7 +825,7 @@ class _CeldaLugar extends StatelessWidget {
                           style: TipografiaHaku.interfaz(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: PaletaRutas.ink,
                           ),
                         ),
                       ),

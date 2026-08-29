@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../proveedores/proveedor_sesion.dart';
 import 'pantalla_iniciar_sesion.dart';
@@ -105,7 +104,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
     final bottom = MediaQuery.paddingOf(context).bottom + 20;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           children: [
@@ -117,7 +116,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                     onPressed: () => Navigator.of(context).pop(false),
                     icon: const Icon(
                       Icons.arrow_back_rounded,
-                      color: PaletaRutas.marronOscuro,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
                   Expanded(
@@ -127,6 +126,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.titulo(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                   ),
@@ -139,17 +139,17 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
               child: LineaEncabezadoInca(altura: 2),
             ),
             Expanded(
-              child: FondoSuaveSeccion(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(20, 18, 20, bottom),
-                  children: [
-                    Text(
-                      'Documento',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(20, 18, 20, bottom),
+                children: [
+                  Text(
+                    'Documento',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.piedra,
                     ),
+                  ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -182,13 +182,18 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _docCtrl,
                       keyboardType: TextInputType.number,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: decoracionCampoAuth(
                         _tipoDoc == TipoDocumentoRegistro.dni
                             ? '8 dígitos'
@@ -202,12 +207,17 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _usuarioCtrl,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: decoracionCampoAuth(
                         '@tuusuario',
                         icono: Icons.person_outline_rounded,
@@ -219,13 +229,18 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _correoCtrl,
                       keyboardType: TextInputType.emailAddress,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: decoracionCampoAuth(
                         'tu@correo.com',
                         icono: Icons.mail_outline_rounded,
@@ -237,13 +252,18 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _claveCtrl,
                       obscureText: _ocultar1,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: decoracionCampoAuth(
                         'Mínimo 6 caracteres',
                         icono: Icons.lock_outline_rounded,
@@ -254,6 +274,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                             _ocultar1
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ),
@@ -264,13 +285,18 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _clave2Ctrl,
                       obscureText: _ocultar2,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: decoracionCampoAuth(
                         'Repite tu contraseña',
                         icono: Icons.lock_outline_rounded,
@@ -281,6 +307,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                             _ocultar2
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ),
@@ -291,8 +318,8 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       child: FilledButton(
                         onPressed: _cargando ? null : _crear,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.92),
-                          foregroundColor: Colors.white,
+                          backgroundColor: PaletaRutas.oro,
+                          foregroundColor: PaletaRutas.ink,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -303,7 +330,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: PaletaRutas.ink,
                                 ),
                               )
                             : Text(
@@ -311,7 +338,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                                 style: TipografiaHaku.interfaz(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: PaletaRutas.ink,
                                 ),
                               ),
                       ),
@@ -322,11 +349,13 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       child: OutlinedButton.icon(
                         onPressed: _cargando ? null : _google,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: PaletaRutas.marronOscuro,
+                          foregroundColor: PaletaRutas.piedra,
                           side: BorderSide(
-                            color: Colors.black.withValues(alpha: 0.22),
+                            color: PaletaRutas.plomoOscuro.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
-                          backgroundColor: Colors.white.withValues(alpha: 0.75),
+                          backgroundColor: PaletaRutas.carbon,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -337,6 +366,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                           style: TipografiaHaku.interfaz(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                       ),
@@ -347,16 +377,15 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,
-                        color: PaletaRutas.marronOscuro.withValues(alpha: 0.55),
+                        color: PaletaRutas.plomo,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
     );
   }
 }
@@ -383,11 +412,13 @@ class _ChipDoc extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             color: activo
-                ? Colors.black.withValues(alpha: 0.9)
-                : Colors.white.withValues(alpha: 0.7),
+                ? PaletaRutas.oro.withValues(alpha: 0.18)
+                : PaletaRutas.carbon,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.black.withValues(alpha: activo ? 0.9 : 0.16),
+              color: activo
+                  ? PaletaRutas.oro
+                  : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
             ),
           ),
           child: Text(
@@ -396,7 +427,7 @@ class _ChipDoc extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: activo ? Colors.white : PaletaRutas.marronOscuro,
+              color: activo ? PaletaRutas.oro : PaletaRutas.plomoClaro,
             ),
           ),
         ),

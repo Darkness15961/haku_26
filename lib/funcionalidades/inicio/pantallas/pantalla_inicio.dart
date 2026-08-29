@@ -37,8 +37,8 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
       etiqueta: 'Descubre',
     ),
     ItemBarraNavegacion(
-      iconoNormal: Icons.search_rounded,
-      iconoActivo: Icons.search_rounded,
+      iconoNormal: Icons.explore_outlined,
+      iconoActivo: Icons.explore_rounded,
       etiqueta: 'Explora',
     ),
     ItemBarraNavegacion(

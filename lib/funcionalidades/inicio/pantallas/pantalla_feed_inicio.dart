@@ -6,17 +6,17 @@ import '../../autenticacion/navegacion_auth.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
+import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
-import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../proveedores/proveedor_navegacion_inicio.dart';
+import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
+import '../proveedores/proveedor_comunidad_ui.dart';
 import '../widgets/card_escapada_comunidad.dart';
 import '../widgets/carrusel_rutas_recomendadas.dart';
 import '../widgets/portada_inicio_cultura.dart';
 import 'pantalla_busqueda_inicio.dart';
-import 'pantalla_mensajes_inicio.dart';
 
 /// Descubre: categorías agrupadas + descubiertos por la comunidad.
 class PantallaFeedInicio extends ConsumerStatefulWidget {
@@ -31,11 +31,6 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   final _keys = <String, GlobalKey>{
     'aventura': GlobalKey(),
     'comida': GlobalKey(),
-    'ceramica': GlobalKey(),
-    'mistico': GlobalKey(),
-    'naturaleza': GlobalKey(),
-    'foto': GlobalKey(),
-    'refugios': GlobalKey(),
     'descubiertos': GlobalKey(),
   };
 
@@ -47,14 +42,11 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     );
   }
 
-  Future<void> _abrirMensajes() async {
+  Future<void> _abrirComunidadMensajes() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PantallaMensajesInicio(),
-      ),
-    );
+    ref.read(pestaniaShellInicioProvider.notifier).state = 2;
+    ref.read(pestaniaComunidadProvider.notifier).state = 3;
   }
 
   void _abrirDetalle(ModeloRuta ruta) {
@@ -75,9 +67,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   }
 
   void _abrirRutas() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PantallaRutas()),
-    );
+    irAExplora(ref, modo: ModoExplora.rutas);
   }
 
   ModeloRuta _desdeLugar(ModeloLugar l) {
@@ -248,7 +238,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
           .where(
             (l) =>
                 l.categoria == CategoriaLugar.aventura ||
-                l.categoria == CategoriaLugar.caminata,
+                l.categoria == CategoriaLugar.caminata ||
+                l.categoria == CategoriaLugar.naturaleza,
           )
           .map(_desdeLugar),
     ];
@@ -260,63 +251,35 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
         );
       }),
       ...lugares
-          .where((l) => l.categoria == CategoriaLugar.gastronomia)
+          .where(
+            (l) =>
+                l.categoria == CategoriaLugar.gastronomia ||
+                l.categoria == CategoriaLugar.cultura,
+          )
           .map((l) {
             final r = _desdeLugar(l);
             return r.copyWith(
-              imagenUrl: CatalogoImagenesHaku.imagenFogones(lugarId: l.id),
+              imagenUrl: l.categoria == CategoriaLugar.gastronomia
+                  ? CatalogoImagenesHaku.imagenFogones(lugarId: l.id)
+                  : r.imagenUrl,
             );
           }),
     ];
 
-    // Cerámica / talleres / tejido / arte (no monumentos genéricos)
-    var ceramicaYTalleres = <ModeloRuta>[
-      ...todasRutas.where(
-        (r) =>
-            r.hilo == HiloCultura.ceramica ||
-            r.hilo == HiloCultura.tejido ||
-            r.hilo == HiloCultura.pintura ||
-            r.hilo == HiloCultura.teatro,
-      ),
+    var experiencias = <ModeloRuta>[
       ...lugares
           .where(
             (l) =>
-                l.categoria == CategoriaLugar.cultura &&
-                (l.nombre.toLowerCase().contains('taller') ||
-                    l.nombre.toLowerCase().contains('cerám') ||
-                    l.nombre.toLowerCase().contains('museo') ||
-                    l.nombre.toLowerCase().contains('tejido') ||
-                    l.nombre.toLowerCase().contains('fiesta')),
+                l.categoria == CategoriaLugar.misterioso ||
+                l.categoria == CategoriaLugar.magico ||
+                l.categoria == CategoriaLugar.fotografia,
           )
-          .map(_desdeLugar),
-    ];
-
-    var misticos = <ModeloRuta>[];
-
-    var naturaleza = <ModeloRuta>[
-      ...lugares
-          .where((l) => l.categoria == CategoriaLugar.naturaleza)
-          .map(_desdeLugar),
-    ];
-    if (naturaleza.isEmpty) {
-      naturaleza.addAll(
-        caminos.where((r) => r.categoria == CategoriaRuta.naturaleza),
-      );
-    }
-
-    var foto = lugares
-        .where((l) => l.categoria == CategoriaLugar.fotografia)
-        .map(_desdeLugar)
-        .toList();
-
-    var refugios = <ModeloRuta>[
-      ...lugares
-          .where(
-            (l) =>
-                l.nombre.toLowerCase().contains('casa') ||
-                l.tiempoEstimado.toLowerCase().contains('noche'),
-          )
-          .map(_desdeLugar),
+          .map((l) {
+            final r = _desdeLugar(l);
+            return r.copyWith(
+              imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
+            );
+          }),
     ];
 
     // —— Agrupación estricta por categoría ——
@@ -334,17 +297,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     }
     aventura = _sinDuplicados(aventura, idsUsados, imgsUsadas);
     comida = _sinDuplicados(comida, idsUsados, imgsUsadas);
-    ceramicaYTalleres =
-        _sinDuplicados(ceramicaYTalleres, idsUsados, imgsUsadas);
-    // Sección místicos: el resto que no salió en el hero
-    misticos = _sinDuplicados(
-      cuscoMagico.where((r) => !idsUsados.contains(r.id)).toList(),
-      idsUsados,
-      imgsUsadas,
-    );
-    naturaleza = _sinDuplicados(naturaleza, idsUsados, imgsUsadas);
-    foto = _sinDuplicados(foto, idsUsados, imgsUsadas);
-    refugios = _sinDuplicados(refugios, idsUsados, imgsUsadas);
+    experiencias = _sinDuplicados(experiencias, idsUsados, imgsUsadas);
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -360,19 +313,32 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        '¿Qué descubres hoy?',
-                        style: TipografiaHaku.titulo(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.piedra,
-                          height: 1.05,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿Qué descubres hoy?',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                              height: 1.05,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Inspírate — lo mejor curado de Cusco',
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 13,
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     IconButton(
                       tooltip: 'Mensajes',
-                      onPressed: _abrirMensajes,
+                      onPressed: _abrirComunidadMensajes,
                       icon: const Icon(
                         Icons.chat_bubble_outline_rounded,
                         color: PaletaRutas.piedra,
@@ -460,7 +426,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Cerca para descubrir',
+                                  'Ver en el mapa',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -468,7 +434,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                                   ),
                                 ),
                                 Text(
-                                  'Cusco, Perú',
+                                  'Explora lugares cerca de ti',
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
                                     color: PaletaRutas.plomoClaro,
@@ -495,7 +461,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                     ? heroMagico
                     : (culturales.isNotEmpty ? culturales : caminos),
                 onExplorar: () {
-                  final ctx = _keys['mistico']?.currentContext;
+                  final ctx = _keys['aventura']?.currentContext;
                   if (ctx != null) {
                     Scrollable.ensureVisible(
                       ctx,
@@ -509,24 +475,24 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
               ),
             ),
 
-            // Aventura agrupada
+            // Aventura y naturaleza
             SliverToBoxAdapter(
               child: _seccion(
                 keyId: 'aventura',
                 rutas: aventura,
                 titulo: 'Senderos por descubrir',
-                subtitulo: 'Rafting, ferrata, trekking y caminatas',
+                subtitulo: 'Rafting, ferrata, trekking y naturaleza',
                 estilo: EstiloPieCarrusel.tipoYProvincia,
                 altura: 310,
               ),
             ),
-            // Comida / restaurantes
+            // Comida y cultura
             SliverToBoxAdapter(
               child: _seccion(
                 keyId: 'comida',
                 rutas: comida,
-                titulo: 'Fogones por descubrir',
-                subtitulo: 'Restaurantes, picanterías y mercados',
+                titulo: 'Fogones y oficios vivos',
+                subtitulo: 'Comida, talleres y cultura local',
                 estilo: EstiloPieCarrusel.tipoYProvincia,
               ),
             ),
@@ -540,55 +506,15 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 ),
               ),
             ),
-            // Cerámica / talleres
-            SliverToBoxAdapter(
-              child: _seccion(
-                keyId: 'ceramica',
-                rutas: ceramicaYTalleres,
-                titulo: 'Talleres y oficios vivos',
-                subtitulo: 'Cerámica, tejido, pintura y teatro',
-                estilo: EstiloPieCarrusel.tipoYProvincia,
-              ),
-            ),
-            // Místicos
-            SliverToBoxAdapter(
-              child: _seccion(
-                keyId: 'mistico',
-                rutas: misticos,
-                titulo: 'Experiencias místicas',
-                subtitulo: 'Noche, leyendas y ese silencio que solo Cusco tiene',
-                estilo: EstiloPieCarrusel.tipoYProvincia,
-              ),
-            ),
-            // Naturaleza
-            SliverToBoxAdapter(
-              child: _seccion(
-                keyId: 'naturaleza',
-                rutas: naturaleza,
-                titulo: 'Cumbres y lagunas',
-                subtitulo: 'Naturaleza para descubrir con calma',
-                estilo: EstiloPieCarrusel.tipoYProvincia,
-              ),
-            ),
-            // Foto
-            SliverToBoxAdapter(
-              child: _seccion(
-                keyId: 'foto',
-                rutas: foto,
-                titulo: 'Miradas que inspiran',
-                subtitulo: 'Sesiones y ángulos por descubrir',
-                estilo: EstiloPieCarrusel.tipoYProvincia,
-              ),
-            ),
-            // Refugios
+            // Experiencias especiales
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: bottomPad),
                 child: _seccion(
-                  keyId: 'refugios',
-                  rutas: refugios,
-                  titulo: 'Refugios del camino',
-                  subtitulo: 'Dónde quedarte mientras descubres',
+                  keyId: 'experiencias',
+                  rutas: experiencias,
+                  titulo: 'Experiencias que marcan',
+                  subtitulo: 'Místico, fotografía y ese silencio de Cusco',
                   estilo: EstiloPieCarrusel.tipoYProvincia,
                 ),
               ),

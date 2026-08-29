@@ -6,12 +6,11 @@ import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
+import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
-import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 
 /// Guardados reales: rutas + publicaciones.
@@ -40,7 +39,7 @@ class PantallaFavoritos extends ConsumerWidget {
     final vacio = rutas.isEmpty && lugares.isEmpty && posts.isEmpty;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,7 +52,7 @@ class PantallaFavoritos extends ConsumerWidget {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(
                       Icons.arrow_back_rounded,
-                      color: PaletaRutas.marronOscuro,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
                   Expanded(
@@ -62,6 +61,7 @@ class PantallaFavoritos extends ConsumerWidget {
                       style: TipografiaHaku.titulo(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                   ),
@@ -73,44 +73,42 @@ class PantallaFavoritos extends ConsumerWidget {
               child: LineaEncabezadoInca(altura: 2),
             ),
             Expanded(
-              child: FondoSuaveSeccion(
-                child: vacio
-                    ? ListView(
-                        padding: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
-                        children: [
-                          Text(
-                            'Todavía no hay nada',
-                            textAlign: TextAlign.center,
-                            style: TipografiaHaku.titulo(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
+              child: vacio
+                  ? ListView(
+                      padding: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
+                      children: [
+                        Text(
+                          'Todavía no hay nada',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
+                        ),
                           const SizedBox(height: 16),
                           BotonPrimarioRuta(
                             texto: 'Rutas',
                             icono: Icons.map_outlined,
                             onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const PantallaRutas(),
-                                ),
-                              );
+                              irAExplora(ref, modo: ModoExplora.rutas);
+                              Navigator.of(context).pop();
                             },
                           ),
                         ],
                       )
-                    : ListView(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-                        children: [
-                          if (lugares.isNotEmpty) ...[
-                            Text(
-                              'Lugares',
-                              style: TipografiaHaku.titulo(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
+                  : ListView(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
+                      children: [
+                        if (lugares.isNotEmpty) ...[
+                          Text(
+                            'Lugares',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
                             ),
+                          ),
                             const SizedBox(height: 10),
                             for (final l in lugares) ...[
                               _TileRuta(
@@ -130,14 +128,15 @@ class PantallaFavoritos extends ConsumerWidget {
                             ],
                             const SizedBox(height: 12),
                           ],
-                          if (rutas.isNotEmpty) ...[
-                            Text(
-                              'Rutas',
-                              style: TipografiaHaku.titulo(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        if (rutas.isNotEmpty) ...[
+                          Text(
+                            'Rutas',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
                             ),
+                          ),
                             const SizedBox(height: 10),
                             for (final r in rutas) ...[
                               _TileRuta(
@@ -156,14 +155,15 @@ class PantallaFavoritos extends ConsumerWidget {
                             ],
                             const SizedBox(height: 12),
                           ],
-                          if (posts.isNotEmpty) ...[
-                            Text(
-                              'Publicaciones',
-                              style: TipografiaHaku.titulo(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        if (posts.isNotEmpty) ...[
+                          Text(
+                            'Publicaciones',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
                             ),
+                          ),
                             const SizedBox(height: 10),
                             for (var i = 0; i < posts.length; i++) ...[
                               PublicacionEstiloThreads(
@@ -173,9 +173,8 @@ class PantallaFavoritos extends ConsumerWidget {
                               const SizedBox(height: 12),
                             ],
                           ],
-                        ],
-                      ),
-              ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -198,7 +197,7 @@ class _TileRuta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.88),
+      color: PaletaRutas.carbon,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -223,11 +222,14 @@ class _TileRuta extends StatelessWidget {
                   style: TipografiaHaku.titulo(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: PaletaRutas.piedra,
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white54),
+              const Icon(
+                Icons.chevron_right,
+                color: PaletaRutas.plomo,
+              ),
             ],
           ),
         ),

@@ -128,7 +128,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                           etiqueta: formatearConteo(
                             c.likes + (liked ? 1 : 0),
                           ),
-                          color: liked ? PaletaRutas.terracota : Colors.white,
+                          color: liked ? PaletaRutas.oro : Colors.white,
                           onTap: () => _like(c),
                         ),
                         const SizedBox(height: 16),
@@ -141,7 +141,12 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                         _AccionClip(
                           icono: Icons.visibility_outlined,
                           etiqueta: formatearConteo(c.vistas),
-                          onTap: () {},
+                          onTap: () async {
+                            await ref
+                                .read(almacenFeedProvider.notifier)
+                                .registrarVistaClip(c.id);
+                            if (mounted) setState(() {});
+                          },
                         ),
                         const SizedBox(height: 16),
                         _AccionClip(

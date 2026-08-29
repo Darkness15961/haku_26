@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../inicio/pantallas/pantalla_mensajes_inicio.dart';
+import '../../inicio/datos/feed_inicio_datasource_local.dart';
+import '../../inicio/pantallas/pantalla_chat_directo.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -48,7 +49,15 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
     if (!ok || !mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const PantallaMensajesInicio(),
+        builder: (_) => PantallaChatDirecto(
+          persona: SugerenciaSeguimiento(
+            id: p.id,
+            nombre: p.nombre,
+            usuario: p.usuario,
+            avatarUrl: p.avatarUrl,
+            bioCorta: p.bioCorta,
+          ),
+        ),
       ),
     );
   }
@@ -58,7 +67,7 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -82,7 +91,7 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
                           onPressed: () => Navigator.of(context).pop(),
                           icon: const Icon(
                             Icons.arrow_back_rounded,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         Expanded(
@@ -94,7 +103,7 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
                             style: TipografiaHaku.titulo(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
-                              color: PaletaRutas.marronOscuro,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                         ),
@@ -111,6 +120,9 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
             ),
             Expanded(
               child: FondoSuaveSeccion(
+                color: PaletaRutas.ink,
+                opacidadImagen: 0,
+                opacidadVelo: 0,
                 child: SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
                   child: Column(
@@ -157,8 +169,7 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
                           textAlign: TextAlign.center,
                           style: TipografiaHaku.interfaz(
                             fontSize: 13,
-                            color: PaletaRutas.marronOscuro
-                                .withValues(alpha: 0.75),
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ],
@@ -221,10 +232,10 @@ class _CardExploradorAjeno extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.94),
+        color: PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
+          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
         ),
       ),
       child: Row(
@@ -242,7 +253,7 @@ class _CardExploradorAjeno extends StatelessWidget {
                   style: TipografiaHaku.titulo(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: PaletaRutas.piedra,
                   ),
                 ),
                 Text(
@@ -250,7 +261,7 @@ class _CardExploradorAjeno extends StatelessWidget {
                   style: TipografiaHaku.interfaz(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: PaletaRutas.plomoClaro,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -262,9 +273,10 @@ class _CardExploradorAjeno extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: progreso,
                           minHeight: 10,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.25),
-                          color: Colors.white,
+                          backgroundColor: PaletaRutas.plomoOscuro.withValues(
+                            alpha: 0.5,
+                          ),
+                          color: PaletaRutas.oro,
                         ),
                       ),
                     ),
@@ -274,7 +286,7 @@ class _CardExploradorAjeno extends StatelessWidget {
                       style: TipografiaHaku.interfaz(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                   ],
@@ -312,11 +324,13 @@ class _BotonAccionPerfil extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: relleno
-                ? Colors.black.withValues(alpha: 0.92)
-                : Colors.white.withValues(alpha: 0.7),
+                ? PaletaRutas.oro
+                : PaletaRutas.carbon,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.black.withValues(alpha: relleno ? 0.92 : 0.22),
+              color: relleno
+                  ? PaletaRutas.oro
+                  : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
               width: 1.1,
             ),
           ),
@@ -326,7 +340,7 @@ class _BotonAccionPerfil extends StatelessWidget {
               Icon(
                 icono,
                 size: 18,
-                color: relleno ? Colors.white : PaletaRutas.marronOscuro,
+                color: relleno ? PaletaRutas.ink : PaletaRutas.piedra,
               ),
               const SizedBox(width: 6),
               Text(
@@ -334,7 +348,7 @@ class _BotonAccionPerfil extends StatelessWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: relleno ? Colors.white : PaletaRutas.marronOscuro,
+                  color: relleno ? PaletaRutas.ink : PaletaRutas.piedra,
                 ),
               ),
             ],
@@ -395,8 +409,8 @@ class _IconoSeccion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = seleccionado
-        ? PaletaRutas.marronOscuro
-        : PaletaRutas.marronOscuro.withValues(alpha: 0.38);
+        ? PaletaRutas.oro
+        : PaletaRutas.plomo;
 
     return Tooltip(
       message: tooltip,
@@ -415,7 +429,7 @@ class _IconoSeccion extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: seleccionado
-                    ? PaletaRutas.marronOscuro
+                    ? PaletaRutas.oro
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -491,14 +505,76 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.marronOscuro,
+                  color: PaletaRutas.piedra,
                 ),
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: PaletaRutas.carbon,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                  ),
+                  builder: (ctx) => Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Insignias',
+                          style: TipografiaHaku.titulo(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            InsigniaPerfil(
+                              icono: Icons.terrain_rounded,
+                              nombre: 'Explorador Inca',
+                              colorFondo: Color(0xFF1A1A1A),
+                            ),
+                            InsigniaPerfil(
+                              icono: Icons.filter_hdr_rounded,
+                              nombre: 'Montañista',
+                              colorFondo: Color(0xFF2D6A4F),
+                            ),
+                            InsigniaPerfil(
+                              icono: Icons.hiking_rounded,
+                              nombre: 'Aventurero',
+                              colorFondo: Color(0xFF9C3B2E),
+                            ),
+                            InsigniaPerfil(
+                              icono: Icons.photo_camera_outlined,
+                              nombre: 'Fotógrafo',
+                              colorFondo: Color(0xFF1E4D6B),
+                            ),
+                            InsigniaPerfil(
+                              icono: Icons.restaurant_outlined,
+                              nombre: 'Gourmet Andino',
+                              colorFondo: Color(0xFF6B4226),
+                            ),
+                            InsigniaPerfil(
+                              icono: Icons.nightlight_round,
+                              nombre: 'Nocturno',
+                              colorFondo: Color(0xFF2C2C54),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
               style: TextButton.styleFrom(
-                foregroundColor: PaletaRutas.verdeBosque,
+                foregroundColor: PaletaRutas.oro,
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -508,7 +584,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: PaletaRutas.verdeBosque,
+                  color: PaletaRutas.oro,
                 ),
               ),
             ),
@@ -575,7 +651,7 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
             Icon(
               Icons.photo_library_outlined,
               size: 42,
-              color: PaletaRutas.marronOscuro.withValues(alpha: 0.45),
+              color: PaletaRutas.plomo,
             ),
             const SizedBox(height: 12),
             Text(
@@ -583,7 +659,7 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
+                color: PaletaRutas.plomoClaro,
               ),
             ),
           ],
@@ -614,7 +690,7 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.12),
               child: const Icon(
                 Icons.broken_image_outlined,
-                color: Colors.white70,
+                color: PaletaRutas.plomo,
               ),
             ),
           ),

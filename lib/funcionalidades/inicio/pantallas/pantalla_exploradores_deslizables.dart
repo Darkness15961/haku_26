@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -63,8 +64,11 @@ class _EstadoPantallaExploradoresDeslizables
     final persona = feed.perfilPorId(_base.id) ?? _base;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: FondoSuaveSeccion(
+        color: PaletaRutas.ink,
+        opacidadImagen: 0,
+        opacidadVelo: 0,
         child: SafeArea(
           child: Column(
             children: [
@@ -78,7 +82,7 @@ class _EstadoPantallaExploradoresDeslizables
                           onPressed: () => Navigator.of(context).pop(),
                           icon: const Icon(
                             Icons.arrow_back_rounded,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         Expanded(
@@ -88,22 +92,35 @@ class _EstadoPantallaExploradoresDeslizables
                             style: TipografiaHaku.titulo(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                         ),
                         IconButton(
                           tooltip: 'Compartir',
-                          onPressed: () {
+                          onPressed: () async {
+                            final texto =
+                                'Explora el perfil de ${persona.usuario} en HAKU';
+                            await Clipboard.setData(
+                              ClipboardData(text: texto),
+                            );
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Perfil'),
+                                content: Text(
+                                  'Enlace del perfil copiado',
+                                  style: TipografiaHaku.interfaz(
+                                    color: PaletaRutas.piedra,
+                                  ),
+                                ),
                                 behavior: SnackBarBehavior.floating,
+                                backgroundColor: PaletaRutas.carbon,
                               ),
                             );
                           },
                           icon: const Icon(
                             Icons.ios_share_rounded,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                       ],
@@ -190,6 +207,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                   style: TipografiaHaku.titulo(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
+                    color: PaletaRutas.piedra,
                   ),
                 ),
                 Text(
@@ -197,7 +215,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(
                     fontSize: 13,
-                    color: PaletaRutas.marronCuero,
+                    color: PaletaRutas.plomoClaro,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -253,7 +271,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                   style: TipografiaHaku.interfaz(
                     fontSize: 13,
                     height: 1.4,
-                    color: PaletaRutas.marronOscuro,
+                    color: PaletaRutas.plomoClaro,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -288,7 +306,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                 _tab == 1
                     ? 'Sin favoritos'
                     : 'Sin publicaciones',
-                style: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
+                style: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
               ),
             ),
           )
@@ -364,7 +382,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
       width: 1,
       height: 28,
       margin: const EdgeInsets.symmetric(horizontal: 18),
-      color: PaletaRutas.arena,
+      color: PaletaRutas.plomoOscuro.withValues(alpha: 0.5),
     );
   }
 }
@@ -384,13 +402,14 @@ class _Stat extends StatelessWidget {
           style: TipografiaHaku.titulo(
             fontSize: 18,
             fontWeight: FontWeight.w800,
+            color: PaletaRutas.piedra,
           ),
         ),
         Text(
           etiqueta,
           style: TipografiaHaku.interfaz(
             fontSize: 12,
-            color: PaletaRutas.marronCuero,
+            color: PaletaRutas.plomoClaro,
           ),
         ),
       ],
@@ -418,8 +437,11 @@ class _BotonIcono extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           padding: EdgeInsets.zero,
-          foregroundColor: PaletaRutas.marronOscuro,
-          side: const BorderSide(color: PaletaRutas.arena),
+          foregroundColor: PaletaRutas.piedra,
+          backgroundColor: PaletaRutas.carbon,
+          side: BorderSide(
+            color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+          ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
         child: Icon(icono, size: 20),
@@ -451,13 +473,13 @@ class _TabIcono extends StatelessWidget {
               child: Icon(
                 icono,
                 color: activo
-                    ? PaletaRutas.marronOscuro
-                    : PaletaRutas.marronCuero.withValues(alpha: 0.45),
+                    ? PaletaRutas.oro
+                    : PaletaRutas.plomo.withValues(alpha: 0.45),
               ),
             ),
             Container(
               height: 2,
-              color: activo ? PaletaRutas.marronOscuro : Colors.transparent,
+              color: activo ? PaletaRutas.oro : Colors.transparent,
             ),
           ],
         ),

@@ -4,17 +4,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
+import '../../lugares/datos/lugares_datasource_local.dart';
+import '../../lugares/dominio/modelos/modelo_lugar.dart';
+import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
-import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 
 enum TipoBusquedaInicio { personas, lugares }
+
+class _ResultadoLugarBusqueda {
+  const _ResultadoLugarBusqueda({
+    required this.titulo,
+    required this.subtitulo,
+    required this.imagenUrl,
+    this.lugarId,
+    this.ruta,
+  });
+
+  final String titulo;
+  final String subtitulo;
+  final String imagenUrl;
+  final String? lugarId;
+  final ModeloRuta? ruta;
+}
 
 /// Búsqueda de personas o lugares desde Inicio.
 class PantallaBusquedaInicio extends ConsumerStatefulWidget {
@@ -54,18 +71,74 @@ class _EstadoPantallaBusquedaInicio
         .toList();
   }
 
-  List<ModeloRuta> get _lugares {
+  String? _lugarIdParaRuta(ModeloRuta r) {
+    if (r.id.startsWith('lugar_')) {
+      return r.id.substring('lugar_'.length);
+    }
+    final titulo = r.titulo.trim().toLowerCase();
+    for (final l in LugaresDataSourceLocal.instancia.todos()) {
+      if (l.nombre.trim().toLowerCase() == titulo) return l.id;
+    }
+    return null;
+  }
+
+  List<_ResultadoLugarBusqueda> get _lugares {
     final q = _query.trim().toLowerCase();
-    final base = RutasDataSourceLocal.obtenerTodas();
-    if (q.isEmpty) return base;
-    return base
-        .where(
-          (r) =>
-              r.titulo.toLowerCase().contains(q) ||
-              r.subtitulo.toLowerCase().contains(q) ||
-              r.descripcion.toLowerCase().contains(q),
-        )
-        .toList();
+    final resultados = <_ResultadoLugarBusqueda>[];
+    final idsLugar = <String>{};
+
+    for (final l in LugaresDataSourceLocal.instancia.todos()) {
+      final match = q.isEmpty ||
+          l.nombre.toLowerCase().contains(q) ||
+          l.provincia.toLowerCase().contains(q) ||
+          l.descripcion.toLowerCase().contains(q);
+      if (match) {
+        idsLugar.add(l.id);
+        resultados.add(
+          _ResultadoLugarBusqueda(
+            titulo: l.nombre,
+            subtitulo: '${l.provincia} · ${l.categoria.etiqueta}',
+            imagenUrl: l.imagenUrl,
+            lugarId: l.id,
+          ),
+        );
+      }
+    }
+
+    for (final r in RutasDataSourceLocal.obtenerTodas()) {
+      final idLugar = _lugarIdParaRuta(r);
+      if (idLugar != null) {
+        if (idsLugar.contains(idLugar)) continue;
+        final l = LugaresDataSourceLocal.instancia.porId(idLugar);
+        if (l != null) {
+          idsLugar.add(l.id);
+          resultados.add(
+            _ResultadoLugarBusqueda(
+              titulo: l.nombre,
+              subtitulo: '${l.provincia} · ${l.categoria.etiqueta}',
+              imagenUrl: l.imagenUrl,
+              lugarId: l.id,
+            ),
+          );
+          continue;
+        }
+      }
+      final match = q.isEmpty ||
+          r.titulo.toLowerCase().contains(q) ||
+          r.subtitulo.toLowerCase().contains(q) ||
+          r.descripcion.toLowerCase().contains(q);
+      if (match) {
+        resultados.add(
+          _ResultadoLugarBusqueda(
+            titulo: r.titulo,
+            subtitulo: r.subtitulo.isEmpty ? r.dificultadTexto : r.subtitulo,
+            imagenUrl: r.imagenUrl,
+            ruta: r,
+          ),
+        );
+      }
+    }
+    return resultados;
   }
 
   @override
@@ -73,7 +146,7 @@ class _EstadoPantallaBusquedaInicio
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -86,7 +159,7 @@ class _EstadoPantallaBusquedaInicio
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(
                       Icons.arrow_back_rounded,
-                      color: PaletaRutas.marronOscuro,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
                   Expanded(
@@ -95,7 +168,7 @@ class _EstadoPantallaBusquedaInicio
                       style: TipografiaHaku.titulo(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                   ),
@@ -107,114 +180,126 @@ class _EstadoPantallaBusquedaInicio
               child: LineaEncabezadoInca(altura: 2),
             ),
             Expanded(
-              child: FondoSuaveSeccion(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
-                  children: [
-                    TextField(
-                      controller: _controller,
-                      autofocus: true,
-                      onChanged: (v) => setState(() => _query = v),
-                      style: TipografiaHaku.interfaz(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
+                children: [
+                  TextField(
+                    controller: _controller,
+                    autofocus: true,
+                    onChanged: (v) => setState(() => _query = v),
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
+                    ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: InputDecoration(
+                      hintText: _tipo == TipoBusquedaInicio.personas
+                          ? 'Personas'
+                          : 'Lugares',
+                      hintStyle: TipografiaHaku.interfaz(
                         fontSize: 14,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.plomo,
                       ),
-                      decoration: InputDecoration(
-                        hintText: _tipo == TipoBusquedaInicio.personas
-                            ? 'Personas'
-                            : 'Lugares',
-                        hintStyle: TipografiaHaku.interfaz(
-                          fontSize: 14,
-                          color: PaletaRutas.marronOscuro.withValues(alpha: 0.45),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: PaletaRutas.plomoClaro,
+                      ),
+                      filled: true,
+                      fillColor: PaletaRutas.carbon,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
                         ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
                         ),
-                        filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.72),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: Colors.black.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: Colors.black.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: Colors.black,
-                            width: 1.2,
-                          ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: PaletaRutas.oro,
+                          width: 1.2,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ChipTipo(
-                            etiqueta: 'Personas',
-                            icono: Icons.person_outline_rounded,
-                            activo: _tipo == TipoBusquedaInicio.personas,
-                            onTap: () => setState(
-                              () => _tipo = TipoBusquedaInicio.personas,
-                            ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ChipTipo(
+                          etiqueta: 'Personas',
+                          icono: Icons.person_outline_rounded,
+                          activo: _tipo == TipoBusquedaInicio.personas,
+                          onTap: () => setState(
+                            () => _tipo = TipoBusquedaInicio.personas,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ChipTipo(
-                            etiqueta: 'Lugares',
-                            icono: Icons.place_outlined,
-                            activo: _tipo == TipoBusquedaInicio.lugares,
-                            onTap: () => setState(
-                              () => _tipo = TipoBusquedaInicio.lugares,
-                            ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ChipTipo(
+                          etiqueta: 'Lugares',
+                          icono: Icons.place_outlined,
+                          activo: _tipo == TipoBusquedaInicio.lugares,
+                          onTap: () => setState(
+                            () => _tipo = TipoBusquedaInicio.lugares,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    if (_tipo == TipoBusquedaInicio.personas)
-                      ..._personas.asMap().entries.map(
-                            (e) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _CardPersona(
-                                persona: e.value,
-                                indice: e.key,
-                              ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  if (_tipo == TipoBusquedaInicio.personas)
+                    ..._personas.asMap().entries.map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _CardPersona(
+                              persona: e.value,
+                              indice: e.key,
                             ),
-                          )
-                    else
-                      ..._lugares.asMap().entries.map(
-                            (e) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _CardLugar(
-                                ruta: e.value,
-                                indice: e.key,
-                                onTap: () {
+                          ),
+                        )
+                  else
+                    ..._lugares.asMap().entries.map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _CardLugar(
+                              titulo: e.value.titulo,
+                              subtitulo: e.value.subtitulo,
+                              imagenUrl: e.value.imagenUrl,
+                              indice: e.key,
+                              onTap: () {
+                                if (e.value.lugarId != null) {
                                   Navigator.of(context).push(
                                     MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          PantallaDetalleRuta(ruta: e.value),
+                                      builder: (_) => PantallaDetalleLugar(
+                                        lugarId: e.value.lugarId!,
+                                      ),
                                     ),
                                   );
-                                },
-                              ),
+                                } else if (e.value.ruta != null) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => PantallaDetalleRuta(
+                                        ruta: e.value.ruta!,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           ),
-                  ],
-                ),
+                        ),
+                ],
               ),
             ),
           ],
@@ -247,12 +332,12 @@ class _ChipTipo extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: activo
-                ? Colors.black.withValues(alpha: 0.9)
-                : Colors.white.withValues(alpha: 0.65),
+            color: activo ? PaletaRutas.oro : PaletaRutas.carbon,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.black.withValues(alpha: activo ? 0.9 : 0.16),
+              color: activo
+                  ? PaletaRutas.oro
+                  : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
             ),
           ),
           child: Row(
@@ -261,7 +346,7 @@ class _ChipTipo extends StatelessWidget {
               Icon(
                 icono,
                 size: 18,
-                color: activo ? Colors.white : PaletaRutas.marronOscuro,
+                color: activo ? PaletaRutas.ink : PaletaRutas.plomoClaro,
               ),
               const SizedBox(width: 6),
               Text(
@@ -269,7 +354,7 @@ class _ChipTipo extends StatelessWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: activo ? Colors.white : PaletaRutas.marronOscuro,
+                  color: activo ? PaletaRutas.ink : PaletaRutas.plomoClaro,
                 ),
               ),
             ],
@@ -288,7 +373,6 @@ class _CardPersona extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final veloNegro = indice.isEven;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -305,69 +389,48 @@ class _CardPersona extends ConsumerWidget {
         child: Ink(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
+            color: PaletaRutas.carbon,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.12)),
-            image: DecorationImage(
-              image: AssetImage(FondosDetalleHaku.porIndice(indice)),
-              fit: BoxFit.cover,
-              opacity: 0.45,
+            border: Border.all(
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
             ),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: ColoredBox(
-              color: veloNegro
-                  ? Colors.black.withValues(alpha: 0.62)
-                  : Colors.white.withValues(alpha: 0.78),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
+          child: Row(
+            children: [
+              AvatarHaku(url: persona.avatarUrl, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AvatarHaku(url: persona.avatarUrl, size: 48),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            persona.nombre,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: veloNegro
-                                  ? Colors.white
-                                  : PaletaRutas.marronOscuro,
-                            ),
-                          ),
-                          Text(
-                            persona.usuario,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 12,
-                              color: (veloNegro
-                                      ? Colors.white
-                                      : PaletaRutas.marronOscuro)
-                                  .withValues(alpha: 0.7),
-                            ),
-                          ),
-                          Text(
-                            persona.bioCorta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 12,
-                              color: (veloNegro
-                                      ? Colors.white
-                                      : PaletaRutas.marronOscuro)
-                                  .withValues(alpha: 0.75),
-                            ),
-                          ),
-                        ],
+                    Text(
+                      persona.nombre,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    Text(
+                      persona.usuario,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        color: PaletaRutas.plomoClaro,
+                      ),
+                    ),
+                    Text(
+                      persona.bioCorta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        color: PaletaRutas.plomo,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -376,12 +439,16 @@ class _CardPersona extends ConsumerWidget {
 }
 
 class _CardLugar extends StatelessWidget {
-  final ModeloRuta ruta;
+  final String titulo;
+  final String subtitulo;
+  final String imagenUrl;
   final int indice;
   final VoidCallback onTap;
 
   const _CardLugar({
-    required this.ruta,
+    required this.titulo,
+    required this.subtitulo,
+    required this.imagenUrl,
     required this.indice,
     required this.onTap,
   });
@@ -396,7 +463,9 @@ class _CardLugar extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black, width: 1.1),
+            border: Border.all(
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14.8),
@@ -406,15 +475,15 @@ class _CardLugar extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   CachedNetworkImage(
-                    imageUrl: ruta.imagenUrl,
+                    imageUrl: imagenUrl,
                     fit: BoxFit.cover,
                     errorWidget: (_, __, ___) =>
-                        const ColoredBox(color: Color(0xFFD4C8B8)),
+                        const ColoredBox(color: PaletaRutas.carbon),
                   ),
                   ColoredBox(
-                    color: indice.isEven
-                        ? Colors.black.withValues(alpha: 0.55)
-                        : Colors.black.withValues(alpha: 0.42),
+                    color: PaletaRutas.ink.withValues(
+                      alpha: indice.isEven ? 0.55 : 0.42,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(12),
@@ -423,24 +492,22 @@ class _CardLugar extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          ruta.titulo,
+                          titulo,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TipografiaHaku.titulo(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         Text(
-                          ruta.subtitulo.isEmpty
-                              ? ruta.dificultadTexto
-                              : ruta.subtitulo,
+                          subtitulo,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TipografiaHaku.interfaz(
                             fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.85),
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ],

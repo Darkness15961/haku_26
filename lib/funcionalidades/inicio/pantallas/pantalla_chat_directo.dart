@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
@@ -15,7 +14,8 @@ class PantallaChatDirecto extends ConsumerStatefulWidget {
   const PantallaChatDirecto({super.key, required this.persona});
 
   @override
-  ConsumerState<PantallaChatDirecto> createState() => _EstadoPantallaChatDirecto();
+  ConsumerState<PantallaChatDirecto> createState() =>
+      _EstadoPantallaChatDirecto();
 }
 
 class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
@@ -66,9 +66,8 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
               ),
           ];
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: FondoSuaveSeccion(
-        child: SafeArea(
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -79,7 +78,7 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(
                       Icons.arrow_back_rounded,
-                      color: PaletaRutas.marronOscuro,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
                   AvatarHaku(url: p.avatarUrl, size: 40),
@@ -93,13 +92,14 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
                           style: TipografiaHaku.titulo(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         Text(
                           p.usuario,
                           style: TipografiaHaku.interfaz(
                             fontSize: 12,
-                            color: PaletaRutas.marronCuero,
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ],
@@ -133,15 +133,23 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
                       ),
                       decoration: BoxDecoration(
                         color: m.mio
-                            ? PaletaRutas.marronOscuro
-                            : Colors.white.withValues(alpha: 0.92),
+                            ? PaletaRutas.oro
+                            : PaletaRutas.carbon,
                         borderRadius: BorderRadius.circular(16),
+                        border: m.mio
+                            ? null
+                            : Border.all(
+                                color: PaletaRutas.plomoOscuro
+                                    .withValues(alpha: 0.7),
+                              ),
                       ),
                       child: Text(
                         m.texto,
                         style: TipografiaHaku.interfaz(
                           fontSize: 14,
-                          color: m.mio ? Colors.white : PaletaRutas.marronOscuro,
+                          color: m.mio
+                              ? PaletaRutas.ink
+                              : PaletaRutas.piedra,
                           height: 1.35,
                         ),
                       ),
@@ -159,20 +167,36 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
                       controller: _ctrl,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _enviar(),
+                      style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                      cursorColor: PaletaRutas.oro,
                       decoration: InputDecoration(
                         hintText: 'Mensaje',
                         hintStyle: TipografiaHaku.interfaz(
-                          color: PaletaRutas.marronCuero,
+                          color: PaletaRutas.plomo,
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: PaletaRutas.carbon,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(22),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: PaletaRutas.plomoOscuro
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: BorderSide(
+                            color: PaletaRutas.plomoOscuro
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(color: PaletaRutas.oro),
                         ),
                       ),
                     ),
@@ -181,8 +205,8 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
                   IconButton.filled(
                     onPressed: _enviar,
                     style: IconButton.styleFrom(
-                      backgroundColor: PaletaRutas.marronOscuro,
-                      foregroundColor: Colors.white,
+                      backgroundColor: PaletaRutas.oro,
+                      foregroundColor: PaletaRutas.ink,
                     ),
                     icon: const Icon(Icons.send_rounded),
                   ),
@@ -190,7 +214,6 @@ class _EstadoPantallaChatDirecto extends ConsumerState<PantallaChatDirecto> {
               ),
             ),
           ],
-        ),
         ),
       ),
     );

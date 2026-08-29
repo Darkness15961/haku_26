@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
+import '../../comunidad/pantallas/pantalla_detalle_comunidad.dart';
 import '../../comunidad/widgets/chip_categoria_comunidad.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
@@ -83,7 +84,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Grupo "$nombre" creado'),
+        content: Text('Equipo "$nombre" creado'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -95,17 +96,20 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _EncabezadoSeccion(
-              titulo: 'Crear grupo',
+              titulo: 'Crear equipo de ruta',
               onBack: () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: FondoSuaveSeccion(
+                color: PaletaRutas.ink,
+                opacidadImagen: 0,
+                opacidadVelo: 0,
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
                   children: [
@@ -114,13 +118,17 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _nombreCtrl,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: _inputDecoration('Ej. Trek Humantay'),
                     ),
                     const SizedBox(height: 22),
@@ -129,7 +137,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -160,11 +168,10 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                           p.usuario,
                           style: TipografiaHaku.interfaz(
                             fontSize: 12,
-                            color: PaletaRutas.marronOscuro
-                                .withValues(alpha: 0.65),
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
-                        activeColor: Colors.black,
+                        activeColor: PaletaRutas.oro,
                       );
                     }),
                     const SizedBox(height: 16),
@@ -173,7 +180,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -181,7 +188,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                       'Se elimina al terminar.',
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
-                        color: PaletaRutas.marronOscuro.withValues(alpha: 0.65),
+                        color: PaletaRutas.plomoClaro,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -198,12 +205,15 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: sel
-                                    ? Colors.black.withValues(alpha: 0.88)
-                                    : Colors.white.withValues(alpha: 0.72),
+                                    ? PaletaRutas.oro.withValues(alpha: 0.18)
+                                    : PaletaRutas.carbon,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: Colors.black
-                                      .withValues(alpha: sel ? 0.9 : 0.16),
+                                  color: sel
+                                      ? PaletaRutas.oro
+                                      : PaletaRutas.plomoOscuro.withValues(
+                                          alpha: 0.7,
+                                        ),
                                 ),
                               ),
                               child: Row(
@@ -234,8 +244,8 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
                                             color: sel
-                                                ? Colors.white
-                                                : PaletaRutas.marronOscuro,
+                                                ? PaletaRutas.oro
+                                                : PaletaRutas.piedra,
                                           ),
                                         ),
                                         Text(
@@ -243,9 +253,9 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                                           style: TipografiaHaku.interfaz(
                                             fontSize: 12,
                                             color: (sel
-                                                    ? Colors.white
-                                                    : PaletaRutas.marronOscuro)
-                                                .withValues(alpha: 0.7),
+                                                    ? PaletaRutas.oro
+                                                    : PaletaRutas.plomoClaro)
+                                                .withValues(alpha: 0.85),
                                           ),
                                         ),
                                       ],
@@ -254,7 +264,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                                   if (sel)
                                     const Icon(
                                       Icons.check_circle,
-                                      color: Colors.white,
+                                      color: PaletaRutas.oro,
                                     ),
                                 ],
                               ),
@@ -269,8 +279,8 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                       child: FilledButton(
                         onPressed: _crear,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.92),
-                          foregroundColor: Colors.white,
+                          backgroundColor: PaletaRutas.oro,
+                          foregroundColor: PaletaRutas.ink,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -280,7 +290,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                           style: TipografiaHaku.interfaz(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.ink,
                           ),
                         ),
                       ),
@@ -344,7 +354,7 @@ class _EstadoPantallaCrearComunidad
         ? 'Comunidad'
         : _descCtrl.text.trim();
 
-    await ref.read(almacenFeedProvider.notifier).crearComunidad(
+    final id = await ref.read(almacenFeedProvider.notifier).crearComunidad(
           nombre: nombre,
           descripcion: desc,
           categorias: _categorias.toList(),
@@ -353,9 +363,18 @@ class _EstadoPantallaCrearComunidad
 
     if (!mounted) return;
     Navigator.of(context).pop(true);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaDetalleComunidad(comunidadId: id),
+      ),
+    );
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Creada'),
+        content: Text(
+          'Comunidad "$nombre" creada',
+          style: TipografiaHaku.interfaz(color: Colors.white),
+        ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -370,17 +389,20 @@ class _EstadoPantallaCrearComunidad
         personas.isEmpty ? FeedInicioDataSourceLocal.sugerencias : personas;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _EncabezadoSeccion(
-              titulo: 'Comunidad',
+              titulo: 'Crear comunidad',
               onBack: () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: FondoSuaveSeccion(
+                color: PaletaRutas.ink,
+                opacidadImagen: 0,
+                opacidadVelo: 0,
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(16, 14, 16, bottomPad),
                   children: [
@@ -389,13 +411,17 @@ class _EstadoPantallaCrearComunidad
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _nombreCtrl,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: _inputDecoration('Ej. Trekkers Cusco'),
                     ),
                     const SizedBox(height: 18),
@@ -404,7 +430,7 @@ class _EstadoPantallaCrearComunidad
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -434,14 +460,18 @@ class _EstadoPantallaCrearComunidad
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _descCtrl,
                       maxLines: 3,
-                      style: TipografiaHaku.interfaz(fontSize: 14),
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
                       decoration: _inputDecoration(
                         'De qué trata tu comunidad…',
                       ),
@@ -452,7 +482,7 @@ class _EstadoPantallaCrearComunidad
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -483,11 +513,10 @@ class _EstadoPantallaCrearComunidad
                           p.usuario,
                           style: TipografiaHaku.interfaz(
                             fontSize: 12,
-                            color: PaletaRutas.marronOscuro
-                                .withValues(alpha: 0.65),
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
-                        activeColor: Colors.black,
+                        activeColor: PaletaRutas.oro,
                       );
                     }),
                     const SizedBox(height: 20),
@@ -496,8 +525,8 @@ class _EstadoPantallaCrearComunidad
                       child: FilledButton(
                         onPressed: _crear,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.92),
-                          foregroundColor: Colors.white,
+                          backgroundColor: PaletaRutas.oro,
+                          foregroundColor: PaletaRutas.ink,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -507,7 +536,7 @@ class _EstadoPantallaCrearComunidad
                           style: TipografiaHaku.interfaz(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.ink,
                           ),
                         ),
                       ),
@@ -528,22 +557,26 @@ InputDecoration _inputDecoration(String hint) {
     hintText: hint,
     hintStyle: TipografiaHaku.interfaz(
       fontSize: 14,
-      color: PaletaRutas.marronOscuro.withValues(alpha: 0.45),
+      color: PaletaRutas.plomo,
     ),
     filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.75),
+    fillColor: PaletaRutas.carbon,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.18)),
+      borderSide: BorderSide(
+        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+      ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.18)),
+      borderSide: BorderSide(
+        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+      ),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.black, width: 1.2),
+      borderSide: const BorderSide(color: PaletaRutas.oro, width: 1.2),
     ),
   );
 }
@@ -569,7 +602,7 @@ class _EncabezadoSeccion extends StatelessWidget {
                 onPressed: onBack,
                 icon: const Icon(
                   Icons.arrow_back_rounded,
-                  color: PaletaRutas.marronOscuro,
+                  color: PaletaRutas.piedra,
                 ),
               ),
               Expanded(
@@ -578,7 +611,7 @@ class _EncabezadoSeccion extends StatelessWidget {
                   style: TipografiaHaku.titulo(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: PaletaRutas.marronOscuro,
+                    color: PaletaRutas.piedra,
                   ),
                 ),
               ),

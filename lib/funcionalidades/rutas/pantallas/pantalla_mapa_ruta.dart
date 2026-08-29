@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../widgets/boton_primario_ruta.dart';
 import '../widgets/estilos_rutas.dart';
-import '../widgets/fondo_suave_seccion.dart';
 import '../widgets/linea_encabezado_inca.dart';
 
 /// Mapa simulado + cómo llegar (sin SDK externo).
@@ -52,9 +51,9 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
       SnackBar(
         content: Text(
           'Copiado',
-          style: TipografiaHaku.interfaz(color: Colors.white),
+          style: TipografiaHaku.interfaz(color: PaletaRutas.ink),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: PaletaRutas.oro,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -67,35 +66,35 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
     final bottom = MediaQuery.paddingOf(context).bottom + 20;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: FondoSuaveSeccion(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: PaletaRutas.marronOscuro,
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Cómo llegar',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
-                    Expanded(
-                      child: Text(
-                        'Cómo llegar',
-                        style: TipografiaHaku.titulo(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: LineaEncabezadoInca(altura: 2),
@@ -109,6 +108,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                       style: TipografiaHaku.titulo(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     if (ruta.puntoPartida.isNotEmpty) ...[
@@ -117,7 +117,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                         'Partida: ${ruta.puntoPartida}',
                         style: TipografiaHaku.interfaz(
                           fontSize: 13,
-                          color: PaletaRutas.marronCuero,
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                     ],
@@ -191,6 +191,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -264,6 +265,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                         style: TipografiaHaku.titulo(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -276,13 +278,16 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                               const Icon(
                                 Icons.check_circle_outline,
                                 size: 18,
-                                color: PaletaRutas.verdeBosque,
+                                color: PaletaRutas.oro,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   t,
-                                  style: TipografiaHaku.interfaz(fontSize: 13),
+                                  style: TipografiaHaku.interfaz(
+                                    fontSize: 13,
+                                    color: PaletaRutas.plomoClaro,
+                                  ),
                                 ),
                               ),
                             ],
@@ -301,7 +306,6 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -372,7 +376,7 @@ class _TileParada extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Copiar coords',
+                  tooltip: 'Copiar coordenadas',
                   onPressed: onCopiar,
                   icon: const Icon(
                     Icons.my_location_rounded,

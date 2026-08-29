@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../proveedores/proveedor_sesion.dart';
@@ -81,9 +80,9 @@ class _EstadoPantallaIniciarSesion
     final bottom = MediaQuery.paddingOf(context).bottom + 20;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: PaletaRutas.ink,
         body: SafeArea(
           child: Column(
             children: [
@@ -95,7 +94,7 @@ class _EstadoPantallaIniciarSesion
                       onPressed: () => Navigator.of(context).pop(false),
                       icon: const Icon(
                         Icons.close_rounded,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     Expanded(
@@ -105,6 +104,7 @@ class _EstadoPantallaIniciarSesion
                         style: TipografiaHaku.titulo(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                     ),
@@ -117,229 +117,243 @@ class _EstadoPantallaIniciarSesion
                 child: LineaEncabezadoInca(altura: 2),
               ),
               Expanded(
-                child: FondoSuaveSeccion(
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(20, 24, 20, bottom),
-                    children: [
-                      Text(
-                        'HAKU',
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.logo(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.marronOscuro,
-                        ),
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(20, 24, 20, bottom),
+                  children: [
+                    Text(
+                      'HAKU',
+                      textAlign: TextAlign.center,
+                      style: TipografiaHaku.logo(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Entrar',
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 14,
-                          color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
-                        ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Entrar',
+                      textAlign: TextAlign.center,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.plomoClaro,
                       ),
-                      const SizedBox(height: 28),
-                      Text(
-                        'Correo',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Correo',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _correoCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        style: TipografiaHaku.interfaz(fontSize: 14),
-                        decoration: decoracionCampoAuth(
-                          'tu@correo.com',
-                          icono: Icons.mail_outline_rounded,
-                        ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _correoCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
                       ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Contraseña',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      cursorColor: PaletaRutas.oro,
+                      decoration: decoracionCampoAuth(
+                        'tu@correo.com',
+                        icono: Icons.mail_outline_rounded,
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _claveCtrl,
-                        obscureText: _ocultarClave,
-                        style: TipografiaHaku.interfaz(fontSize: 14),
-                        decoration: decoracionCampoAuth(
-                          '••••••••',
-                          icono: Icons.lock_outline_rounded,
-                          suffix: IconButton(
-                            onPressed: () => setState(
-                              () => _ocultarClave = !_ocultarClave,
-                            ),
-                            icon: Icon(
-                              _ocultarClave
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: PaletaRutas.marronOscuro
-                                  .withValues(alpha: 0.55),
-                            ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Contraseña',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _claveCtrl,
+                      obscureText: _ocultarClave,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 14,
+                        color: PaletaRutas.piedra,
+                      ),
+                      cursorColor: PaletaRutas.oro,
+                      decoration: decoracionCampoAuth(
+                        '••••••••',
+                        icono: Icons.lock_outline_rounded,
+                        suffix: IconButton(
+                          onPressed: () => setState(
+                            () => _ocultarClave = !_ocultarClave,
+                          ),
+                          icon: Icon(
+                            _ocultarClave
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    const PantallaRecuperarContrasena(),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const PantallaRecuperarContrasena(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          '¿Olvidaste?',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.oro,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 50,
+                      child: FilledButton(
+                        onPressed: _cargando ? null : _ingresar,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: PaletaRutas.oro,
+                          foregroundColor: PaletaRutas.ink,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _cargando
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: PaletaRutas.ink,
+                                ),
+                              )
+                            : Text(
+                                'Iniciar sesión',
+                                style: TipografiaHaku.interfaz(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: PaletaRutas.ink,
+                                ),
                               ),
-                            );
-                          },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: PaletaRutas.plomoOscuro.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
-                            '¿Olvidaste?',
+                            'o',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: PaletaRutas.verdeBosque,
+                              color: PaletaRutas.plomo,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 50,
-                        child: FilledButton(
-                          onPressed: _cargando ? null : _ingresar,
-                          style: FilledButton.styleFrom(
-                            backgroundColor:
-                                Colors.black.withValues(alpha: 0.92),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Expanded(
+                          child: Divider(
+                            color: PaletaRutas.plomoOscuro.withValues(
+                              alpha: 0.7,
                             ),
                           ),
-                          child: _cargando
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  'Iniciar sesión',
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: _cargando ? null : _google,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: PaletaRutas.piedra,
+                          side: BorderSide(
+                            color: PaletaRutas.plomoOscuro.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                          backgroundColor: PaletaRutas.carbon,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+                        label: Text(
+                          'Iniciar sesión con Google',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.black.withValues(alpha: 0.15),
-                            ),
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '¿Sin cuenta? ',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 13,
+                            color: PaletaRutas.plomoClaro,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              'o',
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 12,
-                                color: PaletaRutas.marronOscuro
-                                    .withValues(alpha: 0.5),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final ok = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (_) => const PantallaRegistro(),
                               ),
-                            ),
+                            );
+                            if (!mounted) return;
+                            if (ok == true) {
+                              Navigator.of(context).pop(true);
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.black.withValues(alpha: 0.15),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 50,
-                        child: OutlinedButton.icon(
-                          onPressed: _cargando ? null : _google,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: PaletaRutas.marronOscuro,
-                            side: BorderSide(
-                              color: Colors.black.withValues(alpha: 0.22),
-                            ),
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.75),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                          label: Text(
-                            'Iniciar sesión con Google',
+                          child: Text(
+                            'Crear',
                             style: TipografiaHaku.interfaz(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: PaletaRutas.oro,
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Términos y Condiciones',
+                      textAlign: TextAlign.center,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 11,
+                        color: PaletaRutas.plomo,
                       ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            '¿Sin cuenta? ',
-                            style: TipografiaHaku.interfaz(fontSize: 13),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              final ok = await Navigator.of(context).push<bool>(
-                                MaterialPageRoute(
-                                  builder: (_) => const PantallaRegistro(),
-                                ),
-                              );
-                              if (!mounted) return;
-                              if (ok == true) {
-                                Navigator.of(context).pop(true);
-                              }
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Crear',
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: PaletaRutas.verdeBosque,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        'Términos y Condiciones',
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 11,
-                          color: PaletaRutas.marronOscuro.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -359,26 +373,30 @@ InputDecoration decoracionCampoAuth(
     hintText: hint,
     hintStyle: TipografiaHaku.interfaz(
       fontSize: 14,
-      color: PaletaRutas.marronOscuro.withValues(alpha: 0.4),
+      color: PaletaRutas.plomo,
     ),
     prefixIcon: icono == null
         ? null
-        : Icon(icono, color: PaletaRutas.marronOscuro.withValues(alpha: 0.55)),
+        : Icon(icono, color: PaletaRutas.plomoClaro),
     suffixIcon: suffix,
     filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.78),
+    fillColor: PaletaRutas.carbon,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.16)),
+      borderSide: BorderSide(
+        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+      ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.16)),
+      borderSide: BorderSide(
+        color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+      ),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.black, width: 1.2),
+      borderSide: const BorderSide(color: PaletaRutas.oro, width: 1.2),
     ),
   );
 }

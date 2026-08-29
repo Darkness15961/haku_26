@@ -324,7 +324,7 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
     await _persistir();
   }
 
-  Future<void> crearComunidad({
+  Future<String> crearComunidad({
     required String nombre,
     required String descripcion,
     required List<CategoriaLugar> categorias,
@@ -348,6 +348,7 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
       comunidadIds: {...state.comunidadIds, id},
     );
     await _persistir();
+    return id;
   }
 
   EstadoAlmacenFeed _desdeDocumento(Map<String, dynamic> doc) {

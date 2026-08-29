@@ -8,7 +8,6 @@ import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelo_comunidad.dart';
 import '../widgets/chip_categoria_comunidad.dart';
@@ -31,9 +30,18 @@ class PantallaDetalleComunidad extends ConsumerWidget {
     }
     if (comunidad == null) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(backgroundColor: Colors.white),
-        body: const Center(child: Text('Comunidad no encontrada')),
+        backgroundColor: PaletaRutas.ink,
+        appBar: AppBar(
+          backgroundColor: PaletaRutas.ink,
+          foregroundColor: PaletaRutas.piedra,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Text(
+            'Comunidad no encontrada',
+            style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+          ),
+        ),
       );
     }
 
@@ -46,9 +54,8 @@ class PantallaDetalleComunidad extends ConsumerWidget {
     final bottom = MediaQuery.paddingOf(context).bottom + 24;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: FondoSuaveSeccion(
-        child: CustomScrollView(
+      backgroundColor: PaletaRutas.ink,
+      body: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: SizedBox(
@@ -89,11 +96,13 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                             ),
                             const Spacer(),
                             IconButton(
-                              tooltip: 'Salidas',
+                              tooltip: 'Salidas de la comunidad',
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (_) => const PantallaSalidas(),
+                                    builder: (_) => PantallaSalidas(
+                                      comunidadId: c.id,
+                                    ),
                                   ),
                                 );
                               },
@@ -120,7 +129,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: PaletaRutas.terracota.withValues(alpha: 0.92),
+                              color: PaletaRutas.oro,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -128,7 +137,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: PaletaRutas.ink,
                               ),
                             ),
                           ),
@@ -220,6 +229,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -227,7 +237,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                       Text(
                         'Aún no hay miembros visibles',
                         style: TipografiaHaku.interfaz(
-                          color: PaletaRutas.marronCuero,
+                          color: PaletaRutas.plomoClaro,
                         ),
                       )
                     else
@@ -285,7 +295,6 @@ class PantallaDetalleComunidad extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

@@ -91,14 +91,21 @@ class _EstadoPantallaRegistrarLugar
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: PaletaRutas.crema,
+        backgroundColor: PaletaRutas.carbon,
         title: Text(
           'Nuevo lugar',
-          style: TipografiaHaku.titulo(fontSize: 22, fontWeight: FontWeight.w700),
+          style: TipografiaHaku.titulo(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
+          ),
         ),
         content: Text(
           '+50 pts',
-          style: TipografiaHaku.interfaz(height: 1.4),
+          style: TipografiaHaku.interfaz(
+            height: 1.4,
+            color: PaletaRutas.plomoClaro,
+          ),
         ),
         actions: [
           TextButton(
@@ -107,7 +114,7 @@ class _EstadoPantallaRegistrarLugar
               'Continuar',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w700,
-                color: PaletaRutas.verdeBosque,
+                color: PaletaRutas.oro,
               ),
             ),
           ),
@@ -120,48 +127,97 @@ class _EstadoPantallaRegistrarLugar
   void _aviso(String m) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(m, style: TipografiaHaku.interfaz(color: Colors.white)),
-        backgroundColor: PaletaRutas.marronOscuro,
+        content: Text(
+          m,
+          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+        ),
+        backgroundColor: PaletaRutas.carbon,
       ),
     );
   }
 
+  InputDecoration _campo(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+      hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
+      filled: true,
+      fillColor: PaletaRutas.carbon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: PaletaRutas.oro),
+      ),
+    );
+  }
+
+  TextStyle get _tituloPaso => TipografiaHaku.titulo(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: PaletaRutas.piedra,
+      );
+
+  TextStyle get _textoPaso => TipografiaHaku.interfaz(
+        color: PaletaRutas.piedra,
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: PaletaRutas.marronOscuro,
+        backgroundColor: PaletaRutas.ink,
+        foregroundColor: PaletaRutas.piedra,
         elevation: 0,
         title: Text(
           'Agregar lugar',
-          style: TipografiaHaku.titulo(fontSize: 20, fontWeight: FontWeight.w700),
+          style: TipografiaHaku.titulo(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
+          ),
         ),
       ),
       body: FondoSuaveSeccion(
+        color: PaletaRutas.ink,
+        opacidadImagen: 0,
+        opacidadVelo: 0,
         child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Paso ${_paso + 1} de 5',
-                style: TipografiaHaku.interfaz(
-                  fontSize: 12,
-                  color: PaletaRutas.marronCuero,
-                  fontWeight: FontWeight.w600,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Paso ${_paso + 1} de 5',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: PaletaRutas.plomoClaro,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              LinearProgressIndicator(
-                value: (_paso + 1) / 5,
-                backgroundColor: PaletaRutas.beigeEnvejecido,
-                color: PaletaRutas.verdeBosque,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(4),
-              ),
+                const SizedBox(height: 6),
+                LinearProgressIndicator(
+                  value: (_paso + 1) / 5,
+                  backgroundColor: PaletaRutas.plomoOscuro.withValues(
+                    alpha: 0.5,
+                  ),
+                  color: PaletaRutas.oro,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               const SizedBox(height: 10),
               const LineaEncabezadoInca(altura: 2),
               const SizedBox(height: 18),
@@ -173,7 +229,7 @@ class _EstadoPantallaRegistrarLugar
             ],
           ),
         ),
-      ),
+        ),
       ),
     );
   }
@@ -183,10 +239,7 @@ class _EstadoPantallaRegistrarLugar
       case 0:
         return ListView(
           children: [
-            Text(
-              'Lugar',
-              style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+            Text('Lugar', style: _tituloPaso),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {
@@ -199,9 +252,12 @@ class _EstadoPantallaRegistrarLugar
                 style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: PaletaRutas.marronOscuro,
+                foregroundColor: PaletaRutas.piedra,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: PaletaRutas.marronCuero),
+                side: BorderSide(
+                  color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                ),
+                backgroundColor: PaletaRutas.carbon,
               ),
             ),
             const SizedBox(height: 12),
@@ -209,31 +265,27 @@ class _EstadoPantallaRegistrarLugar
               contentPadding: EdgeInsets.zero,
               title: Text(
                 'Ubicación',
-                style: TipografiaHaku.interfaz(fontWeight: FontWeight.w600),
+                style: TipografiaHaku.interfaz(
+                  fontWeight: FontWeight.w600,
+                  color: PaletaRutas.piedra,
+                ),
               ),
               value: _usandoUbicacion,
-              activeColor: PaletaRutas.verdeBosque,
+              activeColor: PaletaRutas.oro,
               onChanged: (v) => setState(() => _usandoUbicacion = v),
             ),
             TextField(
               controller: _nombre,
-              decoration: InputDecoration(
-                labelText: 'Nombre',
-                labelStyle: TipografiaHaku.interfaz(),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              style: _textoPaso,
+              cursorColor: PaletaRutas.oro,
+              decoration: _campo('Nombre'),
             ),
           ],
         );
       case 1:
         return ListView(
           children: [
-            Text(
-              'Tipo',
-              style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+            Text('Tipo', style: _tituloPaso),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -244,10 +296,16 @@ class _EstadoPantallaRegistrarLugar
                   label: Text(c.etiqueta),
                   selected: sel,
                   onSelected: (_) => setState(() => _categoria = c),
-                  selectedColor: PaletaRutas.pergamino,
+                  selectedColor: PaletaRutas.oro.withValues(alpha: 0.22),
+                  backgroundColor: PaletaRutas.carbon,
+                  side: BorderSide(
+                    color: sel
+                        ? PaletaRutas.oro
+                        : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                  ),
                   labelStyle: TipografiaHaku.interfaz(
                     fontWeight: FontWeight.w700,
-                    color: PaletaRutas.marronOscuro,
+                    color: sel ? PaletaRutas.oro : PaletaRutas.plomoClaro,
                   ),
                 );
               }).toList(),
@@ -257,17 +315,14 @@ class _EstadoPantallaRegistrarLugar
       case 2:
         return ListView(
           children: [
-            Text(
-              'Acceso',
-              style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+            Text('Acceso', style: _tituloPaso),
             const SizedBox(height: 16),
             ...['Auto', 'Transporte', 'Caminando', 'Caballo'].map((a) {
               return RadioListTile<String>(
-                title: Text(a, style: TipografiaHaku.interfaz()),
+                title: Text(a, style: _textoPaso),
                 value: a,
                 groupValue: _acceso,
-                activeColor: PaletaRutas.verdeBosque,
+                activeColor: PaletaRutas.oro,
                 onChanged: (v) => setState(() => _acceso = v!),
               );
             }),
@@ -276,17 +331,14 @@ class _EstadoPantallaRegistrarLugar
       case 3:
         return ListView(
           children: [
-            Text(
-              'Dificultad',
-              style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+            Text('Dificultad', style: _tituloPaso),
             const SizedBox(height: 16),
             ...['Fácil', 'Medio', 'Difícil'].map((d) {
               return RadioListTile<String>(
-                title: Text(d, style: TipografiaHaku.interfaz()),
+                title: Text(d, style: _textoPaso),
                 value: d,
                 groupValue: _dificultad,
-                activeColor: PaletaRutas.verdeBosque,
+                activeColor: PaletaRutas.oro,
                 onChanged: (v) => setState(() => _dificultad = v!),
               );
             }),
@@ -295,21 +347,14 @@ class _EstadoPantallaRegistrarLugar
       default:
         return ListView(
           children: [
-            Text(
-              'Experiencia',
-              style: TipografiaHaku.titulo(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+            Text('Experiencia', style: _tituloPaso),
             const SizedBox(height: 16),
             TextField(
               controller: _experiencia,
               maxLines: 6,
-              decoration: InputDecoration(
-                hintText: 'Qué viste',
-                hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.marronCuero),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              style: _textoPaso,
+              cursorColor: PaletaRutas.oro,
+              decoration: _campo('Qué viste', hint: 'Qué viste'),
             ),
           ],
         );

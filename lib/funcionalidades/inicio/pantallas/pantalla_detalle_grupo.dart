@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
-import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/mensajes_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
@@ -19,17 +17,21 @@ class PantallaDetalleGrupo extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: PaletaRutas.carbon,
         title: Text(
           'Finalizar ruta',
           style: TipografiaHaku.titulo(
             fontSize: 20,
             fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
           ),
         ),
         content: Text(
-          'Se elimina el grupo.',
-          style: TipografiaHaku.interfaz(fontSize: 14),
+          'Se elimina el equipo.',
+          style: TipografiaHaku.interfaz(
+            fontSize: 14,
+            color: PaletaRutas.plomoClaro,
+          ),
         ),
         actions: [
           TextButton(
@@ -38,20 +40,20 @@ class PantallaDetalleGrupo extends ConsumerWidget {
               'Cancelar',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w700,
-                color: PaletaRutas.marronOscuro,
+                color: PaletaRutas.plomoClaro,
               ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.9),
+              backgroundColor: PaletaRutas.oro,
             ),
             child: Text(
               'Eliminar',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: PaletaRutas.ink,
               ),
             ),
           ),
@@ -67,7 +69,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
     Navigator.of(context).pop(true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Grupo eliminado'),
+        content: Text('Equipo eliminado'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.black.withValues(alpha: 0.9),
       ),
@@ -80,7 +82,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
     final miembros = grupo.miembros;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: PaletaRutas.ink,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,7 +97,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(
                           Icons.arrow_back_rounded,
-                          color: PaletaRutas.marronOscuro,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                       Expanded(
@@ -106,7 +108,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                           style: TipografiaHaku.titulo(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: PaletaRutas.marronOscuro,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                       ),
@@ -120,27 +122,26 @@ class PantallaDetalleGrupo extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: FondoSuaveSeccion(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-                  children: [
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
+                children: [
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.9),
+                        color: PaletaRutas.carbon,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
                         ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ruta del grupo',
+                            'Ruta del equipo',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.7),
+                              color: PaletaRutas.plomoClaro,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -149,7 +150,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                             style: TipografiaHaku.titulo(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -157,7 +158,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                             '${grupo.miembroIds.length} · ${grupo.esCreador ? 'Creador' : 'Miembro'}',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.75),
+                              color: PaletaRutas.plomo,
                             ),
                           ),
                         ],
@@ -169,7 +170,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                       style: TipografiaHaku.titulo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PaletaRutas.marronOscuro,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -179,16 +180,11 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
+                            color: PaletaRutas.carbon,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.12),
-                            ),
-                            image: DecorationImage(
-                              image: AssetImage(
-                                FondosDetalleHaku.porIndice(i),
-                              ),
-                              fit: BoxFit.cover,
-                              opacity: 0.35,
+                              color: PaletaRutas.plomoOscuro
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                           child: Row(
@@ -201,6 +197,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
+                                    color: PaletaRutas.piedra,
                                   ),
                                 ),
                               ),
@@ -214,7 +211,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                         'Se elimina al terminar.',
                         style: TipografiaHaku.interfaz(
                           fontSize: 12,
-                          color: PaletaRutas.marronOscuro.withValues(alpha: 0.7),
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -223,10 +220,11 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                         child: OutlinedButton.icon(
                           onPressed: () => _finalizar(context, ref),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor:
-                                const Color(0xFF9C3B2E).withValues(alpha: 0.95),
-                            side: BorderSide.none,
+                            foregroundColor: PaletaRutas.oro,
+                            backgroundColor: PaletaRutas.carbon,
+                            side: BorderSide(
+                              color: PaletaRutas.oro.withValues(alpha: 0.6),
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -237,7 +235,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                             style: TipografiaHaku.interfaz(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: PaletaRutas.oro,
                             ),
                           ),
                         ),
@@ -245,7 +243,6 @@ class PantallaDetalleGrupo extends ConsumerWidget {
                     ],
                   ],
                 ),
-              ),
             ),
           ],
         ),

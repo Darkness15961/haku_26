@@ -278,9 +278,15 @@ class SalidasDataSourceLocal {
     ),
   ];
 
-  List<ModeloSalida> todas({String? lugarId}) {
-    if (lugarId == null) return List.unmodifiable(_salidas);
-    return _salidas.where((s) => s.lugarId == lugarId).toList();
+  List<ModeloSalida> todas({String? lugarId, String? comunidadId}) {
+    Iterable<ModeloSalida> list = _salidas;
+    if (lugarId != null) {
+      list = list.where((s) => s.lugarId == lugarId);
+    }
+    if (comunidadId != null) {
+      list = list.where((s) => s.comunidadId == comunidadId);
+    }
+    return List.unmodifiable(list);
   }
 
   ModeloSalida? porId(String id) {

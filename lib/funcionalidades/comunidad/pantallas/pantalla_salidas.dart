@@ -4,18 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
+import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/salidas_datasource_local.dart';
 import '../widgets/mapa_punto_encuentro.dart';
 import 'pantalla_check_in.dart';
-import 'pantalla_crear_salida.dart';
 
 class PantallaSalidas extends ConsumerStatefulWidget {
-  const PantallaSalidas({super.key, this.lugarId});
+  const PantallaSalidas({super.key, this.lugarId, this.comunidadId});
 
   final String? lugarId;
+  final String? comunidadId;
 
   @override
   ConsumerState<PantallaSalidas> createState() => _EstadoPantallaSalidas();
@@ -24,18 +26,28 @@ class PantallaSalidas extends ConsumerStatefulWidget {
 class _EstadoPantallaSalidas extends ConsumerState<PantallaSalidas> {
   @override
   Widget build(BuildContext context) {
-    ref.watch(almacenFeedProvider);
+    final store = ref.watch(almacenFeedProvider);
     final salidas = SalidasDataSourceLocal.instancia.todas(
       lugarId: widget.lugarId,
+      comunidadId: widget.comunidadId,
     );
     final bottom = MediaQuery.paddingOf(context).bottom + 24;
     final inscritos = salidas.fold<int>(0, (s, x) => s + x.inscritos);
     final lugar = widget.lugarId == null
         ? null
         : LugaresDataSourceLocal.instancia.porId(widget.lugarId!);
+    String? tituloComunidad;
+    if (widget.comunidadId != null) {
+      for (final c in store.comunidades) {
+        if (c.id == widget.comunidadId) {
+          tituloComunidad = c.nombre;
+          break;
+        }
+      }
+    }
     final tituloSitio = lugar?.nombre ??
         (salidas.isNotEmpty ? salidas.first.lugarNombre : null);
-    final tituloAppBar = tituloSitio ?? 'Salidas';
+    final tituloAppBar = tituloComunidad ?? tituloSitio ?? 'Salidas';
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -67,24 +79,7 @@ class _EstadoPantallaSalidas extends ConsumerState<PantallaSalidas> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Crear salida',
-                      onPressed: () async {
-                        final ok = await asegurarSesion(context, ref);
-                        if (!ok || !mounted) return;
-                        await Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                PantallaCrearSalida(lugarId: widget.lugarId),
-                          ),
-                        );
-                        if (mounted) setState(() {});
-                      },
-                      icon: const Icon(
-                        Icons.add_rounded,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -110,7 +105,9 @@ class _EstadoPantallaSalidas extends ConsumerState<PantallaSalidas> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Sin salidas en este sitio',
+                        widget.comunidadId != null
+                            ? 'Sin salidas en esta comunidad'
+                            : 'Sin salidas en este sitio',
                         style: TipografiaHaku.titulo(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -118,25 +115,29 @@ class _EstadoPantallaSalidas extends ConsumerState<PantallaSalidas> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      Text(
+                        'Crea salidas desde Comunidad → Salidas',
+                        textAlign: TextAlign.center,
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 13,
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: () async {
-                          final ok = await asegurarSesion(context, ref);
-                          if (!ok || !mounted) return;
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => PantallaCrearSalida(
-                                lugarId: widget.lugarId,
-                              ),
-                            ),
-                          );
-                          if (mounted) setState(() {});
+                        onPressed: () {
+                          ref.read(pestaniaShellInicioProvider.notifier).state =
+                              2;
+                          ref.read(pestaniaComunidadProvider.notifier).state =
+                              1;
+                          Navigator.of(context).popUntil((r) => r.isFirst);
                         },
                         style: FilledButton.styleFrom(
                           backgroundColor: PaletaRutas.oro,
                           foregroundColor: PaletaRutas.ink,
                         ),
                         child: Text(
-                          'Crear salida',
+                          'Ir a Comunidad',
                           style: TipografiaHaku.interfaz(
                             fontWeight: FontWeight.w800,
                             color: PaletaRutas.ink,
