@@ -2,23 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/imagen_haku.dart';
-import '../../autenticacion/navegacion_auth.dart';
-import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../rutas/widgets/boton_icono_accion.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
-import '../widgets/boton_ver_salidas_lugar.dart';
+import '../widgets/lista_experiencias_lugar.dart';
+import '../widgets/menu_acciones_lugar.dart';
 
 /// Ficha de lugar — Conoce más (Descubre / Explora).
-class PantallaDetalleLugar extends ConsumerWidget {
+class PantallaDetalleLugar extends ConsumerStatefulWidget {
   const PantallaDetalleLugar({super.key, required this.lugarId});
 
   final String lugarId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final lugar = ref.watch(lugaresDataSourceProvider).porId(lugarId);
-    if (lugar == null) {
+  ConsumerState<PantallaDetalleLugar> createState() =>
+      _EstadoPantallaDetalleLugar();
+}
+
+class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
+  bool _menuAbierto = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final lugar = ref.watch(lugaresDataSourceProvider).porId(widget.lugarId);    if (lugar == null) {
       return Scaffold(
         backgroundColor: PaletaRutas.ink,
         appBar: AppBar(
@@ -41,9 +48,10 @@ class PantallaDetalleLugar extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [          SliverAppBar(
             expandedHeight: 300,
             pinned: true,
             backgroundColor: PaletaRutas.ink,
@@ -122,8 +130,7 @@ class PantallaDetalleLugar extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 28 + bottom),
-              child: Column(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 100 + bottom),              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
@@ -251,44 +258,45 @@ class PantallaDetalleLugar extends ConsumerWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 28),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final ok = await asegurarSesion(context, ref);
-                      if (!ok || !context.mounted) return;
-                      await Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => PantallaPublicaciones(
-                            rutaId: lugar.id,
-                            rutaTitulo: lugar.nombre,
-                          ),
-                        ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: PaletaRutas.oro,
-                      foregroundColor: PaletaRutas.ink,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    icon: const Icon(Icons.add_a_photo_outlined),
-                    label: Text(
-                      'Publicar',
-                      style: TipografiaHaku.interfaz(
-                        fontWeight: FontWeight.w800,
-                        color: PaletaRutas.ink,
-                      ),
+                  const SizedBox(height: 22),
+                  Text(
+                    'Experiencias',
+                    style: TipografiaHaku.titulo(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  BotonVerSalidasLugar(
-                    lugarId: lugar.id,
-                    lugarNombre: lugar.nombre,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Lo que compartieron exploradores solos o en grupo',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 12,
+                      color: PaletaRutas.plomoClaro,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  ListaExperienciasLugar(lugarId: lugar.id),
                 ],
               ),
+            ),
+          ),
+            ],
+          ),
+          Positioned.fill(
+            child: VeloAccionesFlotante(
+              visible: _menuAbierto,
+              onTap: () => setState(() => _menuAbierto = false),
+            ),
+          ),
+          Positioned(
+            right: 20,
+            bottom: 16 + bottom,
+            child: MenuAccionesLugar(
+              lugar: lugar,
+              abierto: _menuAbierto,
+              onToggle: () => setState(() => _menuAbierto = !_menuAbierto),
+              onCerrar: () => setState(() => _menuAbierto = false),
             ),
           ),
         ],
@@ -296,7 +304,6 @@ class PantallaDetalleLugar extends ConsumerWidget {
     );
   }
 }
-
 class _ChipDato extends StatelessWidget {
   const _ChipDato(this.icono, this.texto);
   final IconData icono;

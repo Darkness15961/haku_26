@@ -396,6 +396,7 @@ class PublicacionFeed {
   final DateTime? creadoEn;
   final String? lugarId;
   final String? lugarNombre;
+  final String? rutaId;
   final String? categoria;
   /// Cuenta verificada (oficial HAKU u explorador validado).
   final bool verificado;
@@ -403,6 +404,10 @@ class PublicacionFeed {
   final String tipo;
   /// Si es invitación a salida de grupo.
   final String? salidaId;
+  /// Valoración de la experiencia (1–5), si el autor la dejó.
+  final double? calificacion;
+  /// Nombre del grupo si fue visita grupal (null = fue solo/a).
+  final String? grupoNombre;
 
   const PublicacionFeed({
     required this.id,
@@ -419,11 +424,18 @@ class PublicacionFeed {
     this.creadoEn,
     this.lugarId,
     this.lugarNombre,
+    this.rutaId,
     this.categoria,
     this.verificado = false,
     this.tipo = 'normal',
     this.salidaId,
+    this.calificacion,
+    this.grupoNombre,
   });
+
+  bool get esVisitaGrupal =>
+      (grupoNombre?.trim().isNotEmpty ?? false) ||
+      (salidaId?.isNotEmpty ?? false);
 
   bool get esInvitacionSalida =>
       tipo == 'invitacion_salida' && (salidaId?.isNotEmpty ?? false);
@@ -450,6 +462,8 @@ class PublicacionFeed {
     bool? verificado,
     String? tipo,
     String? salidaId,
+    double? calificacion,
+    String? grupoNombre,
   }) {
     return PublicacionFeed(
       id: id,
@@ -466,10 +480,13 @@ class PublicacionFeed {
       creadoEn: creadoEn,
       lugarId: lugarId,
       lugarNombre: lugarNombre,
+      rutaId: rutaId,
       categoria: categoria,
       verificado: verificado ?? this.verificado,
       tipo: tipo ?? this.tipo,
       salidaId: salidaId ?? this.salidaId,
+      calificacion: calificacion ?? this.calificacion,
+      grupoNombre: grupoNombre ?? this.grupoNombre,
     );
   }
 
@@ -483,10 +500,13 @@ class PublicacionFeed {
         'creado_en': creadoEn?.toIso8601String(),
         'lugar_id': lugarId,
         'lugar_nombre': lugarNombre,
+        'ruta_id': rutaId,
         'categoria': categoria,
         'verificado': verificado,
         'tipo': tipo,
         'salida_id': salidaId,
+        'calificacion': calificacion,
+        'grupo_nombre': grupoNombre,
       };
 }
 

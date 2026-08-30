@@ -201,6 +201,7 @@ class SemillaAlmacenHaku {
         lugarId: 'machu_picchu',
         lugarNombre: 'Machu Picchu',
         categoria: 'Naturaleza',
+        calificacion: 4.8,
       ),
       _post(
         id: 'p2',
@@ -214,6 +215,23 @@ class SemillaAlmacenHaku {
         lugarId: 'moray',
         lugarNombre: 'Moray',
         categoria: 'Lugares',
+        calificacion: 4.6,
+      ),
+      _post(
+        id: 'p2b',
+        autorId: 'camilarios',
+        texto:
+            'Con Fotógrafos Andinos: amanecer en los anfiteatros. La niebla entró justo a tiempo.',
+        imagen: CatalogoImagenesHaku.fondoExplora,
+        likes: 72,
+        comentarios: 9,
+        creadoEn: DateTime.now().subtract(const Duration(days: 3)),
+        lugarId: 'moray',
+        lugarNombre: 'Moray',
+        categoria: 'Cultura',
+        calificacion: 4.9,
+        grupoNombre: 'Fotógrafos Andinos',
+        salidaId: 's2',
       ),
       _post(
         id: 'p3',
@@ -224,9 +242,10 @@ class SemillaAlmacenHaku {
         likes: 412,
         comentarios: 67,
         creadoEn: DateTime.now().subtract(const Duration(days: 1)),
-        lugarId: 'ausangate',
-        lugarNombre: 'Ausangate',
+        lugarId: 'ausangate_vista',
+        lugarNombre: 'Mirador Ausangate',
         categoria: 'Nevado',
+        calificacion: 5,
       ),
       _post(
         id: 'p4',
@@ -240,6 +259,22 @@ class SemillaAlmacenHaku {
         lugarId: 'machu_picchu',
         lugarNombre: 'Machu Picchu',
         categoria: 'Patrimonio',
+        calificacion: 5,
+      ),
+      _post(
+        id: 'p4b',
+        autorId: 'diegoandes',
+        texto:
+            'Subimos con Trekkers Cusco. Menos filas, más silencio en la terraza superior.',
+        imagen: CatalogoImagenesHaku.detalleRutaB,
+        likes: 203,
+        comentarios: 31,
+        creadoEn: DateTime.now().subtract(const Duration(days: 4)),
+        lugarId: 'machu_picchu',
+        lugarNombre: 'Machu Picchu',
+        categoria: 'Patrimonio',
+        calificacion: 4.7,
+        grupoNombre: 'Trekkers Cusco',
       ),
       _post(
         id: 'p5',
@@ -266,6 +301,37 @@ class SemillaAlmacenHaku {
         lugarId: 'canon_qeswachaka',
         lugarNombre: 'Cañón Q\'eswachaka',
         categoria: 'Aventura',
+        calificacion: 5,
+      ),
+      _post(
+        id: 'p6b',
+        autorId: 'diegoandes',
+        texto:
+            'Con Trekkers Cusco: el puente se balancea suave y el río suena fuerte abajo. Recomendado.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
+        likes: 89,
+        comentarios: 14,
+        creadoEn: DateTime.now().subtract(const Duration(days: 5)),
+        lugarId: 'canon_qeswachaka',
+        lugarNombre: 'Cañón Q\'eswachaka',
+        categoria: 'Aventura',
+        calificacion: 4.5,
+        grupoNombre: 'Trekkers Cusco',
+        salidaId: 's4',
+      ),
+      _post(
+        id: 'p6c',
+        autorId: 'mariaq',
+        texto:
+            'Fui sola un martes. Casi nadie en el puente — se siente el viento del cañón en las manos.',
+        imagen: CatalogoImagenesHaku.moray,
+        likes: 61,
+        comentarios: 8,
+        creadoEn: DateTime.now().subtract(const Duration(days: 12)),
+        lugarId: 'canon_qeswachaka',
+        lugarNombre: 'Cañón Q\'eswachaka',
+        categoria: 'Misterioso',
+        calificacion: 4.8,
       ),
       _post(
         id: 'p7',
@@ -279,6 +345,23 @@ class SemillaAlmacenHaku {
         lugarId: 'cementerio_almudena_noche',
         lugarNombre: 'Tour nocturno Cementerio Almudena',
         categoria: 'Misterioso',
+        calificacion: 4.4,
+      ),
+      _post(
+        id: 'p7b',
+        autorId: 'haku',
+        texto:
+            'Salida con Misterios Cusco. Las velas lejanas y el viento en la colina — inolvidable.',
+        imagen: CatalogoImagenesHaku.encabezadoRutas,
+        likes: 112,
+        comentarios: 16,
+        creadoEn: DateTime.now().subtract(const Duration(days: 6)),
+        lugarId: 'cementerio_almudena_noche',
+        lugarNombre: 'Tour nocturno Cementerio Almudena',
+        categoria: 'Misterioso',
+        calificacion: 4.9,
+        grupoNombre: 'Misterios Cusco',
+        salidaId: 's3',
       ),
       _post(
         id: 'p8',
@@ -292,6 +375,23 @@ class SemillaAlmacenHaku {
         lugarId: 'astro_foto_maras',
         lugarNombre: 'Astrofoto en Maras',
         categoria: 'Foto',
+        calificacion: 5,
+      ),
+      _post(
+        id: 'p8b',
+        autorId: 'sofiatrek',
+        texto:
+            'Grupo pequeño, cielo limpio. Aprendí a enfocar estrellas sobre los pozos.',
+        imagen: CatalogoImagenesHaku.ausangate,
+        likes: 88,
+        comentarios: 11,
+        creadoEn: DateTime.now().subtract(const Duration(days: 9)),
+        lugarId: 'astro_foto_maras',
+        lugarNombre: 'Astrofoto en Maras',
+        categoria: 'Foto',
+        calificacion: 4.8,
+        grupoNombre: 'Fotógrafos Andinos',
+        salidaId: 's5',
       ),
       _post(
         id: 'p9',
@@ -305,6 +405,7 @@ class SemillaAlmacenHaku {
         lugarId: 'laguna_sibinacocha',
         lugarNombre: 'Laguna Sibinacocha',
         categoria: 'Naturaleza',
+        calificacion: 4.7,
       ),
       _post(
         id: 'p10',
@@ -318,6 +419,77 @@ class SemillaAlmacenHaku {
         lugarId: 'salineras_luna_llena',
         lugarNombre: 'Salineras en luna llena',
         categoria: 'Mágico',
+        calificacion: 5,
+      ),
+      _post(
+        id: 'p11',
+        autorId: 'camilarios',
+        texto:
+            'Humantay al amanecer, sola. El lago verde apareció cuando la niebla se abrió.',
+        imagen: CatalogoImagenesHaku.fondoExplora,
+        likes: 145,
+        comentarios: 20,
+        creadoEn: DateTime.now().subtract(const Duration(days: 2)),
+        lugarId: 'laguna_humantay',
+        lugarNombre: 'Laguna Humantay',
+        categoria: 'Naturaleza',
+        calificacion: 4.9,
+      ),
+      _post(
+        id: 'p12',
+        autorId: 'sofiatrek',
+        texto:
+            'Con Trekkers Cusco subimos juntos. Ritmo lento, mate en la cima y fotos compartidas.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
+        likes: 98,
+        comentarios: 15,
+        creadoEn: DateTime.now().subtract(const Duration(days: 7)),
+        lugarId: 'laguna_humantay',
+        lugarNombre: 'Laguna Humantay',
+        categoria: 'Naturaleza',
+        calificacion: 4.6,
+        grupoNombre: 'Trekkers Cusco',
+        salidaId: 's1',
+      ),
+      _post(
+        id: 'p_ruta1',
+        autorId: 'sofiatrek',
+        texto:
+            'Día 3: niebla en Wiñay Wayna y primera vista de Machu Picchu desde Inti Punku. Agotador y hermoso.',
+        imagen: CatalogoImagenesHaku.machuPicchu,
+        likes: 284,
+        comentarios: 47,
+        creadoEn: DateTime.now().subtract(const Duration(days: 3)),
+        rutaId: 'ruta_inca_clasica',
+        categoria: 'Trekking',
+        calificacion: 5,
+      ),
+      _post(
+        id: 'p_ruta2',
+        autorId: 'diegoandes',
+        texto:
+            'Cuatro días con Trekkers Cusco. Buen ritmo, buen equipo y cero prisa en los campamentos.',
+        imagen: CatalogoImagenesHaku.llamaMachu,
+        likes: 167,
+        comentarios: 22,
+        creadoEn: DateTime.now().subtract(const Duration(days: 11)),
+        rutaId: 'ruta_inca_clasica',
+        categoria: 'Trekking',
+        calificacion: 4.7,
+        grupoNombre: 'Trekkers Cusco',
+      ),
+      _post(
+        id: 'p_ruta3',
+        autorId: 'mariaq',
+        texto:
+            'Lo hice sola con guía local. Dead Woman\'s Pass me dejó sin aliento — vale cada paso.',
+        imagen: CatalogoImagenesHaku.ausangate,
+        likes: 98,
+        comentarios: 14,
+        creadoEn: DateTime.now().subtract(const Duration(days: 18)),
+        rutaId: 'ruta_inca_clasica',
+        categoria: 'Trekking',
+        calificacion: 4.8,
       ),
       ..._postsUsuarioLocal(),
     ];
@@ -806,6 +978,22 @@ class SemillaAlmacenHaku {
       inter['favoritos_ruta_ids'] = favs;
       inter['descubre_lugares_v4'] = true;
     }
+    if (inter['experiencias_ruta_v1'] != true) {
+      final pubsPatch = [
+        for (final e in (doc['publicaciones'] as List<dynamic>? ?? []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+      final pubIds = pubsPatch.map((p) => p['id']?.toString()).toSet();
+      for (final e in (seed['publicaciones'] as List<dynamic>? ?? [])) {
+        if (e is! Map) continue;
+        final id = e['id']?.toString() ?? '';
+        if (!{'p_ruta1', 'p_ruta2', 'p_ruta3'}.contains(id)) continue;
+        if (pubIds.contains(id)) continue;
+        pubsPatch.add(Map<String, dynamic>.from(e));
+      }
+      doc['publicaciones'] = pubsPatch;
+      inter['experiencias_ruta_v1'] = true;
+    }
     if (doc['salidas'] is! List || (doc['salidas'] as List).isEmpty) {
       doc['salidas'] = seed['salidas'];
     } else {
@@ -1139,9 +1327,12 @@ class SemillaAlmacenHaku {
     required DateTime creadoEn,
     String? lugarId,
     String? lugarNombre,
+    String? rutaId,
     String? categoria,
     String tipo = 'normal',
     String? salidaId,
+    double? calificacion,
+    String? grupoNombre,
   }) {
     return {
       'id': id,
@@ -1153,9 +1344,12 @@ class SemillaAlmacenHaku {
       'creado_en': creadoEn.toIso8601String(),
       'lugar_id': lugarId,
       'lugar_nombre': lugarNombre,
+      if (rutaId != null) 'ruta_id': rutaId,
       'categoria': categoria,
       'tipo': tipo,
       'salida_id': salidaId,
+      if (calificacion != null) 'calificacion': calificacion,
+      if (grupoNombre != null) 'grupo_nombre': grupoNombre,
     };
   }
 

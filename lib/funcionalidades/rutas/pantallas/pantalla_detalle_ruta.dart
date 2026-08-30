@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
-import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import '../dominio/modelos/modelo_ruta.dart';
-import '../widgets/boton_primario_ruta.dart';
 import '../widgets/decoracion_detalle_fondo.dart';
 import '../widgets/estilos_rutas.dart';
 import '../widgets/imagen_parallax_ruta.dart';
 import '../widgets/linea_encabezado_inca.dart';
-import 'pantalla_mapa_ruta.dart';
+import '../widgets/boton_icono_accion.dart';
+import '../widgets/menu_acciones_ruta.dart';
 
 /// Detalle de una ruta: hero + ficha + aporte a la comunidad.
 class PantallaDetalleRuta extends ConsumerStatefulWidget {
@@ -29,6 +29,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
   static const _adorno = 'public/image/adorno_detalle_ruta.jpg';
 
   final ScrollController _scroll = ScrollController();
+  bool _menuAbierto = false;
 
   @override
   void dispose() {
@@ -37,27 +38,6 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
   }
 
   double get _offset => _scroll.hasClients ? _scroll.offset : 0.0;
-
-  Future<void> _publicarEnRuta() async {
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaPublicaciones(
-          rutaId: widget.ruta.id,
-          rutaTitulo: widget.ruta.titulo,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirMapa() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaMapaRuta(ruta: widget.ruta),
-      ),
-    );
-  }
 
   Future<void> _toggleFavorito() async {
     final ok = await asegurarSesion(context, ref);
@@ -132,7 +112,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                               22,
                               36,
                               22,
-                              48 + bottomInset,
+                              100 + bottomInset,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -343,17 +323,24 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                 const SizedBox(height: 22),
                                 _GrillaInfo(ruta: ruta),
                                 const SizedBox(height: 24),
-                                BotonSecundarioRuta(
-                                  texto: 'Publicar',
-                                  icono: Icons.add_a_photo_outlined,
-                                  onPressed: _publicarEnRuta,
+                                Text(
+                                  'Experiencias',
+                                  style: TipografiaHaku.titulo(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: PaletaRutas.piedra,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Lo que compartieron exploradores solos o en grupo',
+                                  style: TipografiaHaku.interfaz(
+                                    fontSize: 12,
+                                    color: PaletaRutas.plomoClaro,
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
-                                BotonPrimarioRuta(
-                                  texto: 'Mapa',
-                                  icono: Icons.map_outlined,
-                                  onPressed: _abrirMapa,
-                                ),
+                                ListaExperienciasLugar(rutaId: ruta.id),
                               ],
                             ),
                           ),
@@ -363,6 +350,23 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                   ),
                 ),
               ],
+            ),
+
+            Positioned.fill(
+              child: VeloAccionesFlotante(
+                visible: _menuAbierto,
+                onTap: () => setState(() => _menuAbierto = false),
+              ),
+            ),
+            Positioned(
+              right: 20,
+              bottom: 16 + bottomInset,
+              child: MenuAccionesRuta(
+                ruta: ruta,
+                abierto: _menuAbierto,
+                onToggle: () => setState(() => _menuAbierto = !_menuAbierto),
+                onCerrar: () => setState(() => _menuAbierto = false),
+              ),
             ),
 
             Positioned(

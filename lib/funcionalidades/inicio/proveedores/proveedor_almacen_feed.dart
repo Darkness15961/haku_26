@@ -407,6 +407,7 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
             creadoEn: creado,
             lugarId: m['lugar_id'] as String?,
             lugarNombre: m['lugar_nombre'] as String?,
+            rutaId: m['ruta_id'] as String?,
             categoria: m['categoria'] as String?,
             verificado: (m['verificado'] as bool?) == true ||
                 PublicacionFeed.esAutorVerificado(
@@ -415,6 +416,8 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
                 ),
             tipo: m['tipo'] as String? ?? 'normal',
             salidaId: m['salida_id'] as String?,
+            calificacion: (m['calificacion'] as num?)?.toDouble(),
+            grupoNombre: m['grupo_nombre'] as String?,
           );
         })
         .toList();

@@ -336,6 +336,7 @@ class _EstadoPantallaPublicaciones
             lugarId: lugarId,
             lugarNombre: nombreLugar,
             categoria: _categoria?.name,
+            calificacion: 5,
           ),
         );
 
