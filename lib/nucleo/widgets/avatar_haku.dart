@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../funcionalidades/rutas/widgets/estilos_rutas.dart';
 import '../recursos/catalogo_imagenes_haku.dart';
 import 'imagen_haku.dart';
 
@@ -35,7 +36,7 @@ class AvatarHaku extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: borderColor ?? Colors.white,
+            color: borderColor ?? PaletaRutas.piedra,
             width: borderWidth,
           ),
         ),

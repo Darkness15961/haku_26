@@ -30,7 +30,6 @@ class ChipCategoriaComunidad extends StatelessWidget {
   final VoidCallback? onTap;
   final bool compacto;
   final bool sobreOscuro;
-  final bool oscuro;
 
   const ChipCategoriaComunidad({
     super.key,
@@ -39,30 +38,31 @@ class ChipCategoriaComunidad extends StatelessWidget {
     this.onTap,
     this.compacto = false,
     this.sobreOscuro = false,
-    this.oscuro = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fg = seleccionado || sobreOscuro || oscuro
-        ? Colors.white
-        : PaletaRutas.marronOscuro;
+    final fg = seleccionado
+        ? PaletaRutas.oro
+        : sobreOscuro
+            ? PaletaRutas.piedra
+            : PaletaRutas.plomoClaro;
     final bg = seleccionado
-        ? Colors.black.withValues(alpha: 0.92)
-        : oscuro
-            ? Colors.black.withValues(alpha: 0.55)
-            : sobreOscuro
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.88);
+        ? PaletaRutas.oro.withValues(alpha: 0.18)
+        : sobreOscuro
+            ? PaletaRutas.piedra.withValues(alpha: 0.12)
+            : PaletaRutas.carbon;
+    final borderColor = seleccionado
+        ? PaletaRutas.oro
+        : sobreOscuro
+            ? PaletaRutas.plomo.withValues(alpha: 0.35)
+            : PaletaRutas.plomoOscuro.withValues(alpha: 0.7);
+
     return Material(
       color: bg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: (sobreOscuro || oscuro)
-              ? Colors.white.withValues(alpha: seleccionado ? 0.12 : 0.18)
-              : Colors.black.withValues(alpha: seleccionado ? 0 : 0.12),
-        ),
+        side: BorderSide(color: borderColor),
       ),
       child: InkWell(
         onTap: onTap,

@@ -38,11 +38,11 @@ class BotonFondoTextil extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
               border: Border.all(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: PaletaRutas.plomo.withValues(alpha: 0.45),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.22),
+                  color: PaletaRutas.ink.withValues(alpha: 0.35),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -57,7 +57,7 @@ class BotonFondoTextil extends StatelessWidget {
                     FondosDetalleHaku.porIndice(indiceFondo),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
-                        const ColoredBox(color: Colors.black87),
+                        const ColoredBox(color: PaletaRutas.carbon),
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -65,11 +65,11 @@ class BotonFondoTextil extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(
+                          PaletaRutas.ink.withValues(
                             alpha: habilitado ? 0.52 : 0.7,
                           ),
-                          Colors.black.withValues(
-                            alpha: habilitado ? 0.7 : 0.82,
+                          PaletaRutas.ink.withValues(
+                            alpha: habilitado ? 0.78 : 0.88,
                           ),
                         ],
                       ),
@@ -81,7 +81,7 @@ class BotonFondoTextil extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (icono != null) ...[
-                          Icon(icono, size: 20, color: Colors.white),
+                          Icon(icono, size: 20, color: PaletaRutas.oro),
                           const SizedBox(width: 8),
                         ],
                         Text(
@@ -89,7 +89,7 @@ class BotonFondoTextil extends StatelessWidget {
                           style: TipografiaHaku.interfaz(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                             letterSpacing: 0.3,
                           ),
                         ),

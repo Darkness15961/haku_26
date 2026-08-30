@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'estilos_rutas.dart';
+
 /// Fondos intercalados para cards / paneles (detalle destino).
 abstract final class FondosDetalleHaku {
   static const fondoA = 'public/image/FONDO_HAKU2.png';
@@ -15,12 +17,14 @@ abstract final class FondosDetalleHaku {
     double opacity = opacidadDetalle,
   }) {
     return BoxDecoration(
-      color: Colors.white,
+      color: PaletaRutas.carbon,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+      border: Border.all(
+        color: PaletaRutas.plomo.withValues(alpha: 0.25),
+      ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
+          color: PaletaRutas.ink.withValues(alpha: 0.12),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

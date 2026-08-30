@@ -105,18 +105,7 @@ class _EstadoPantallaExploradoresDeslizables
                               ClipboardData(text: texto),
                             );
                             if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Enlace del perfil copiado',
-                                  style: TipografiaHaku.interfaz(
-                                    color: PaletaRutas.piedra,
-                                  ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: PaletaRutas.carbon,
-                              ),
-                            );
+                            mostrarSnackHaku(context, 'Enlace del perfil copiado');
                           },
                           icon: const Icon(
                             Icons.ios_share_rounded,
@@ -334,12 +323,15 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                           placeholder: (_, __) =>
                               const ColoredBox(color: Color(0xFFD4C8B8)),
                         ),
-                        const DecoratedBox(
+                        DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.center,
                               end: Alignment.bottomCenter,
-                              colors: [Color(0x00000000), Color(0x99000000)],
+                              colors: [
+                                PaletaRutas.ink.withValues(alpha: 0),
+                                PaletaRutas.ink.withValues(alpha: 0.72),
+                              ],
                             ),
                           ),
                         ),
@@ -350,7 +342,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                             children: [
                               const Icon(
                                 Icons.play_arrow_rounded,
-                                color: Colors.white,
+                                color: PaletaRutas.piedra,
                                 size: 16,
                               ),
                               const SizedBox(width: 2),
@@ -359,7 +351,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                                 style: TipografiaHaku.interfaz(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                                  color: PaletaRutas.piedra,
                                 ),
                               ),
                             ],

@@ -67,13 +67,7 @@ class PantallaDetalleGrupo extends ConsumerWidget {
     await ref.read(almacenFeedProvider.notifier).persistirSatelites();
     if (!context.mounted) return;
     Navigator.of(context).pop(true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Equipo eliminado'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-      ),
-    );
+    mostrarSnackHaku(context, 'Equipo eliminado', destacado: true);
   }
 
   @override

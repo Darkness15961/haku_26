@@ -68,16 +68,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
   }
 
   void _avisar(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          mensaje,
-          style: TipografiaHaku.interfaz(color: PaletaRutas.ink),
-        ),
-        backgroundColor: PaletaRutas.oro,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    mostrarSnackHaku(context, mensaje, destacado: true);
   }
 
   @override
@@ -259,10 +250,10 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                   Container(
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.88),
+                                      color: PaletaRutas.carbon,
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.16),
+                                        color: PaletaRutas.plomo.withValues(alpha: 0.35),
                                       ),
                                     ),
                                     child: Column(
@@ -274,7 +265,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                           style: TipografiaHaku.titulo(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.white,
+                                            color: PaletaRutas.piedra,
                                           ),
                                         ),
                                         const SizedBox(height: 6),
@@ -284,8 +275,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TipografiaHaku.interfaz(
                                             fontSize: 13,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.85),
+                                            color: PaletaRutas.plomoClaro,
                                           ),
                                         ),
                                         if (ruta.puntos.isNotEmpty) ...[
@@ -295,8 +285,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                             style: TipografiaHaku.interfaz(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.7),
+                                              color: PaletaRutas.oro,
                                             ),
                                           ),
                                         ],
@@ -507,24 +496,26 @@ class _InfoItemCard extends StatelessWidget {
               FondosDetalleHaku.porIndice(indice),
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
-                  const ColoredBox(color: Colors.black),
+                  const ColoredBox(color: PaletaRutas.carbon),
             ),
           ),
           Positioned.fill(
             child: ColoredBox(
-              color: Colors.black.withValues(alpha: 0.68),
+              color: PaletaRutas.ink.withValues(alpha: 0.68),
             ),
           ),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+              border: Border.all(
+                color: PaletaRutas.plomo.withValues(alpha: 0.35),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(item.icono, size: 20, color: Colors.white),
+                Icon(item.icono, size: 20, color: PaletaRutas.oro),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -534,7 +525,7 @@ class _InfoItemCard extends StatelessWidget {
                         item.etiqueta,
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.82),
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -543,7 +534,7 @@ class _InfoItemCard extends StatelessWidget {
                         style: TipografiaHaku.interfaz(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                     ],
@@ -579,7 +570,7 @@ class _BotonCircular extends StatelessWidget {
         color: Colors.transparent,
         shape: const CircleBorder(),
         elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.35),
+        shadowColor: PaletaRutas.ink.withValues(alpha: 0.35),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
@@ -592,19 +583,21 @@ class _BotonCircular extends StatelessWidget {
                 image: AssetImage(FondosDetalleHaku.fondoA),
                 fit: BoxFit.cover,
               ),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.35)),
+              border: Border.all(
+                color: PaletaRutas.plomo.withValues(alpha: 0.45),
+              ),
             ),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.55),
+                color: PaletaRutas.ink.withValues(alpha: 0.55),
               ),
               child: Icon(
                 icono,
                 size: 18,
                 color: colorIcono == PaletaRutas.oro
                     ? PaletaRutas.oro
-                    : Colors.white,
+                    : PaletaRutas.piedra,
               ),
             ),
           ),

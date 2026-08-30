@@ -28,13 +28,7 @@ class _EstadoPantallaRecuperarContrasena
   Future<void> _enviar() async {
     final correo = _correoCtrl.text.trim();
     if (correo.isEmpty || !correo.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Ingresa un correo válido'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.black.withValues(alpha: 0.9),
-        ),
-      );
+      mostrarSnackHaku(context, 'Ingresa un correo válido');
       return;
     }
     setState(() => _cargando = true);

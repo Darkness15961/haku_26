@@ -684,10 +684,10 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
             imageUrl: urls[index],
             fit: BoxFit.cover,
             placeholder: (_, __) => ColoredBox(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: PaletaRutas.carbon.withValues(alpha: 0.35),
             ),
             errorWidget: (_, __, ___) => ColoredBox(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: PaletaRutas.carbon.withValues(alpha: 0.5),
               child: const Icon(
                 Icons.broken_image_outlined,
                 color: PaletaRutas.plomo,

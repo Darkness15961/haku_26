@@ -229,7 +229,7 @@ class _HeroSalidas extends StatelessWidget {
                     style: TipografiaHaku.titulo(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: PaletaRutas.piedra,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -242,7 +242,7 @@ class _HeroSalidas extends StatelessWidget {
                     style: TipografiaHaku.interfaz(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: PaletaRutas.plomoClaro,
                     ),
                   ),
                 ],
@@ -273,9 +273,8 @@ class _CardSalidaVisual extends StatelessWidget {
     final cuposMax = salida.cuposTotales;
     final lleno = salida.inscritos >= cuposMax;
     final cuposLibres = cuposMax - salida.inscritos;
-    final colorCupos = lleno
-        ? const Color(0xFFC45C4A)
-        : const Color(0xFF2F7D4A);
+    final colorCupos = lleno ? PaletaRutas.plomoOscuro : PaletaRutas.oro;
+    final colorTextoCupos = lleno ? PaletaRutas.plomoClaro : PaletaRutas.ink;
 
     return Material(
       color: Colors.transparent,
@@ -287,7 +286,7 @@ class _CardSalidaVisual extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: PaletaRutas.ink.withValues(alpha: 0.28),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -315,7 +314,7 @@ class _CardSalidaVisual extends StatelessWidget {
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
                             colors: [
-                              Colors.black.withValues(alpha: 0.65),
+                              PaletaRutas.ink.withValues(alpha: 0.65),
                               Colors.transparent,
                             ],
                           ),
@@ -341,7 +340,7 @@ class _CardSalidaVisual extends StatelessWidget {
                                 style: TipografiaHaku.interfaz(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                                  color: colorTextoCupos,
                                 ),
                               ),
                             ),
@@ -352,7 +351,7 @@ class _CardSalidaVisual extends StatelessWidget {
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.45),
+                                color: PaletaRutas.carbon.withValues(alpha: 0.72),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -362,7 +361,7 @@ class _CardSalidaVisual extends StatelessWidget {
                                 style: TipografiaHaku.interfaz(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                                  color: PaletaRutas.piedra,
                                 ),
                               ),
                             ),
@@ -372,7 +371,7 @@ class _CardSalidaVisual extends StatelessWidget {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: PaletaRutas.piedra,
                               ),
                             ),
                           ],
@@ -382,7 +381,7 @@ class _CardSalidaVisual extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  color: const Color(0xFF1C1A17),
+                  color: PaletaRutas.carbon,
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +494,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.72),
+                          PaletaRutas.ink.withValues(alpha: 0.72),
                           Colors.transparent,
                         ],
                       ),
@@ -529,7 +528,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                           '${s.fecha.day}/${s.fecha.month}/${s.fecha.year} · ${s.hora}',
                           style: TipografiaHaku.interfaz(
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                             fontSize: 15,
                           ),
                         ),
@@ -646,15 +645,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                 ? null
                 : () async {
                     if (yaUnido) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Ya estás en este grupo',
-                            style: TipografiaHaku.interfaz(color: Colors.white),
-                          ),
-                          backgroundColor: PaletaRutas.carbon,
-                        ),
-                      );
+                      mostrarSnackHaku(context, 'Ya estás en este grupo');
                       return;
                     }
                     final ok = await asegurarSesion(context, ref);
@@ -674,16 +665,10 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                     }
                     if (!mounted) return;
                     setState(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          done
-                              ? 'Te uniste a la salida'
-                              : 'No se pudo unir',
-                          style: TipografiaHaku.interfaz(color: Colors.white),
-                        ),
-                        backgroundColor: PaletaRutas.carbon,
-                      ),
+                    mostrarSnackHaku(
+                      context,
+                      done ? 'Te uniste a la salida' : 'No se pudo unir',
+                      destacado: done,
                     );
                   },
             style: FilledButton.styleFrom(

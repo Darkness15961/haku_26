@@ -20,8 +20,8 @@ class TarjetaSalidaComunidad extends StatelessWidget {
     final fecha = '${salida.fecha.day}/${salida.fecha.month} · ${salida.hora}';
     final cuposMax = salida.cuposTotales;
     final lleno = salida.inscritos >= cuposMax;
-    final colorCupos =
-        lleno ? const Color(0xFFC45C4A) : const Color(0xFF2F7D4A);
+    final colorCupos = lleno ? PaletaRutas.plomoOscuro : PaletaRutas.oro;
+    final colorTextoCupos = lleno ? PaletaRutas.plomoClaro : PaletaRutas.ink;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -96,7 +96,7 @@ class TarjetaSalidaComunidad extends StatelessWidget {
                     style: TipografiaHaku.interfaz(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: colorTextoCupos,
                     ),
                   ),
                 ),

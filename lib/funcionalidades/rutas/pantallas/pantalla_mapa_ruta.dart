@@ -47,16 +47,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
   Future<void> _copiarCoords(PuntoRuta p) async {
     await Clipboard.setData(ClipboardData(text: '${p.lat}, ${p.lng}'));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Copiado',
-          style: TipografiaHaku.interfaz(color: PaletaRutas.ink),
-        ),
-        backgroundColor: PaletaRutas.oro,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    mostrarSnackHaku(context, 'Copiado', destacado: true);
   }
 
   @override
@@ -144,7 +135,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.72),
+                                  color: PaletaRutas.carbon.withValues(alpha: 0.92),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -152,7 +143,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                                    color: PaletaRutas.piedra,
                                   ),
                                 ),
                               ),
@@ -166,7 +157,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.72),
+                                  color: PaletaRutas.carbon.withValues(alpha: 0.92),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -176,7 +167,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                                    color: PaletaRutas.piedra,
                                   ),
                                 ),
                               ),
@@ -207,10 +198,10 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.88),
+                        color: PaletaRutas.carbon,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.16),
+                          color: PaletaRutas.plomo.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Column(
@@ -221,7 +212,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                             style: TipografiaHaku.titulo(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: PaletaRutas.piedra,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -232,7 +223,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                             style: TipografiaHaku.interfaz(
                               fontSize: 13,
                               height: 1.4,
-                              color: Colors.white.withValues(alpha: 0.88),
+                              color: PaletaRutas.plomoClaro,
                             ),
                           ),
                           if (ruta.transporte.isNotEmpty) ...[
@@ -242,7 +233,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white.withValues(alpha: 0.75),
+                                color: PaletaRutas.oro,
                               ),
                             ),
                           ],
@@ -252,7 +243,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                             '${sel.lat.toStringAsFixed(4)}, ${sel.lng.toStringAsFixed(4)}',
                             style: TipografiaHaku.interfaz(
                               fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.7),
+                              color: PaletaRutas.plomo,
                             ),
                           ),
                         ],
@@ -330,7 +321,9 @@ class _TileParada extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: Colors.black.withValues(alpha: seleccionado ? 0.92 : 0.78),
+        color: seleccionado
+            ? PaletaRutas.carbon
+            : PaletaRutas.carbon.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -341,12 +334,16 @@ class _TileParada extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  backgroundColor: seleccionado
+                      ? PaletaRutas.oro.withValues(alpha: 0.22)
+                      : PaletaRutas.plomo.withValues(alpha: 0.35),
                   child: Text(
                     '$indice',
                     style: TipografiaHaku.interfaz(
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: seleccionado
+                          ? PaletaRutas.oro
+                          : PaletaRutas.piedra,
                     ),
                   ),
                 ),
@@ -359,7 +356,7 @@ class _TileParada extends StatelessWidget {
                         punto.nombre,
                         style: TipografiaHaku.interfaz(
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                       Text(
@@ -369,7 +366,7 @@ class _TileParada extends StatelessWidget {
                         ].join(' · '),
                         style: TipografiaHaku.interfaz(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                     ],
@@ -380,7 +377,7 @@ class _TileParada extends StatelessWidget {
                   onPressed: onCopiar,
                   icon: const Icon(
                     Icons.my_location_rounded,
-                    color: Colors.white70,
+                    color: PaletaRutas.oro,
                     size: 20,
                   ),
                 ),
@@ -409,16 +406,16 @@ class _MapaRutaPainter extends CustomPainter {
         Offset.zero,
         Offset(size.width, size.height),
         const [
-          Color(0xFF1B4332),
-          Color(0xFF2D6A4F),
-          Color(0xFF40916C),
+          PaletaRutas.ink,
+          PaletaRutas.carbon,
+          PaletaRutas.plomoOscuro,
         ],
       );
     canvas.drawRect(Offset.zero & size, bg);
 
     // Relieve simulado
     final relieve = Paint()
-      ..color = Colors.black.withValues(alpha: 0.08)
+      ..color = PaletaRutas.ink.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (var i = 1; i <= 6; i++) {
@@ -467,7 +464,7 @@ class _MapaRutaPainter extends CustomPainter {
     }
 
     final trazo = Paint()
-      ..color = const Color(0xFFE9C46A)
+      ..color = PaletaRutas.oroSuave
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
@@ -478,13 +475,13 @@ class _MapaRutaPainter extends CustomPainter {
       final o = toXy(puntos[i]);
       final sel = i == seleccionado;
       final fill = Paint()
-        ..color = sel ? const Color(0xFFE76F51) : Colors.white;
+        ..color = sel ? PaletaRutas.oro : PaletaRutas.piedra;
       canvas.drawCircle(o, sel ? 11 : 8, fill);
       canvas.drawCircle(
         o,
         sel ? 11 : 8,
         Paint()
-          ..color = Colors.black.withValues(alpha: 0.55)
+          ..color = PaletaRutas.ink.withValues(alpha: 0.55)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2,
       );

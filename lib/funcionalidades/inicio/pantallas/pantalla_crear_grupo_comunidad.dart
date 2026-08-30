@@ -42,30 +42,15 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
   Future<void> _crear() async {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nombre'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      mostrarSnackHaku(context, 'Nombre');
       return;
     }
     if (_invitados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invita'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      mostrarSnackHaku(context, 'Invita');
       return;
     }
     if (_rutaId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Elige ruta'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      mostrarSnackHaku(context, 'Elige ruta');
       return;
     }
 
@@ -82,13 +67,7 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
     await ref.read(almacenFeedProvider.notifier).persistirSatelites();
     if (!mounted) return;
     Navigator.of(context).pop(true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Equipo "$nombre" creado'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-      ),
-    );
+    mostrarSnackHaku(context, 'Equipo "$nombre" creado', destacado: true);
   }
 
   @override
@@ -332,21 +311,11 @@ class _EstadoPantallaCrearComunidad
   Future<void> _crear() async {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nombre'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      mostrarSnackHaku(context, 'Nombre');
       return;
     }
     if (_categorias.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Categoría'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      mostrarSnackHaku(context, 'Categoría');
       return;
     }
 
@@ -369,16 +338,7 @@ class _EstadoPantallaCrearComunidad
       ),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Comunidad "$nombre" creada',
-          style: TipografiaHaku.interfaz(color: Colors.white),
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-      ),
-    );
+    mostrarSnackHaku(context, 'Comunidad "$nombre" creada', destacado: true);
   }
 
   @override

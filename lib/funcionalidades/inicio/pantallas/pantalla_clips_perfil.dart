@@ -23,7 +23,8 @@ class PantallaClipsPerfil extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<PantallaClipsPerfil> createState() => _EstadoPantallaClipsPerfil();
+  ConsumerState<PantallaClipsPerfil> createState() =>
+      _EstadoPantallaClipsPerfil();
 }
 
 class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
@@ -68,7 +69,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: PaletaRutas.ink,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -99,17 +100,17 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                     imageUrl: c.imagenUrl,
                     fit: BoxFit.cover,
                     placeholder: (_, __) =>
-                        const ColoredBox(color: Colors.black),
+                        const ColoredBox(color: PaletaRutas.ink),
                   ),
-                  const DecoratedBox(
+                  DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Color(0x66000000),
-                          Color(0x00000000),
-                          Color(0xCC000000),
+                          PaletaRutas.ink.withValues(alpha: 0.45),
+                          PaletaRutas.ink.withValues(alpha: 0),
+                          PaletaRutas.ink.withValues(alpha: 0.78),
                         ],
                       ),
                     ),
@@ -128,7 +129,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                           etiqueta: formatearConteo(
                             c.likes + (liked ? 1 : 0),
                           ),
-                          color: liked ? PaletaRutas.oro : Colors.white,
+                          color: liked ? PaletaRutas.oro : PaletaRutas.piedra,
                           onTap: () => _like(c),
                         ),
                         const SizedBox(height: 16),
@@ -169,7 +170,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                           style: TipografiaHaku.titulo(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -177,7 +178,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                           c.texto,
                           style: TipografiaHaku.interfaz(
                             fontSize: 14,
-                            color: Colors.white,
+                            color: PaletaRutas.plomoClaro,
                             height: 1.3,
                           ),
                         ),
@@ -193,7 +194,10 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
             left: 4,
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              icon: const Icon(
+                Icons.arrow_back_rounded,
+                color: PaletaRutas.piedra,
+              ),
             ),
           ),
         ],
@@ -212,7 +216,7 @@ class _AccionClip extends StatelessWidget {
     required this.icono,
     required this.etiqueta,
     required this.onTap,
-    this.color = Colors.white,
+    this.color = PaletaRutas.piedra,
   });
 
   @override
@@ -228,7 +232,7 @@ class _AccionClip extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: PaletaRutas.piedra,
             ),
           ),
         ],

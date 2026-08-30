@@ -28,7 +28,7 @@ class InsigniaPerfil extends StatelessWidget {
               shape: BoxShape.circle,
               color: colorFondo,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: PaletaRutas.oro.withValues(alpha: 0.45),
                 width: 2,
               ),
               boxShadow: [
@@ -38,13 +38,13 @@ class InsigniaPerfil extends StatelessWidget {
                   offset: const Offset(0, 3),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: PaletaRutas.ink.withValues(alpha: 0.25),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Icon(icono, color: Colors.white, size: 28),
+            child: Icon(icono, color: PaletaRutas.piedra, size: 28),
           ),
           const SizedBox(height: 6),
           Text(
@@ -55,21 +55,8 @@ class InsigniaPerfil extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: PaletaRutas.marronOscuro,
+              color: PaletaRutas.piedra,
               height: 1.15,
-            ).copyWith(
-              shadows: const [
-                Shadow(
-                  color: Color(0xE6FFFFFF),
-                  blurRadius: 5,
-                  offset: Offset(0, 0),
-                ),
-                Shadow(
-                  color: Color(0x66000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-              ],
             ),
           ),
         ],

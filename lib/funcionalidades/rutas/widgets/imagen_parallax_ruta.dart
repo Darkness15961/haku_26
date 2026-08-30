@@ -47,7 +47,7 @@ class ImagenParallaxRuta extends StatelessWidget {
                     child: const Icon(
                       Icons.landscape_rounded,
                       size: 48,
-                      color: PaletaRutas.marronCuero,
+                      color: PaletaRutas.plomo,
                     ),
                   ),
                 ),

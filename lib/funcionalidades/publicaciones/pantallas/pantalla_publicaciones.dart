@@ -72,16 +72,16 @@ class _EstadoPantallaPublicaciones
   }
 
   void _aviso(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          mensaje,
-          style: TipografiaHaku.interfaz(color: Colors.white),
-        ),
-        backgroundColor: Colors.black,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    mostrarSnackHaku(context, mensaje);
+  }
+
+  void _abrirLugarSiFalta() {
+    if (_lugarId != null && _lugarId!.isNotEmpty) return;
+    final nombre = _lugarNombre?.trim();
+    if (nombre != null && nombre.isNotEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mostrarLugares();
+    });
   }
 
   Future<void> _elegirFoto() async {
@@ -96,6 +96,7 @@ class _EstadoPantallaPublicaciones
         _esVideo = false;
         _paso = _PasoPublicacion.editar;
       });
+      _abrirLugarSiFalta();
     } catch (_) {
       _aviso('No se pudo abrir la galeria de fotos');
     }
@@ -110,6 +111,7 @@ class _EstadoPantallaPublicaciones
         _esVideo = true;
         _paso = _PasoPublicacion.editar;
       });
+      _abrirLugarSiFalta();
     } catch (_) {
       _aviso('No se pudo abrir la galeria de videos');
     }
@@ -123,9 +125,9 @@ class _EstadoPantallaPublicaciones
         return Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.94),
+            color: PaletaRutas.carbon.withValues(alpha: 0.94),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            border: Border.all(color: PaletaRutas.plomo.withValues(alpha: 0.35)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -134,7 +136,7 @@ class _EstadoPantallaPublicaciones
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: PaletaRutas.plomo,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -144,7 +146,7 @@ class _EstadoPantallaPublicaciones
                 style: TipografiaHaku.titulo(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: PaletaRutas.piedra,
                 ),
               ),
               const SizedBox(height: 14),
@@ -344,15 +346,10 @@ class _EstadoPantallaPublicaciones
     Navigator.of(context).pop();
     ref.read(pestaniaShellInicioProvider.notifier).state = 2;
     ref.read(pestaniaComunidadProvider.notifier).state = 0;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          nombreLugar == null ? 'Publicado' : 'Publicado en $nombreLugar',
-          style: TipografiaHaku.interfaz(color: Colors.white),
-        ),
-        backgroundColor: Colors.black,
-        behavior: SnackBarBehavior.floating,
-      ),
+    mostrarSnackHaku(
+      context,
+      nombreLugar == null ? 'Publicado' : 'Publicado en $nombreLugar',
+      destacado: true,
     );
   }
 
@@ -361,7 +358,7 @@ class _EstadoPantallaPublicaciones
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: PaletaRutas.ink,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -370,9 +367,9 @@ class _EstadoPantallaPublicaciones
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             filterQuality: FilterQuality.high,
-            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+            errorBuilder: (_, __, ___) => const ColoredBox(color: PaletaRutas.ink),
           ),
-          ColoredBox(color: Colors.black.withValues(alpha: 0.45)),
+          ColoredBox(color: PaletaRutas.ink.withValues(alpha: 0.45)),
           SafeArea(
             bottom: false,
             child: Column(
@@ -428,7 +425,7 @@ class _EstadoPantallaPublicaciones
                                     : 'Más opciones',
                                 style: TipografiaHaku.interfaz(
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: PaletaRutas.piedra.withValues(alpha: 0.85),
                                 ),
                               ),
                             ),
@@ -504,7 +501,7 @@ class _EncabezadoPublicar extends StatelessWidget {
             onPressed: onAtras,
             icon: Icon(
               onListo == null ? Icons.close_rounded : Icons.arrow_back_rounded,
-              color: Colors.white,
+              color: PaletaRutas.piedra,
             ),
           ),
           Expanded(
@@ -514,7 +511,7 @@ class _EncabezadoPublicar extends StatelessWidget {
               style: TipografiaHaku.titulo(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: PaletaRutas.piedra,
               ).copyWith(letterSpacing: 0.6),
             ),
           ),
@@ -526,7 +523,7 @@ class _EncabezadoPublicar extends StatelessWidget {
                 style: TipografiaHaku.interfaz(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: PaletaRutas.piedra,
                 ),
               ),
             )
@@ -566,7 +563,7 @@ class _PasoElegirMedia extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.28),
+                      color: PaletaRutas.piedra.withValues(alpha: 0.28),
                       width: 1.2,
                     ),
                   ),
@@ -582,7 +579,7 @@ class _PasoElegirMedia extends StatelessWidget {
                               const ColoredBox(color: Color(0xFF1A1A1A)),
                         ),
                         ColoredBox(
-                          color: Colors.black.withValues(alpha: 0.62),
+                          color: PaletaRutas.carbon.withValues(alpha: 0.62),
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -592,15 +589,15 @@ class _PasoElegirMedia extends StatelessWidget {
                               height: 72,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withValues(alpha: 0.72),
+                                color: PaletaRutas.carbon.withValues(alpha: 0.72),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color: PaletaRutas.piedra.withValues(alpha: 0.9),
                                   width: 2,
                                 ),
                               ),
                               child: const Icon(
                                 Icons.add_rounded,
-                                color: Colors.white,
+                                color: PaletaRutas.piedra,
                                 size: 38,
                               ),
                             ),
@@ -610,7 +607,7 @@ class _PasoElegirMedia extends StatelessWidget {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: PaletaRutas.piedra,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -619,7 +616,7 @@ class _PasoElegirMedia extends StatelessWidget {
                               textAlign: TextAlign.center,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.75),
+                                color: PaletaRutas.piedra.withValues(alpha: 0.75),
                                 height: 1.35,
                               ),
                             ),
@@ -679,21 +676,21 @@ class _BotonMediaRapido extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.78),
+            color: PaletaRutas.carbon.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.22)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icono, color: Colors.white, size: 20),
+              Icon(icono, color: PaletaRutas.piedra, size: 20),
               const SizedBox(width: 8),
               Text(
                 texto,
                 style: TipografiaHaku.interfaz(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: PaletaRutas.piedra,
                 ),
               ),
             ],
@@ -720,18 +717,18 @@ class _OpcionSheet extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      leading: Icon(icono, color: Colors.white),
+      leading: Icon(icono, color: PaletaRutas.piedra),
       title: Text(
         titulo,
         style: TipografiaHaku.interfaz(
           fontSize: 15,
           fontWeight: FontWeight.w700,
-          color: Colors.white,
+          color: PaletaRutas.piedra,
         ),
       ),
       trailing: Icon(
         Icons.chevron_right_rounded,
-        color: Colors.white.withValues(alpha: 0.6),
+        color: PaletaRutas.piedra.withValues(alpha: 0.6),
       ),
     );
   }
@@ -765,8 +762,8 @@ class _PreviewMedia extends StatelessWidget {
                 File(archivo.path),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Color(0xFF1A1A1A),
-                  child: Icon(Icons.broken_image_outlined, color: Colors.white54),
+                  color: PaletaRutas.carbon,
+                  child: Icon(Icons.broken_image_outlined, color: PaletaRutas.plomo),
                 ),
               ),
             Positioned(
@@ -783,10 +780,10 @@ class _PreviewMedia extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.78),
+                      color: PaletaRutas.carbon.withValues(alpha: 0.78),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: PaletaRutas.piedra.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
@@ -794,7 +791,7 @@ class _PreviewMedia extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.swap_horiz_rounded,
-                          color: Colors.white,
+                          color: PaletaRutas.piedra,
                           size: 18,
                         ),
                         const SizedBox(width: 6),
@@ -803,7 +800,7 @@ class _PreviewMedia extends StatelessWidget {
                           style: TipografiaHaku.interfaz(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                       ],
@@ -818,7 +815,7 @@ class _PreviewMedia extends StatelessWidget {
                 top: 10,
                 child: Icon(
                   Icons.play_circle_fill_rounded,
-                  color: Colors.white,
+                  color: PaletaRutas.piedra,
                   size: 28,
                 ),
               ),
@@ -866,9 +863,9 @@ class _EstadoPreviewVideo extends State<_PreviewVideo> {
   Widget build(BuildContext context) {
     if (!_listo) {
       return const ColoredBox(
-        color: Color(0xFF1A1A1A),
+        color: PaletaRutas.carbon,
         child: Center(
-          child: CircularProgressIndicator(color: Colors.white70),
+          child: CircularProgressIndicator(color: PaletaRutas.plomoClaro),
         ),
       );
     }
@@ -898,9 +895,9 @@ class _CampoDescripcion extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.78),
+        color: PaletaRutas.carbon.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.2)),
       ),
       child: TextField(
         controller: controller,
@@ -909,17 +906,17 @@ class _CampoDescripcion extends StatelessWidget {
         minLines: 3,
         style: TipografiaHaku.interfaz(
           fontSize: 14,
-          color: Colors.white,
+          color: PaletaRutas.piedra,
           height: 1.35,
         ),
-        cursorColor: Colors.white,
+        cursorColor: PaletaRutas.oro,
         decoration: InputDecoration(
           isDense: true,
           border: InputBorder.none,
           hintText: 'Qué viste',
           hintStyle: TipografiaHaku.interfaz(
             fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.45),
+            color: PaletaRutas.piedra.withValues(alpha: 0.45),
           ),
         ),
       ),
@@ -950,9 +947,9 @@ class _CardOpcion extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.78),
+            color: PaletaRutas.carbon.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
@@ -961,9 +958,9 @@ class _CardOpcion extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: PaletaRutas.piedra.withValues(alpha: 0.12),
                 ),
-                child: Icon(icono, color: Colors.white, size: 20),
+                child: Icon(icono, color: PaletaRutas.piedra, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -975,7 +972,7 @@ class _CardOpcion extends StatelessWidget {
                       style: TipografiaHaku.interfaz(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -985,7 +982,7 @@ class _CardOpcion extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: PaletaRutas.piedra.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -993,7 +990,7 @@ class _CardOpcion extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: PaletaRutas.piedra.withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -1047,9 +1044,9 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.96),
+          color: PaletaRutas.carbon.withValues(alpha: 0.96),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.18)),
         ),
         child: Column(
           children: [
@@ -1058,22 +1055,22 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
               style: TipografiaHaku.titulo(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: PaletaRutas.piedra,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
-              style: TipografiaHaku.interfaz(color: Colors.white),
-              cursorColor: Colors.white,
+              style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+              cursorColor: PaletaRutas.oro,
               decoration: InputDecoration(
                 hintText: 'Lugar',
                 hintStyle: TipografiaHaku.interfaz(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: PaletaRutas.piedra.withValues(alpha: 0.45),
                 ),
-                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: PaletaRutas.plomoClaro),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.08),
+                fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1092,20 +1089,20 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
                     selected: sel,
                     leading: Icon(
                       Icons.place_outlined,
-                      color: sel ? Colors.white : Colors.white70,
+                      color: sel ? PaletaRutas.piedra : PaletaRutas.plomoClaro,
                     ),
                     title: Text(
                       l.nombre,
                       style: TipografiaHaku.interfaz(
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
                     subtitle: Text(
                       '${l.categoria.etiqueta} · ${l.provincia}',
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
-                        color: Colors.white70,
+                        color: PaletaRutas.plomoClaro,
                       ),
                     ),
                   );
@@ -1115,21 +1112,21 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
             const SizedBox(height: 8),
             TextField(
               controller: _nuevo,
-              style: TipografiaHaku.interfaz(color: Colors.white),
-              cursorColor: Colors.white,
+              style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+              cursorColor: PaletaRutas.oro,
               decoration: InputDecoration(
                 hintText: 'Nuevo lugar',
                 hintStyle: TipografiaHaku.interfaz(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: PaletaRutas.piedra.withValues(alpha: 0.45),
                 ),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.08),
+                fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.check_rounded, color: Colors.white),
+                  icon: const Icon(Icons.check_rounded, color: PaletaRutas.piedra),
                   onPressed: () {
                     final n = _nuevo.text.trim();
                     if (n.isEmpty) return;

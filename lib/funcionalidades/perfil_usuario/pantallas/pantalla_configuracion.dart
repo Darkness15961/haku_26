@@ -48,16 +48,7 @@ class _EstadoPantallaConfiguracion
       ref.read(sesionProvider.notifier).actualizarNombre(nombre);
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Listo',
-          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
-        ),
-        backgroundColor: PaletaRutas.carbon,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    mostrarSnackHaku(context, 'Listo', destacado: true);
   }
 
   Future<void> _cerrarSesion() async {
@@ -113,16 +104,7 @@ class _EstadoPantallaConfiguracion
     await ref.read(almacenFeedProvider.notifier).cargar();
     await ref.read(metricasDescubrimientoProvider.notifier).reiniciarDemo();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Reiniciado',
-          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
-        ),
-        backgroundColor: PaletaRutas.carbon,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    mostrarSnackHaku(context, 'Reiniciado', destacado: true);
   }
 
   @override

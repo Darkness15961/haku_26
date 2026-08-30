@@ -54,15 +54,7 @@ class CardInvitacionGrupo extends ConsumerWidget {
     if (!ok || !context.mounted) return;
     final uid = AlmacenFeedNotifier.idUsuarioLocal;
     if (s.unido(uid)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ya estás en este grupo',
-            style: TipografiaHaku.interfaz(color: Colors.white),
-          ),
-          backgroundColor: PaletaRutas.carbon,
-        ),
-      );
+      mostrarSnackHaku(context, 'Ya estás en este grupo');
       return;
     }
     final done = SalidasDataSourceLocal.instancia.enrolar(s.id, usuarioId: uid);
@@ -74,14 +66,10 @@ class CardInvitacionGrupo extends ConsumerWidget {
       await ref.read(almacenFeedProvider.notifier).persistirSatelites();
     }
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          done ? 'Te uniste a la salida' : 'No hay cupos o ya estás inscrito',
-          style: TipografiaHaku.interfaz(color: Colors.white),
-        ),
-        backgroundColor: PaletaRutas.carbon,
-      ),
+    mostrarSnackHaku(
+      context,
+      done ? 'Te uniste a la salida' : 'No hay cupos o ya estás inscrito',
+      destacado: done,
     );
   }
 
@@ -162,11 +150,11 @@ class CardInvitacionGrupo extends ConsumerWidget {
                             ),
                             decoration: BoxDecoration(
                               color: s.llena
-                                  ? const Color(0xFF8B3A3A)
-                                  : const Color(0xFF2F6B5A),
+                                  ? PaletaRutas.plomoOscuro
+                                  : PaletaRutas.oro,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
+                                color: PaletaRutas.plomo.withValues(alpha: 0.35),
                               ),
                             ),
                             child: Text(
@@ -178,7 +166,9 @@ class CardInvitacionGrupo extends ConsumerWidget {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: s.llena
+                                    ? PaletaRutas.plomoClaro
+                                    : PaletaRutas.ink,
                               ),
                             ),
                           ),

@@ -30,14 +30,10 @@ class _EstadoPantallaCheckIn extends ConsumerState<PantallaCheckIn> {
       await ref.read(almacenFeedProvider.notifier).persistirSatelites();
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok ? 'Asistencia confirmada' : 'No se pudo confirmar',
-          style: TipografiaHaku.interfaz(color: PaletaRutas.ink),
-        ),
-        backgroundColor: PaletaRutas.oro,
-      ),
+    mostrarSnackHaku(
+      context,
+      ok ? 'Asistencia confirmada' : 'No se pudo confirmar',
+      destacado: ok,
     );
   }
 

@@ -75,8 +75,8 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.72),
+                            PaletaRutas.ink.withValues(alpha: 0.15),
+                            PaletaRutas.ink.withValues(alpha: 0.72),
                           ],
                         ),
                       ),
@@ -91,7 +91,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                               onPressed: () => Navigator.of(context).pop(),
                               icon: const Icon(
                                 Icons.arrow_back_rounded,
-                                color: Colors.white,
+                                color: PaletaRutas.piedra,
                               ),
                             ),
                             const Spacer(),
@@ -107,7 +107,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                                 );
                               },
                               icon:
-                                  const Icon(Icons.hiking, color: Colors.white),
+                                  const Icon(Icons.hiking, color: PaletaRutas.piedra),
                             ),
                           ],
                         ),
@@ -146,7 +146,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                           style: TipografiaHaku.titulo(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: PaletaRutas.piedra,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -155,7 +155,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                           style: TipografiaHaku.interfaz(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.88),
+                            color: PaletaRutas.plomoClaro,
                           ),
                         ),
                       ],
@@ -174,10 +174,10 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.88),
+                        color: PaletaRutas.carbon,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.16),
+                          color: PaletaRutas.plomo.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Column(
@@ -187,7 +187,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                             c.descripcion,
                             style: TipografiaHaku.interfaz(
                               fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.88),
+                              color: PaletaRutas.plomoClaro,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -250,10 +250,10 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.88),
+                            color: PaletaRutas.carbon,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.14),
+                              color: PaletaRutas.plomo.withValues(alpha: 0.35),
                             ),
                           ),
                           child: Row(
@@ -268,7 +268,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                                       p.nombre,
                                       style: TipografiaHaku.interfaz(
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                                        color: PaletaRutas.piedra,
                                       ),
                                     ),
                                     Text(
@@ -277,9 +277,7 @@ class PantallaDetalleComunidad extends ConsumerWidget {
                                           : p.usuario,
                                       style: TipografiaHaku.interfaz(
                                         fontSize: 12,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ),
+                                        color: PaletaRutas.plomoClaro,
                                       ),
                                     ),
                                   ],

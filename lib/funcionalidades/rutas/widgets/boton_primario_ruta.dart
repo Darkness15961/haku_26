@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'estilos_rutas.dart';
 
-/// Botón primario negro (mismo estilo que Explorar en Inicio).
+/// Botón primario (CTA oro sobre fondo oscuro).
 class BotonPrimarioRuta extends StatelessWidget {
   final String texto;
   final IconData? icono;
@@ -33,17 +33,17 @@ class BotonPrimarioRuta extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.92),
+                color: PaletaRutas.oro,
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: PaletaRutas.oroOscuro.withValues(alpha: 0.35),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icono != null) ...[
-                    Icon(icono, size: 20, color: Colors.white),
+                    Icon(icono, size: 20, color: PaletaRutas.ink),
                     const SizedBox(width: 8),
                   ],
                   Text(
@@ -51,7 +51,7 @@ class BotonPrimarioRuta extends StatelessWidget {
                     style: TipografiaHaku.interfaz(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: PaletaRutas.ink,
                     ),
                   ),
                 ],
@@ -64,7 +64,7 @@ class BotonPrimarioRuta extends StatelessWidget {
   }
 }
 
-/// Botón secundario outline (estilo Haku / pergamino).
+/// Botón secundario outline (carbon + borde oro).
 class BotonSecundarioRuta extends StatelessWidget {
   final String texto;
   final IconData? icono;
@@ -89,13 +89,16 @@ class BotonSecundarioRuta extends StatelessWidget {
           style: TipografiaHaku.interfaz(
             fontSize: 15,
             fontWeight: FontWeight.w800,
-            color: PaletaRutas.marronOscuro,
+            color: PaletaRutas.piedra,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: PaletaRutas.marronOscuro,
-          side: const BorderSide(color: PaletaRutas.marronCuero, width: 1.4),
-          backgroundColor: PaletaRutas.crema.withValues(alpha: 0.92),
+          foregroundColor: PaletaRutas.piedra,
+          side: BorderSide(
+            color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+            width: 1.4,
+          ),
+          backgroundColor: PaletaRutas.carbon,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),

@@ -509,7 +509,7 @@ class _CarruselRecientes extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
+                            color: PaletaRutas.ink.withValues(alpha: 0.12),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -532,7 +532,7 @@ class _CarruselRecientes extends StatelessWidget {
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                   colors: [
-                                    Colors.black.withValues(alpha: 0.7),
+                                    PaletaRutas.ink.withValues(alpha: 0.7),
                                     Colors.transparent,
                                   ],
                                 ),
@@ -569,7 +569,7 @@ class _CarruselRecientes extends StatelessWidget {
                                     style: TipografiaHaku.titulo(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                      color: PaletaRutas.piedra,
                                     ),
                                   ),
                                 ],
@@ -652,7 +652,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.14),
+                color: PaletaRutas.ink.withValues(alpha: 0.14),
                 blurRadius: 12,
                 offset: const Offset(0, 5),
               ),
@@ -676,7 +676,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
                             colors: [
-                              Colors.black.withValues(alpha: 0.65),
+                              PaletaRutas.ink.withValues(alpha: 0.65),
                               Colors.transparent,
                             ],
                           ),
@@ -777,7 +777,7 @@ class _CeldaLugar extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: PaletaRutas.ink.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -800,7 +800,7 @@ class _CeldaLugar extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: alto ? Alignment.topCenter : Alignment.center,
                       colors: [
-                        Colors.black.withValues(alpha: 0.78),
+                        PaletaRutas.ink.withValues(alpha: 0.78),
                         Colors.transparent,
                       ],
                     ),
@@ -837,7 +837,7 @@ class _CeldaLugar extends StatelessWidget {
                         style: TipografiaHaku.titulo(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
                       Text(
@@ -845,7 +845,7 @@ class _CeldaLugar extends StatelessWidget {
                         style: TipografiaHaku.interfaz(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.88),
+                          color: PaletaRutas.plomoClaro,
                         ),
                       ),
                     ],

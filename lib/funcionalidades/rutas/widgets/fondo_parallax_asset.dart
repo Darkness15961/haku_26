@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'estilos_rutas.dart';
+
 /// Fondo tipo "gambar background" con parallax al hacer scroll.
 class FondoParallaxAsset extends StatelessWidget {
   final String asset;
@@ -81,10 +83,10 @@ class TarjetaFondoParallax extends StatelessWidget {
             padding: padding,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+              border: Border.all(color: PaletaRutas.plomo.withValues(alpha: 0.25)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: PaletaRutas.ink.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),

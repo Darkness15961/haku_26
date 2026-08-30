@@ -82,3 +82,23 @@ abstract final class TipografiaHaku {
     );
   }
 }
+
+/// Snackbar consistente (carbon / oro destacado).
+void mostrarSnackHaku(
+  BuildContext context,
+  String mensaje, {
+  bool destacado = false,
+}) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        mensaje,
+        style: TipografiaHaku.interfaz(
+          color: destacado ? PaletaRutas.ink : PaletaRutas.piedra,
+        ),
+      ),
+      backgroundColor: destacado ? PaletaRutas.oro : PaletaRutas.carbon,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}

@@ -18,16 +18,11 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
     this.indice = 0,
   });
 
-  static const _sombraBlanca = [
+  static final _sombraInk = [
     Shadow(
-      color: Color(0xCC000000),
+      color: PaletaRutas.ink.withValues(alpha: 0.75),
       blurRadius: 6,
-      offset: Offset(0, 1),
-    ),
-    Shadow(
-      color: Color(0x99000000),
-      blurRadius: 3,
-      offset: Offset(0, 0),
+      offset: const Offset(0, 1),
     ),
   ];
 
@@ -43,12 +38,12 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
                 FondosDetalleHaku.porIndice(indice),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
-                    const ColoredBox(color: Colors.black87),
+                    const ColoredBox(color: PaletaRutas.carbon),
               ),
             ),
             Positioned.fill(
               child: ColoredBox(
-                color: Colors.black.withValues(alpha: 0.42),
+                color: PaletaRutas.ink.withValues(alpha: 0.52),
               ),
             ),
             Container(
@@ -57,7 +52,7 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: PaletaRutas.plomo.withValues(alpha: 0.35),
                 ),
               ),
               child: Column(
@@ -66,8 +61,8 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
                   Icon(
                     icono,
                     size: 22,
-                    color: Colors.white,
-                    shadows: _sombraBlanca,
+                    color: PaletaRutas.oro,
+                    shadows: _sombraInk,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -75,8 +70,8 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
                     style: TipografiaHaku.titulo(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ).copyWith(shadows: _sombraBlanca),
+                      color: PaletaRutas.piedra,
+                    ).copyWith(shadows: _sombraInk),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -87,9 +82,9 @@ class TarjetaEstadisticaPerfil extends StatelessWidget {
                     style: TipografiaHaku.interfaz(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: PaletaRutas.plomoClaro,
                       height: 1.2,
-                    ).copyWith(shadows: _sombraBlanca),
+                    ).copyWith(shadows: _sombraInk),
                   ),
                 ],
               ),

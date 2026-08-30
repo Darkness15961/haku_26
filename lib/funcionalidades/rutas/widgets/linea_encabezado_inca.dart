@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'estilos_rutas.dart';
+
 /// Franja fina bajo encabezados.
 class LineaEncabezadoInca extends StatelessWidget {
   final double altura;
@@ -8,7 +10,7 @@ class LineaEncabezadoInca extends StatelessWidget {
   const LineaEncabezadoInca({
     super.key,
     this.altura = 2,
-    this.color = Colors.black,
+    this.color = PaletaRutas.oro,
   });
 
   @override

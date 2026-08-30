@@ -220,8 +220,8 @@ class _PortadaPerfil extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.1),
-                            Colors.black.withValues(alpha: 0.65),
+                            PaletaRutas.ink.withValues(alpha: 0.1),
+                            PaletaRutas.ink.withValues(alpha: 0.65),
                           ],
                         ),
                       ),
@@ -237,7 +237,7 @@ class _PortadaPerfil extends StatelessWidget {
                           width: 20,
                           height: 20,
                           colorFilter: const ColorFilter.mode(
-                            Colors.white,
+                            PaletaRutas.piedra,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -247,7 +247,7 @@ class _PortadaPerfil extends StatelessWidget {
                           style: TipografiaHaku.interfaz(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: PaletaRutas.plomoClaro,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -262,10 +262,10 @@ class _PortadaPerfil extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(color: PaletaRutas.piedra, width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: PaletaRutas.ink.withValues(alpha: 0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -275,7 +275,7 @@ class _PortadaPerfil extends StatelessWidget {
                   url: avatarUrl,
                   size: 84,
                   borderWidth: 3,
-                  borderColor: Colors.white,
+                  borderColor: PaletaRutas.piedra,
                 ),
               ),
             ),
@@ -703,7 +703,7 @@ void _mostrarTodasInsignias(
                         child: Icon(
                           i.icono,
                           color: i.desbloqueada
-                              ? Colors.white
+                              ? PaletaRutas.piedra
                               : PaletaRutas.plomo,
                           size: 20,
                         ),
@@ -810,7 +810,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: PaletaRutas.ink.withValues(alpha: 0.12),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -838,8 +838,12 @@ class _PedacitoCultura extends StatelessWidget {
   final int indice;
   final VoidCallback onTap;
 
-  static const _sombra = [
-    Shadow(color: Color(0xB3000000), blurRadius: 5, offset: Offset(0, 1)),
+  static final _sombra = [
+    Shadow(
+      color: PaletaRutas.ink.withValues(alpha: 0.75),
+      blurRadius: 5,
+      offset: const Offset(0, 1),
+    ),
   ];
 
   IconData get _icono {
@@ -877,9 +881,11 @@ class _PedacitoCultura extends StatelessWidget {
                   FondosDetalleHaku.porIndice(indice),
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) =>
-                      const ColoredBox(color: Colors.black87),
+                      const ColoredBox(color: PaletaRutas.carbon),
                 ),
-                const ColoredBox(color: Color(0x7A000000)),
+                ColoredBox(
+                  color: PaletaRutas.ink.withValues(alpha: 0.48),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Column(
@@ -897,7 +903,7 @@ class _PedacitoCultura extends StatelessWidget {
                       const Spacer(),
                       Row(
                         children: [
-                          Icon(_icono, size: 14, color: Colors.white),
+                          Icon(_icono, size: 14, color: PaletaRutas.oro),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -907,7 +913,7 @@ class _PedacitoCultura extends StatelessWidget {
                               style: TipografiaHaku.interfaz(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: PaletaRutas.plomoClaro,
                               ).copyWith(shadows: _sombra),
                             ),
                           ),
@@ -920,7 +926,7 @@ class _PedacitoCultura extends StatelessWidget {
                         style: TipografiaHaku.titulo(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: PaletaRutas.piedra,
                         ).copyWith(shadows: _sombra),
                       ),
                     ],

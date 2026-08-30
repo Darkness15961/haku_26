@@ -120,15 +120,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     if (_comoGrupo) {
       final grupos = _misGrupos(store);
       if (grupos.isEmpty || _comunidadId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Elige un grupo o crea la salida como persona',
-              style: TipografiaHaku.interfaz(color: Colors.white),
-            ),
-            backgroundColor: PaletaRutas.carbon,
-          ),
-        );
+        mostrarSnackHaku(context, 'Elige un grupo o crea la salida como persona');
         return;
       }
       final g = grupos.firstWhere((c) => c.id == _comunidadId);
@@ -139,15 +131,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     }
 
     if (_hora.text.trim().isEmpty || _punto.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Completa hora y punto de encuentro',
-            style: TipografiaHaku.interfaz(color: Colors.white),
-          ),
-          backgroundColor: PaletaRutas.carbon,
-        ),
-      );
+      mostrarSnackHaku(context, 'Completa hora y punto de encuentro');
       return;
     }
 
@@ -205,16 +189,12 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
           ),
         );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          grupo.isEmpty
-              ? 'Salida creada y publicada en Comunidad'
-              : 'Salida creada con $grupo y publicada en Comunidad',
-          style: TipografiaHaku.interfaz(color: Colors.white),
-        ),
-        backgroundColor: PaletaRutas.carbon,
-      ),
+    mostrarSnackHaku(
+      context,
+      grupo.isEmpty
+          ? 'Salida creada y publicada en Comunidad'
+          : 'Salida creada con $grupo y publicada en Comunidad',
+      destacado: true,
     );
     Navigator.pop(context);
   }

@@ -90,13 +90,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
   }
 
   void _aviso(String texto) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-      ),
-    );
+    mostrarSnackHaku(context, texto);
   }
 
   @override

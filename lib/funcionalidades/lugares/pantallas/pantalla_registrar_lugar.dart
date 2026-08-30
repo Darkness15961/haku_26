@@ -125,15 +125,7 @@ class _EstadoPantallaRegistrarLugar
   }
 
   void _aviso(String m) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          m,
-          style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
-        ),
-        backgroundColor: PaletaRutas.carbon,
-      ),
-    );
+    mostrarSnackHaku(context, m);
   }
 
   InputDecoration _campo(String label, {String? hint}) {
