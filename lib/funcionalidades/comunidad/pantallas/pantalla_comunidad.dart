@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/demo/senales_atencion.dart';
+import '../../../nucleo/widgets/badge_contador.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
@@ -124,26 +126,51 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                         ),
                       ),
                     ),
-                    if (pestania == 1)
-                      IconButton(
-                        tooltip: 'Crear salida',
-                        onPressed: _abrirCrearSalida,
-                        icon: const Icon(
-                          Icons.add_rounded,
-                          color: PaletaRutas.oro,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (pestania == 1)
+                          IconButton(
+                            tooltip: 'Crear salida',
+                            onPressed: _abrirCrearSalida,
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: PaletaRutas.oro,
+                            ),
+                          )
+                        else if (pestania == 2)
+                          IconButton(
+                            tooltip: 'Crear comunidad',
+                            onPressed: _abrirCrearComunidad,
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: PaletaRutas.oro,
+                            ),
+                          ),
+                        IconButton(
+                          tooltip: 'Notificaciones',
+                          onPressed: () {
+                            final ir = SenalesAtencion.mensajesSinLeer() > 0
+                                ? 3
+                                : SenalesAtencion.salidasAbiertas() > 0
+                                    ? 1
+                                    : 0;
+                            ref
+                                .read(pestaniaComunidadProvider.notifier)
+                                .state = ir;
+                          },
+                          icon: BadgeContadorOverlay(
+                            cantidad:
+                                SenalesAtencion.totalPendientesComunidad(),
+                            compacto: true,
+                            child: const Icon(
+                              Icons.notifications_outlined,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
                         ),
-                      )
-                    else if (pestania == 2)
-                      IconButton(
-                        tooltip: 'Crear comunidad',
-                        onPressed: _abrirCrearComunidad,
-                        icon: const Icon(
-                          Icons.add_rounded,
-                          color: PaletaRutas.oro,
-                        ),
-                      )
-                    else
-                      const SizedBox(width: 48),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -159,6 +186,11 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                       _TabComunidad(
                         label: _tabs[i],
                         selected: pestania == i,
+                        contador: switch (i) {
+                          1 => SenalesAtencion.salidasAbiertas(),
+                          3 => SenalesAtencion.mensajesSinLeer(),
+                          _ => 0,
+                        },
                         onTap: () => ref
                             .read(pestaniaComunidadProvider.notifier)
                             .state = i,
@@ -463,11 +495,13 @@ class _TabComunidad extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.contador = 0,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final int contador;
 
   @override
   Widget build(BuildContext context) {
@@ -485,13 +519,22 @@ class _TabComunidad extends StatelessWidget {
                 : PaletaRutas.plomo.withValues(alpha: 0.4),
           ),
         ),
-        child: Text(
-          label,
-          style: TipografiaHaku.interfaz(
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? PaletaRutas.oro : PaletaRutas.plomoClaro,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TipografiaHaku.interfaz(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? PaletaRutas.oro : PaletaRutas.plomoClaro,
+              ),
+            ),
+            if (contador > 0 && !selected) ...[
+              const SizedBox(width: 6),
+              BadgeContador(cantidad: contador, compacto: true),
+            ],
+          ],
         ),
       ),
     );
@@ -624,19 +667,16 @@ class _TarjetaChatDirecto extends StatelessWidget {
           child: Row(
             children: [
               Stack(
+                clipBehavior: Clip.none,
                 children: [
                   AvatarHaku(url: chat.avatarUrl, size: 48),
                   if (chat.noLeidos > 0)
                     Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: PaletaRutas.oro,
-                          shape: BoxShape.circle,
-                        ),
+                      right: -4,
+                      top: -4,
+                      child: BadgeContador(
+                        cantidad: chat.noLeidos,
+                        compacto: true,
                       ),
                     ),
                 ],

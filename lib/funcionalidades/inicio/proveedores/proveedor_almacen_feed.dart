@@ -418,6 +418,11 @@ class AlmacenFeedNotifier extends StateNotifier<EstadoAlmacenFeed> {
             salidaId: m['salida_id'] as String?,
             calificacion: (m['calificacion'] as num?)?.toDouble(),
             grupoNombre: m['grupo_nombre'] as String?,
+            musica: m['musica'] as String?,
+            menciones: [
+              for (final x in (m['menciones'] as List<dynamic>? ?? []))
+                x.toString(),
+            ],
           );
         })
         .toList();

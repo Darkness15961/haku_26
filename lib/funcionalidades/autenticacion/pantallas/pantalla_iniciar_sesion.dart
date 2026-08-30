@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
@@ -125,7 +126,7 @@ class _EstadoPantallaIniciarSesion
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Entrar',
+                      CopyHaku.loginSubtitulo,
                       textAlign: TextAlign.center,
                       style: TipografiaHaku.interfaz(
                         fontSize: 14,

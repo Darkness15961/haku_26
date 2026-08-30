@@ -32,6 +32,10 @@ abstract final class PaletaRutas {
   static const marronCuero = plomo;
   static const marronOscuro = ink;
   static const crema = piedra;
+
+  /// Acento vivo para llamar la atención (contrasta con oro del FAB).
+  static const atencion = Color(0xFF4E9B6D);
+  static const atencionBrillo = Color(0xFF7BC49A);
 }
 
 /// Tipografías — minimal: logo manuscrito, títulos serif, UI limpia.

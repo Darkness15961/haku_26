@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../nucleo/demo/preferencias_demo_haku.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import 'pantalla_onboarding_demo.dart';
 
 /// Splash — montaña andina + marca HAKU.
 class PantallaCargaInicial extends StatefulWidget {
@@ -43,12 +46,20 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     _temporizador = Timer(_duracion, _continuar);
   }
 
-  void _continuar() {
+  Future<void> _continuar() async {
     if (!mounted || _navegacionRealizada) return;
     _navegacionRealizada = true;
+
+    final onboardingVisto = await PreferenciasDemoHaku.onboardingVisto();
+    if (!mounted) return;
+
+    final destino = onboardingVisto
+        ? widget.siguientePantalla
+        : PantallaOnboardingDemo(siguiente: widget.siguientePantalla);
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => widget.siguientePantalla,
+        pageBuilder: (_, __, ___) => destino,
         transitionsBuilder: (_, anim, __, child) {
           return FadeTransition(opacity: anim, child: child);
         },
@@ -134,7 +145,7 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
               child: FadeTransition(
                 opacity: _fade,
                 child: Text(
-                  'Toca para entrar',
+                  CopyHaku.splashPie,
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(
                     fontSize: 11,

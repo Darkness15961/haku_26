@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
@@ -9,8 +10,9 @@ import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/pantallas/pantalla_comentarios_publicacion.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import 'metricas_comunidad.dart';
 
-/// Publicaciones de experiencia (lugar o ruta), con valoración.
+/// Publicaciones de experiencia en un lugar o ruta.
 class ListaExperienciasLugar extends ConsumerWidget {
   const ListaExperienciasLugar({
     super.key,
@@ -24,57 +26,27 @@ class ListaExperienciasLugar extends ConsumerWidget {
   final String? lugarId;
   final String? rutaId;
 
-  static List<PublicacionFeed> filtrar(
-    List<PublicacionFeed> todas, {
-    String? lugarId,
-    String? rutaId,
-  }) {
-    final lista = todas.where((p) {
-      if (p.esInvitacionSalida) return false;
-      if (lugarId != null && p.lugarId == lugarId) return true;
-      if (rutaId != null && p.rutaId == rutaId) return true;
-      return false;
-    }).toList();
-    lista.sort((a, b) {
-      final ta = a.creadoEn ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final tb = b.creadoEn ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return tb.compareTo(ta);
-    });
-    return lista;
-  }
-
-  static double? promedioValoraciones(List<PublicacionFeed> experiencias) {
-    final notas = experiencias
-        .map((p) => p.calificacion)
-        .whereType<double>()
-        .where((n) => n > 0)
-        .toList();
-    if (notas.isEmpty) return null;
-    return notas.reduce((a, b) => a + b) / notas.length;
-  }
-
   String _etiquetaGrupo(PublicacionFeed p) {
     final g = p.grupoNombre?.trim();
     if (g != null && g.isNotEmpty) return g;
     final sid = p.salidaId;
     if (sid == null || sid.isEmpty) return '';
-    final salida = SalidasDataSourceLocal.instancia.porId(sid);
-    return salida?.grupo ?? '';
+    return SalidasDataSourceLocal.instancia.porId(sid)?.grupo ?? '';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(almacenFeedProvider);
-    final experiencias = filtrar(
-      feed.publicaciones,
+    final experiencias = MetricasComunidad.experienciasDe(
+      ref.watch(almacenFeedProvider).publicaciones,
       lugarId: lugarId,
       rutaId: rutaId,
     );
+
     if (experiencias.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
-          'Aún no hay experiencias publicadas. Sé el primero en compartir la tuya.',
+          CopyHaku.experienciasVacias,
           style: TipografiaHaku.interfaz(
             fontSize: 13,
             height: 1.4,
@@ -84,36 +56,9 @@ class ListaExperienciasLugar extends ConsumerWidget {
       );
     }
 
-    final promedio = promedioValoraciones(experiencias);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (promedio != null) ...[
-          Row(
-            children: [
-              const Icon(Icons.star_rounded, size: 18, color: PaletaRutas.oro),
-              const SizedBox(width: 4),
-              Text(
-                promedio.toStringAsFixed(1),
-                style: TipografiaHaku.interfaz(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: PaletaRutas.piedra,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '· ${experiencias.length} experiencia${experiencias.length == 1 ? '' : 's'}',
-                style: TipografiaHaku.interfaz(
-                  fontSize: 12,
-                  color: PaletaRutas.plomoClaro,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
         for (final p in experiencias)
           _TarjetaExperienciaLugar(
             publicacion: p,

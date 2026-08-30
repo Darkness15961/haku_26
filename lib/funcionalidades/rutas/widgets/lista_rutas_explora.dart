@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../lugares/widgets/metricas_comunidad.dart';
 import '../datos/rutas_datasource_local.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../pantallas/pantalla_detalle_ruta.dart';
@@ -7,16 +10,16 @@ import 'estilos_rutas.dart';
 import 'tarjeta_ruta.dart';
 
 /// Listado de rutas por categoría — embebido en Explora.
-class ListaRutasExplora extends StatefulWidget {
+class ListaRutasExplora extends ConsumerStatefulWidget {
   const ListaRutasExplora({super.key, this.bottomPadding = 110});
 
   final double bottomPadding;
 
   @override
-  State<ListaRutasExplora> createState() => _EstadoListaRutasExplora();
+  ConsumerState<ListaRutasExplora> createState() => _EstadoListaRutasExplora();
 }
 
-class _EstadoListaRutasExplora extends State<ListaRutasExplora>
+class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
 
@@ -41,15 +44,20 @@ class _EstadoListaRutasExplora extends State<ListaRutasExplora>
   }
 
   void _abrirDetalle(ModeloRuta ruta) {
+    final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PantallaDetalleRuta(ruta: ruta),
+        builder: (_) => PantallaDetalleRuta(ruta: catalogo),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final indiceRutas = MetricasComunidad.indiceRutas(
+      ref.watch(almacenFeedProvider).publicaciones,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -83,7 +91,10 @@ class _EstadoListaRutasExplora extends State<ListaRutasExplora>
           child: TabBarView(
             controller: _tabs,
             children: _categorias.map((categoria) {
-              final rutas = RutasDataSourceLocal.obtenerPorCategoria(categoria);
+              final rutas = MetricasComunidad.enriquecerRutas(
+                RutasDataSourceLocal.obtenerPorCategoria(categoria),
+                indiceRutas,
+              );
               if (rutas.isEmpty) {
                 return _EmptyRutas(onExplorar: () => _tabs.animateTo(0));
               }

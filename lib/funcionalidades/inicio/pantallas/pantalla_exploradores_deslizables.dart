@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
@@ -100,7 +101,7 @@ class _EstadoPantallaExploradoresDeslizables
                           tooltip: 'Compartir',
                           onPressed: () async {
                             final texto =
-                                'Explora el perfil de ${persona.usuario} en HAKU';
+                                CopyHaku.compartirPerfil(persona.usuario);
                             await Clipboard.setData(
                               ClipboardData(text: texto),
                             );

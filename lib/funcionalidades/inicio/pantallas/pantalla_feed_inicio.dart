@@ -4,15 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
+import '../../../nucleo/widgets/badge_contador.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
+import '../../../nucleo/demo/senales_atencion.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../lugares/proveedores/proveedor_explora_ui.dart';
+import '../../lugares/widgets/metricas_comunidad.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
 import '../proveedores/proveedor_comunidad_ui.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 import '../widgets/card_escapada_comunidad.dart';
 import '../widgets/carrusel_rutas_recomendadas.dart';
 import '../widgets/portada_inicio_cultura.dart';
@@ -59,9 +64,10 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
       );
       return;
     }
+    final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PantallaDetalleRuta(ruta: ruta),
+        builder: (_) => PantallaDetalleRuta(ruta: catalogo),
       ),
     );
   }
@@ -70,7 +76,11 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     irAExplora(ref, modo: ModoExplora.rutas);
   }
 
-  ModeloRuta _desdeLugar(ModeloLugar l) {
+  ModeloRuta _desdeLugar(
+    ModeloLugar l,
+    Map<String, int> exploradoresPorLugar,
+    Map<String, double> calificacionPorLugar,
+  ) {
     return ModeloRuta(
       id: 'lugar_${l.id}',
       titulo: l.nombre,
@@ -79,8 +89,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
       imagenUrl: l.imagenUrl,
       categoria: CategoriaRuta.recomendadas,
       provincia: l.provincia,
-      calificacion: l.calificacion,
-      cantidadResenas: l.exploradores,
+      calificacion: calificacionPorLugar[l.id] ?? l.calificacion,
+      cantidadResenas: exploradoresPorLugar[l.id] ?? 0,
       etiquetas: [l.categoria.etiqueta],
       tipoSitio: _tipoLugar(l.categoria),
     );
@@ -108,14 +118,18 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   }
 
   /// Lugares recién descubiertos / poco explorados — elegidos por la comunidad.
-  List<ModeloRuta> _descubiertosPorComunidad(List<ModeloLugar> lugares) {
+  List<ModeloRuta> _descubiertosPorComunidad(
+    List<ModeloLugar> lugares,
+    Map<String, int> exploradoresPorLugar,
+    Map<String, double> calificacionPorLugar,
+  ) {
     final recientes = lugares
         .where(
           (l) =>
               l.nivelExploracion == NivelExploracion.nuevoEnHaku ||
               l.nivelExploracion == NivelExploracion.pocoExplorado,
         )
-        .map(_desdeLugar)
+        .map((l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar))
         .map((r) {
           final lugarId = r.id.startsWith('lugar_')
               ? r.id.substring('lugar_'.length)
@@ -191,8 +205,19 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 88;
-    final todasRutas = RutasDataSourceLocal.obtenerTodas();
-    final culturales = RutasDataSourceLocal.obtenerCultura();
+    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
+    final indice = MetricasComunidad.indiceLugares(publicaciones);
+    final indiceRutas = MetricasComunidad.indiceRutas(publicaciones);
+    final exploradoresPorLugar = indice.exploradores;
+    final calificacionPorLugar = indice.calificaciones;
+    final todasRutas = MetricasComunidad.enriquecerRutas(
+      RutasDataSourceLocal.obtenerTodas(),
+      indiceRutas,
+    );
+    final culturales = MetricasComunidad.enriquecerRutas(
+      RutasDataSourceLocal.obtenerCultura(),
+      indiceRutas,
+    );
     final caminos = todasRutas
         .where((r) => r.hilo == HiloCultura.camino)
         .toList();
@@ -206,7 +231,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
               l.categoria == CategoriaLugar.magico,
         )
         .map((l) {
-          final r = _desdeLugar(l);
+          final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
           return r.copyWith(
             imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
           );
@@ -229,7 +254,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     });
     final heroMagico = cuscoMagico.take(7).toList();
 
-    var descubiertos = _descubiertosPorComunidad(lugares)
+    var descubiertos =
+        _descubiertosPorComunidad(lugares, exploradoresPorLugar, calificacionPorLugar)
         .where((r) => !heroMagico.any((h) => h.id == r.id))
         .toList();
     var aventura = <ModeloRuta>[
@@ -241,7 +267,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.caminata ||
                 l.categoria == CategoriaLugar.naturaleza,
           )
-          .map(_desdeLugar),
+          .map((l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar)),
     ];
 
     var comida = <ModeloRuta>[
@@ -257,7 +283,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.cultura,
           )
           .map((l) {
-            final r = _desdeLugar(l);
+            final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
             return r.copyWith(
               imagenUrl: l.categoria == CategoriaLugar.gastronomia
                   ? CatalogoImagenesHaku.imagenFogones(lugarId: l.id)
@@ -275,7 +301,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.fotografia,
           )
           .map((l) {
-            final r = _desdeLugar(l);
+            final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
             return r.copyWith(
               imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
             );
@@ -317,7 +343,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '¿Qué descubres hoy?',
+                            CopyHaku.tituloInicio,
                             style: TipografiaHaku.titulo(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
@@ -327,7 +353,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Inspírate — lo mejor curado de Cusco',
+                            CopyHaku.subtituloInicio,
                             style: TipografiaHaku.interfaz(
                               fontSize: 13,
                               color: PaletaRutas.plomoClaro,
@@ -339,9 +365,13 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                     IconButton(
                       tooltip: 'Mensajes',
                       onPressed: _abrirComunidadMensajes,
-                      icon: const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: PaletaRutas.piedra,
+                      icon: BadgeContadorOverlay(
+                        cantidad: SenalesAtencion.mensajesSinLeer(),
+                        compacto: true,
+                        child: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: PaletaRutas.piedra,
+                        ),
                       ),
                     ),
                   ],
@@ -378,7 +408,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Buscar descubrimientos en Cusco…',
+                              CopyHaku.buscarHint,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 14,
                                 color: PaletaRutas.plomo,
@@ -426,7 +456,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Ver en el mapa',
+                                  CopyHaku.mapaAccesoTitulo,
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -434,7 +464,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                                   ),
                                 ),
                                 Text(
-                                  'Explora lugares cerca de ti',
+                                  CopyHaku.mapaAccesoSubtitulo,
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
                                     color: PaletaRutas.plomoClaro,
@@ -480,8 +510,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
               child: _seccion(
                 keyId: 'aventura',
                 rutas: aventura,
-                titulo: 'Senderos por descubrir',
-                subtitulo: 'Rafting, ferrata, trekking y naturaleza',
+                titulo: CopyHaku.carruselSenderosTitulo,
+                subtitulo: CopyHaku.carruselSenderosSub,
                 estilo: EstiloPieCarrusel.tipoYProvincia,
                 altura: 310,
               ),
@@ -491,8 +521,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
               child: _seccion(
                 keyId: 'comida',
                 rutas: comida,
-                titulo: 'Fogones y oficios vivos',
-                subtitulo: 'Comida, talleres y cultura local',
+                titulo: CopyHaku.carruselFogonesTitulo,
+                subtitulo: CopyHaku.carruselFogonesSub,
                 estilo: EstiloPieCarrusel.tipoYProvincia,
               ),
             ),
@@ -513,8 +543,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 child: _seccion(
                   keyId: 'experiencias',
                   rutas: experiencias,
-                  titulo: 'Experiencias que marcan',
-                  subtitulo: 'Místico, fotografía y ese silencio de Cusco',
+                  titulo: CopyHaku.carruselExperienciasTitulo,
+                  subtitulo: CopyHaku.carruselExperienciasSub,
                   estilo: EstiloPieCarrusel.tipoYProvincia,
                 ),
               ),

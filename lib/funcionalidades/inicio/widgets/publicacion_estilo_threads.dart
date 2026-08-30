@@ -189,7 +189,7 @@ class _EstadoPublicacionEstiloThreads
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
             child: Text(
-              p.texto,
+              post.texto,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: _ui.copyWith(
@@ -199,6 +199,46 @@ class _EstadoPublicacionEstiloThreads
               ),
             ),
           ),
+          if (post.musica != null && post.musica!.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.music_note_rounded,
+                    size: 14,
+                    color: PaletaRutas.oroSuave,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      post.musica!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _ui.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: PaletaRutas.oroSuave,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (post.menciones.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+              child: Text(
+                post.menciones.join(' '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _ui.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.oro,
+                ),
+              ),
+            ),
         ],
       ),
     );

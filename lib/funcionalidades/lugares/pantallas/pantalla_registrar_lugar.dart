@@ -70,8 +70,6 @@ class _EstadoPantallaRegistrarLugar
       distrito: _usandoUbicacion ? 'Ubicación actual' : 'Por confirmar',
       distanciaKm: 0,
       calificacion: 5,
-      exploradores: 1,
-      fotos: _foto == null ? 0 : 1,
       nivelExploracion: NivelExploracion.nuevoEnHaku,
       dificultad: _dificultad,
       acceso: _acceso,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 
@@ -35,7 +36,7 @@ class UsuarioSesion {
     nombreUsuario: 'Lucía',
     correo: 'lucia@haku.app',
     avatarUrl: CatalogoImagenesHaku.avatar,
-    bio: 'Cusco.',
+    bio: CopyHaku.bioDefault,
     provincia: 'Cusco',
   );
 
@@ -53,7 +54,7 @@ class UsuarioSesion {
   factory UsuarioSesion.desdeMapa(Map<String, dynamic> m) {
     return UsuarioSesion(
       id: m['id'] as String? ?? AlmacenFeedNotifier.idUsuarioLocal,
-      nombreUsuario: m['nombre_usuario'] as String? ?? 'Explorador HAKU',
+      nombreUsuario: m['nombre_usuario'] as String? ?? CopyHaku.nombreDefault,
       correo: m['correo'] as String? ?? '',
       avatarUrl: CatalogoImagenesHaku.resolverAvatar(m['avatar_url'] as String?),
       bio: m['bio'] as String?,
@@ -159,7 +160,7 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
         nombreUsuario: nombreUsuario,
         correo: correo,
         avatarUrl: UsuarioSesion.demoGoogle.avatarUrl,
-        bio: 'Cusco.',
+        bio: CopyHaku.bioDefault,
         provincia: 'Cusco',
         documento: documento,
         tipoDocumento: tipoDocumento,

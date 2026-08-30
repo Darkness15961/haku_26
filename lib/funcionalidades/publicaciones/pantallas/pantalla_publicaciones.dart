@@ -7,6 +7,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
@@ -14,6 +16,8 @@ import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
 import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/proveedores/proveedor_lugares.dart';
+import '../../rutas/datos/rutas_datasource_local.dart';
+import '../datos/catalogo_publicacion_demo.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -27,10 +31,13 @@ class PantallaPublicaciones extends ConsumerStatefulWidget {
     super.key,
     this.rutaId,
     this.rutaTitulo,
+    this.irAComunidadAlPublicar = true,
   });
 
   final String? rutaId;
   final String? rutaTitulo;
+  /// Si es false (p. ej. desde detalle), vuelve al contexto anterior.
+  final bool irAComunidadAlPublicar;
 
   static const fondo = 'public/image/fondo_publicaciones.jpg';
 
@@ -50,6 +57,7 @@ class _EstadoPantallaPublicaciones
   bool _opcionesAvanzadas = false;
   String? _musica;
   String? _lugarId;
+  String? _rutaId;
   String? _lugarNombre;
   CategoriaLugar? _categoria;
   final List<String> _etiquetas = [];
@@ -57,8 +65,15 @@ class _EstadoPantallaPublicaciones
   @override
   void initState() {
     super.initState();
+    final id = widget.rutaId?.trim();
     final titulo = widget.rutaTitulo?.trim();
-    _lugarId = widget.rutaId;
+    if (id != null && id.isNotEmpty) {
+      if (RutasDataSourceLocal.obtenerPorId(id) != null) {
+        _rutaId = id;
+      } else {
+        _lugarId = id;
+      }
+    }
     if (titulo != null && titulo.isNotEmpty) {
       _lugarNombre = titulo;
       _descripcion.text = titulo;
@@ -76,6 +91,7 @@ class _EstadoPantallaPublicaciones
   }
 
   void _abrirLugarSiFalta() {
+    if (_rutaId != null && _rutaId!.isNotEmpty) return;
     if (_lugarId != null && _lugarId!.isNotEmpty) return;
     final nombre = _lugarNombre?.trim();
     if (nombre != null && nombre.isNotEmpty) return;
@@ -199,6 +215,7 @@ class _EstadoPantallaPublicaciones
           onElegir: (lugar) {
             setState(() {
               _lugarId = lugar.id;
+              _rutaId = null;
               _lugarNombre = lugar.nombre;
               _categoria = lugar.categoria;
             });
@@ -207,6 +224,7 @@ class _EstadoPantallaPublicaciones
           onNuevo: (nombre) {
             setState(() {
               _lugarId = null;
+              _rutaId = null;
               _lugarNombre = nombre;
             });
             Navigator.pop(ctx);
@@ -279,12 +297,135 @@ class _EstadoPantallaPublicaciones
     );
   }
 
+  void _mostrarMusica() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          decoration: BoxDecoration(
+            color: PaletaRutas.carbon,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Música',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.titulo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Biblioteca demo — elige una pista para tu recuerdo',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 12,
+                  color: PaletaRutas.plomoClaro,
+                ),
+              ),
+              const SizedBox(height: 14),
+              for (final pista in CatalogoPublicacionDemo.pistasMusica) ...[
+                ListTile(
+                  onTap: () {
+                    setState(() => _musica = pista.etiqueta);
+                    Navigator.pop(ctx);
+                  },
+                  selected: _musica == pista.etiqueta,
+                  selectedTileColor: PaletaRutas.oro.withValues(alpha: 0.12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: Icon(
+                    Icons.music_note_rounded,
+                    color: _musica == pista.etiqueta
+                        ? PaletaRutas.oro
+                        : PaletaRutas.plomoClaro,
+                  ),
+                  title: Text(
+                    pista.titulo,
+                    style: TipografiaHaku.interfaz(
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  subtitle: Text(
+                    pista.artista,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 12,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+              if (_musica != null)
+                TextButton(
+                  onPressed: () {
+                    setState(() => _musica = null);
+                    Navigator.pop(ctx);
+                  },
+                  child: Text(
+                    'Quitar música',
+                    style: TipografiaHaku.interfaz(
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarEtiquetas() {
+    final perfiles = ref.read(almacenFeedProvider).perfiles;
+    final yo = AlmacenFeedNotifier.idUsuarioLocal;
+    final contactos = [
+      for (final p in perfiles)
+        if (p.id != yo) p,
+      if (perfiles.isEmpty) ...FeedInicioDataSourceLocal.sugerencias.where((p) => p.id != yo),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _SheetEtiquetas(
+          contactos: contactos,
+          seleccionados: {..._etiquetas},
+          onConfirmar: (seleccion) {
+            setState(() => _etiquetas
+              ..clear()
+              ..addAll(seleccion));
+            Navigator.pop(ctx);
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _publicar() async {
     var lugarId = _lugarId;
     final nombreLugar = _lugarNombre?.trim();
-    if ((lugarId == null || lugarId.isEmpty) &&
-        (nombreLugar == null || nombreLugar.isEmpty)) {
-      _aviso('Lugar');
+    final rutaId = _rutaId?.trim();
+    final tieneDestino = (lugarId != null && lugarId.isNotEmpty) ||
+        (rutaId != null && rutaId.isNotEmpty) ||
+        (nombreLugar != null && nombreLugar.isNotEmpty);
+    if (!tieneDestino) {
+      _aviso('Elige dónde fue');
       return;
     }
     if ((lugarId == null || lugarId.isEmpty) &&
@@ -305,14 +446,15 @@ class _EstadoPantallaPublicaciones
               distrito: 'Por confirmar',
               distanciaKm: 0,
               calificacion: 5,
-              exploradores: 1,
-              fotos: 1,
               nivelExploracion: NivelExploracion.nuevoEnHaku,
               descubiertoEn: DateTime.now(),
               creadoPorUsuario: true,
             ),
           );
       notificarLugaresCambiaron(ref);
+      await ref
+          .read(metricasDescubrimientoProvider.notifier)
+          .registrarDescubrimiento(lugarId, fuente: 'publicar');
     }
 
     final sesion = ref.read(sesionProvider).usuario;
@@ -321,7 +463,7 @@ class _EstadoPantallaPublicaciones
           PublicacionFeed(
             id: 'p_${ahora.millisecondsSinceEpoch}',
             autorId: AlmacenFeedNotifier.idUsuarioLocal,
-            autor: sesion?.nombreUsuario ?? 'Explorador HAKU',
+            autor: sesion?.nombreUsuario ?? CopyHaku.nombreDefault,
             usuario: sesion != null
                 ? '@${sesion.nombreUsuario.toLowerCase().replaceAll(' ', '')}'
                 : '@haku',
@@ -333,25 +475,42 @@ class _EstadoPantallaPublicaciones
             comentarios: 0,
             estiloFondo: EstiloFondoPublicacion.veloNegro,
             creadoEn: ahora,
-            lugarId: lugarId,
+            lugarId: rutaId != null && rutaId.isNotEmpty ? null : lugarId,
             lugarNombre: nombreLugar,
+            rutaId: rutaId != null && rutaId.isNotEmpty ? rutaId : null,
             categoria: _categoria?.name,
             calificacion: 5,
+            musica: _musica,
+            menciones: List.unmodifiable(_etiquetas),
           ),
         );
 
-    final idMetrica = lugarId ?? 'sin_lugar';
-    ref.read(metricasDescubrimientoProvider.notifier).registrarExperiencia(idMetrica);
+    final idMetrica = rutaId ?? lugarId ?? 'sin_lugar';
+    await ref
+        .read(metricasDescubrimientoProvider.notifier)
+        .registrarExperiencia(idMetrica);
     bumpMetricas(ref);
     if (!mounted) return;
-    Navigator.of(context).pop();
-    ref.read(pestaniaShellInicioProvider.notifier).state = 2;
-    ref.read(pestaniaComunidadProvider.notifier).state = 0;
-    mostrarSnackHaku(
-      context,
-      nombreLugar == null ? 'Publicado' : 'Publicado en $nombreLugar',
-      destacado: true,
-    );
+
+    final etiquetaDestino = nombreLugar ??
+        (rutaId != null
+            ? (RutasDataSourceLocal.obtenerPorId(rutaId)?.titulo ?? 'la ruta')
+            : null);
+    final mensaje = widget.irAComunidadAlPublicar
+        ? (etiquetaDestino == null
+            ? 'Publicado en Comunidad'
+            : 'Publicado en $etiquetaDestino')
+        : (etiquetaDestino == null
+            ? 'Publicado — revisa Recuerdos y Experiencias'
+            : 'Publicado en $etiquetaDestino');
+
+    if (widget.irAComunidadAlPublicar) {
+      ref.read(pestaniaShellInicioProvider.notifier).state = 2;
+      ref.read(pestaniaComunidadProvider.notifier).state = 0;
+    }
+
+    mostrarSnackHaku(context, mensaje, destacado: true);
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -435,12 +594,7 @@ class _EstadoPantallaPublicaciones
                                 icono: Icons.music_note_rounded,
                                 titulo: 'Música',
                                 subtitulo: _musica ?? 'Opcional',
-                                onTap: () {
-                                  setState(
-                                    () => _musica = 'Sonido de los Andes',
-                                  );
-                                  _aviso('Música: conectar biblioteca después');
-                                },
+                                onTap: _mostrarMusica,
                               ),
                               const SizedBox(height: 10),
                               _CardOpcion(
@@ -457,16 +611,7 @@ class _EstadoPantallaPublicaciones
                                 subtitulo: _etiquetas.isEmpty
                                     ? 'Menciona compañeros'
                                     : _etiquetas.join(', '),
-                                onTap: () {
-                                  setState(() {
-                                    if (!_etiquetas.contains('@explorador')) {
-                                      _etiquetas.add('@explorador');
-                                    }
-                                  });
-                                  _aviso(
-                                    'Etiquetas: conectar contactos despues',
-                                  );
-                                },
+                                onTap: _mostrarEtiquetas,
                               ),
                             ],
                           ],
@@ -1140,6 +1285,158 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
                 if (n.isEmpty) return;
                 widget.onNuevo(n);
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetEtiquetas extends StatefulWidget {
+  const _SheetEtiquetas({
+    required this.contactos,
+    required this.seleccionados,
+    required this.onConfirmar,
+  });
+
+  final List<SugerenciaSeguimiento> contactos;
+  final Set<String> seleccionados;
+  final ValueChanged<List<String>> onConfirmar;
+
+  @override
+  State<_SheetEtiquetas> createState() => _EstadoSheetEtiquetas();
+}
+
+class _EstadoSheetEtiquetas extends State<_SheetEtiquetas> {
+  late Set<String> _sel;
+  String _q = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _sel = {...widget.seleccionados};
+  }
+
+  String _mencion(SugerenciaSeguimiento p) {
+    final u = p.usuario.trim();
+    if (u.startsWith('@')) return u;
+    return '@$u';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtrados = widget.contactos.where((p) {
+      if (_q.isEmpty) return true;
+      return p.nombre.toLowerCase().contains(_q) ||
+          p.usuario.toLowerCase().contains(_q);
+    }).toList();
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: BoxDecoration(
+          color: PaletaRutas.carbon.withValues(alpha: 0.96),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.18)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              'Etiquetar compañeros',
+              style: TipografiaHaku.titulo(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.piedra,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              CopyHaku.etiquetarCompanerosSub,
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                color: PaletaRutas.plomoClaro,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
+              style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+              cursorColor: PaletaRutas.oro,
+              decoration: InputDecoration(
+                hintText: 'Buscar',
+                hintStyle: TipografiaHaku.interfaz(
+                  color: PaletaRutas.piedra.withValues(alpha: 0.45),
+                ),
+                prefixIcon: const Icon(Icons.search, color: PaletaRutas.plomoClaro),
+                filled: true,
+                fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: filtrados.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Sin resultados',
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: filtrados.length,
+                      itemBuilder: (context, i) {
+                        final p = filtrados[i];
+                        final mencion = _mencion(p);
+                        final marcado = _sel.contains(mencion);
+                        return CheckboxListTile(
+                          value: marcado,
+                          onChanged: (v) {
+                            setState(() {
+                              if (v == true) {
+                                _sel.add(mencion);
+                              } else {
+                                _sel.remove(mencion);
+                              }
+                            });
+                          },
+                          activeColor: PaletaRutas.oro,
+                          checkColor: PaletaRutas.ink,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          secondary: AvatarHaku(url: p.avatarUrl, size: 40),
+                          title: Text(
+                            p.nombre,
+                            style: TipografiaHaku.interfaz(
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                          subtitle: Text(
+                            mencion,
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 12,
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+            BotonPrimarioRuta(
+              texto: 'Listo',
+              icono: Icons.check_rounded,
+              onPressed: () => widget.onConfirmar(_sel.toList()..sort()),
             ),
           ],
         ),

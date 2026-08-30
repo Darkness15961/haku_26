@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -17,9 +18,9 @@ class CardEscapadaComunidad extends StatefulWidget {
   final ValueChanged<ModeloRuta>? onConocerMas;
 
   static const _badges = [
-    'Descubierto por la comunidad',
-    'Recién compartido',
-    'Poco explorado',
+    CopyHaku.badgeComunidad1,
+    CopyHaku.badgeComunidad2,
+    CopyHaku.badgeComunidad3,
   ];
 
   @override
@@ -71,7 +72,7 @@ class _EstadoCardEscapadaComunidad extends State<CardEscapadaComunidad> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Descubiertos por la comunidad',
+            CopyHaku.comunidadDestacadaTitulo,
             style: TipografiaHaku.titulo(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -149,7 +150,7 @@ class _EstadoCardEscapadaComunidad extends State<CardEscapadaComunidad> {
                                       vertical: 9,
                                     ),
                                     child: Text(
-                                      'Conocer más',
+                                      CopyHaku.cardComunidadCta,
                                       style: TipografiaHaku.interfaz(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -134,11 +135,11 @@ class _TarjetaCarrusel extends StatelessWidget {
       case EstiloPieCarrusel.experiencia:
         return ruta.subtitulo.isNotEmpty
             ? ruta.subtitulo
-            : 'Viaje de aventura';
+            : CopyHaku.carruselPieExperiencia;
       case EstiloPieCarrusel.tipoYProvincia:
         final tipo = (ruta.tipoSitio != null && ruta.tipoSitio!.isNotEmpty)
             ? ruta.tipoSitio!
-            : (ruta.etiquetas.isNotEmpty ? ruta.etiquetas.first : 'Descubrimiento');
+            : (ruta.etiquetas.isNotEmpty ? ruta.etiquetas.first : CopyHaku.tipoLugarFallback);
         return ruta.provincia.isNotEmpty ? '$tipo · ${ruta.provincia}' : tipo;
     }
   }

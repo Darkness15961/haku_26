@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/lista_rutas_explora.dart';
@@ -11,6 +13,7 @@ import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_explora_ui.dart';
 import '../proveedores/proveedor_lugares.dart';
 import '../widgets/mapa_explora_lugares.dart';
+import '../widgets/metricas_comunidad.dart';
 import 'pantalla_detalle_lugar.dart';
 import 'pantalla_registrar_lugar.dart';
 import 'pantalla_sorpresa_lugar.dart';
@@ -76,7 +79,17 @@ class _EstadoPantallaExploraLugares
         )
         .take(6)
         .toList();
-    final totalFotos = todos.fold<int>(0, (s, l) => s + l.fotos);
+    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
+    final indice = MetricasComunidad.indiceLugares(publicaciones);
+    final fotosPorLugar = indice.fotos;
+    final exploradoresPorLugar = indice.exploradores;
+    final totalFotos = indice.totalFotos();
+    final fotosHero = MetricasComunidad.etiquetaFotos(totalFotos);
+    final statsHero = [
+      CopyHaku.huecosSinNombre(huecos),
+      CopyHaku.lugaresEnMapa(todos.length),
+      if (fotosHero.isNotEmpty) fotosHero,
+    ].join(' · ');
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -92,7 +105,7 @@ class _EstadoPantallaExploraLugares
                 child: _HeroExplora(
                   huecos: huecos,
                   totalLugares: todos.length,
-                  totalFotos: totalFotos,
+                  statsResumen: statsHero,
                   onSorpresa: _sorprendeme,
                   onRegistrar: () => abrirRegistrarLugarFlow(context, ref),
                   onRutas: () => ref.read(modoExploraProvider.notifier).state =
@@ -269,6 +282,9 @@ class _EstadoPantallaExploraLugares
                         final grande = i % 5 == 0;
                         return _CeldaLugar(
                           lugar: l,
+                          fotosComunidad: fotosPorLugar[l.id] ?? 0,
+                          exploradoresComunidad:
+                              exploradoresPorLugar[l.id] ?? 0,
                           indice: i,
                           grande: grande,
                           onTap: () => abrirDetalleLugar(context, l.id),
@@ -290,7 +306,7 @@ class _HeroExplora extends StatelessWidget {
   const _HeroExplora({
     required this.huecos,
     required this.totalLugares,
-    required this.totalFotos,
+    required this.statsResumen,
     required this.onSorpresa,
     required this.onRegistrar,
     required this.onRutas,
@@ -298,7 +314,7 @@ class _HeroExplora extends StatelessWidget {
 
   final int huecos;
   final int totalLugares;
-  final int totalFotos;
+  final String statsResumen;
   final VoidCallback onSorpresa;
   final VoidCallback onRegistrar;
   final VoidCallback onRutas;
@@ -350,7 +366,7 @@ class _HeroExplora extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Explora',
+                          CopyHaku.exploraHeroTitulo,
                           style: TipografiaHaku.titulo(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -361,7 +377,7 @@ class _HeroExplora extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Encuentra lugares en el mapa',
+                      CopyHaku.exploraHeroSubtitulo,
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -370,7 +386,7 @@ class _HeroExplora extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '$huecos por explorar · $totalLugares lugares · $totalFotos fotos',
+                      statsResumen,
                       style: TipografiaHaku.interfaz(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -599,7 +615,7 @@ class _LeyendaMapa extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _punto(PaletaRutas.oro, 'Por explorar'),
+          _punto(PaletaRutas.oro, CopyHaku.leyendaMapaPorExplorar),
           const SizedBox(width: 20),
           _punto(PaletaRutas.plomoClaro, 'Con fotos'),
         ],
@@ -754,12 +770,16 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
 class _CeldaLugar extends StatelessWidget {
   const _CeldaLugar({
     required this.lugar,
+    required this.fotosComunidad,
+    required this.exploradoresComunidad,
     required this.indice,
     required this.onTap,
     this.grande = false,
   });
 
   final ModeloLugar lugar;
+  final int fotosComunidad;
+  final int exploradoresComunidad;
   final int indice;
   final VoidCallback onTap;
   final bool grande;
@@ -841,7 +861,10 @@ class _CeldaLugar extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${lugar.fotos} fotos · ${lugar.exploradores} exploradores',
+                        MetricasComunidad.resumenFotosExploradores(
+                          fotos: fotosComunidad,
+                          exploradores: exploradoresComunidad,
+                        ),
                         style: TipografiaHaku.interfaz(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,

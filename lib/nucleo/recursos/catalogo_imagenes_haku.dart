@@ -355,29 +355,6 @@ abstract final class CatalogoImagenesHaku {
     }
   }
 
-  /// Galería coherente para detalle y cards.
-  static List<String> galeriaLugar({
-    required String lugarId,
-    required String provincia,
-  }) {
-    final principal =
-        imagenDescubiertoComunidad(lugarId: lugarId, provincia: provincia);
-    const pool = [
-      ausangate,
-      moray,
-      machuPicchu,
-      fondoExplora,
-      detalleRutaB,
-      llamaMachu,
-      encabezadoRutas,
-    ];
-    return [
-      principal,
-      for (final img in pool)
-        if (img != principal) img,
-    ].take(3).toList();
-  }
-
   static const _descubiertoPorProvincia = {
     'Canas': detalleRutaB,
     'Quispicanchi': ausangate,

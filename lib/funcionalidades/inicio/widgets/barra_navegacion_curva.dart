@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/widgets/badge_contador.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
 /// Ítem de la barra inferior.
@@ -22,13 +23,19 @@ class BarraNavegacionCurva extends StatelessWidget {
   final int indiceActual;
   final List<ItemBarraNavegacion> items;
   final ValueChanged<int> onCambiar;
+  /// Misma longitud que [items]: badge numérico en ese ítem (0 = oculto).
+  final List<int> contadorPorIndice;
 
   const BarraNavegacionCurva({
     super.key,
     required this.indiceActual,
     required this.items,
     required this.onCambiar,
+    this.contadorPorIndice = const [],
   });
+
+  int _contador(int index) =>
+      index < contadorPorIndice.length ? contadorPorIndice[index] : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +58,7 @@ class BarraNavegacionCurva extends StatelessWidget {
                 children: List.generate(items.length, (index) {
                   final item = items[index];
                   final esActivo = indiceActual == index;
+                  final contador = _contador(index);
 
                   if (item.esCentral) {
                     return Expanded(
@@ -81,6 +89,15 @@ class BarraNavegacionCurva extends StatelessWidget {
 
                   final color =
                       esActivo ? PaletaRutas.piedra : PaletaRutas.plomo;
+                  final icono = BadgeContadorOverlay(
+                    cantidad: contador,
+                    compacto: true,
+                    child: Icon(
+                      esActivo ? item.iconoActivo : item.iconoNormal,
+                      color: color,
+                      size: 22,
+                    ),
+                  );
 
                   return Expanded(
                     child: GestureDetector(
@@ -89,11 +106,7 @@ class BarraNavegacionCurva extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            esActivo ? item.iconoActivo : item.iconoNormal,
-                            color: color,
-                            size: 22,
-                          ),
+                          icono,
                           const SizedBox(height: 3),
                           Text(
                             item.etiqueta,

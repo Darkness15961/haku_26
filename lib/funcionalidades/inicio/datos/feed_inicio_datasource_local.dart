@@ -408,6 +408,10 @@ class PublicacionFeed {
   final double? calificacion;
   /// Nombre del grupo si fue visita grupal (null = fue solo/a).
   final String? grupoNombre;
+  /// Pista de audio simulada (catálogo local).
+  final String? musica;
+  /// Compañeros mencionados (@usuario).
+  final List<String> menciones;
 
   const PublicacionFeed({
     required this.id,
@@ -431,6 +435,8 @@ class PublicacionFeed {
     this.salidaId,
     this.calificacion,
     this.grupoNombre,
+    this.musica,
+    this.menciones = const [],
   });
 
   bool get esVisitaGrupal =>
@@ -464,6 +470,8 @@ class PublicacionFeed {
     String? salidaId,
     double? calificacion,
     String? grupoNombre,
+    String? musica,
+    List<String>? menciones,
   }) {
     return PublicacionFeed(
       id: id,
@@ -487,6 +495,8 @@ class PublicacionFeed {
       salidaId: salidaId ?? this.salidaId,
       calificacion: calificacion ?? this.calificacion,
       grupoNombre: grupoNombre ?? this.grupoNombre,
+      musica: musica ?? this.musica,
+      menciones: menciones ?? this.menciones,
     );
   }
 
@@ -507,6 +517,8 @@ class PublicacionFeed {
         'salida_id': salidaId,
         'calificacion': calificacion,
         'grupo_nombre': grupoNombre,
+        if (musica != null && musica!.isNotEmpty) 'musica': musica,
+        if (menciones.isNotEmpty) 'menciones': menciones,
       };
 }
 

@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../lugares/widgets/fila_metricas_comunidad.dart';
 import '../../lugares/widgets/lista_experiencias_lugar.dart';
+import '../../lugares/widgets/metricas_comunidad.dart';
+import '../../lugares/widgets/recuerdos_comunidad.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../widgets/decoracion_detalle_fondo.dart';
 import '../widgets/estilos_rutas.dart';
 import '../widgets/imagen_parallax_ruta.dart';
 import '../widgets/linea_encabezado_inca.dart';
-import '../widgets/boton_icono_accion.dart';
-import '../widgets/menu_acciones_ruta.dart';
+import '../widgets/menu_acciones_detalle.dart';
+import '../widgets/menu_acciones_flotante.dart';
 
 /// Detalle de una ruta: hero + ficha + aporte a la comunidad.
 class PantallaDetalleRuta extends ConsumerStatefulWidget {
@@ -30,6 +34,8 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
 
   final ScrollController _scroll = ScrollController();
   bool _menuAbierto = false;
+
+  void _toggleMenu() => setState(() => _menuAbierto = !_menuAbierto);
 
   @override
   void dispose() {
@@ -58,6 +64,11 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final favorito =
         ref.watch(almacenFeedProvider).favoritosRutaIds.contains(ruta.id);
+    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
+    final metricas = MetricasComunidad.calcular(
+      publicaciones,
+      rutaId: ruta.id,
+    );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -140,60 +151,46 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                     ),
                                   ),
                                 ],
-                                if (ruta.calificacion > 0) ...[
+                                if (metricas.calificacionMostrar(ruta.calificacion) >
+                                        0 ||
+                                    metricas.etiquetaFotos.isNotEmpty ||
+                                    metricas.etiquetaExploradores.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.star_rounded,
-                                        size: 18,
-                                        color: PaletaRutas.oro,
+                                  FilaMetricasComunidad(
+                                    metricas: metricas,
+                                    calificacionCatalogo: ruta.calificacion,
+                                    resenasCatalogo: ruta.cantidadResenas,
+                                    alineacion: MainAxisAlignment.center,
+                                    usarSpacer: false,
+                                    estrellaSize: 18,
+                                    notaSize: 14,
+                                  ),
+                                ],
+                                if (ruta.tipoSitio != null) ...[
+                                  const SizedBox(height: 10),
+                                  Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        ruta.calificacion.toStringAsFixed(1),
+                                      decoration: BoxDecoration(
+                                        color: PaletaRutas.carbon,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: PaletaRutas.plomoOscuro
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        ruta.tipoSitio!,
                                         style: TipografiaHaku.interfaz(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: PaletaRutas.piedra,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: PaletaRutas.oro,
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '(${ruta.cantidadResenas})',
-                                        style: TipografiaHaku.interfaz(
-                                          fontSize: 12,
-                                          color: PaletaRutas.plomoClaro,
-                                        ),
-                                      ),
-                                      if (ruta.tipoSitio != null) ...[
-                                        const SizedBox(width: 10),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: PaletaRutas.carbon,
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            border: Border.all(
-                                              color: PaletaRutas.plomoOscuro
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            ruta.tipoSitio!,
-                                            style: TipografiaHaku.interfaz(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: PaletaRutas.oro,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                    ),
                                   ),
                                 ],
                                 if (ruta.etiquetas.isNotEmpty) ...[
@@ -323,6 +320,8 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                 const SizedBox(height: 22),
                                 _GrillaInfo(ruta: ruta),
                                 const SizedBox(height: 24),
+                                RecuerdosComunidad(rutaId: ruta.id),
+                                const SizedBox(height: 24),
                                 Text(
                                   'Experiencias',
                                   style: TipografiaHaku.titulo(
@@ -333,7 +332,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Lo que compartieron exploradores solos o en grupo',
+                                  CopyHaku.seccionExperienciasSub,
                                   style: TipografiaHaku.interfaz(
                                     fontSize: 12,
                                     color: PaletaRutas.plomoClaro,
@@ -361,10 +360,10 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
             Positioned(
               right: 20,
               bottom: 16 + bottomInset,
-              child: MenuAccionesRuta(
+              child: MenuAccionesDetalle.ruta(
                 ruta: ruta,
                 abierto: _menuAbierto,
-                onToggle: () => setState(() => _menuAbierto = !_menuAbierto),
+                onToggle: _toggleMenu,
                 onCerrar: () => setState(() => _menuAbierto = false),
               ),
             ),

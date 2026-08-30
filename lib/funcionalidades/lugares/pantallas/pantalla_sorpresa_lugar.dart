@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
 import '../widgets/boton_ver_salidas_lugar.dart';
+import '../widgets/metricas_comunidad.dart';
 
 /// Frase épica según el destino (destino / oportunidad / llamado).
 String mensajeDestinoSorpresa(ModeloLugar lugar) {
@@ -83,6 +85,13 @@ class PantallaSorpresaLugar extends ConsumerWidget {
     }
 
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
+    final metricas = MetricasComunidad.calcular(
+      publicaciones,
+      lugarId: lugar.id,
+    );
+    final calificacionMostrar =
+        metricas.calificacionMostrar(lugar.calificacion);
     final frase = mensajeDestinoSorpresa(lugar);
     final eco = subtituloDestino(lugar);
 
@@ -229,20 +238,22 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 18,
-                        color: PaletaRutas.oro,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        lugar.calificacion.toStringAsFixed(1),
-                        style: TipografiaHaku.interfaz(
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.piedra,
+                      if (calificacionMostrar > 0) ...[
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 18,
+                          color: PaletaRutas.oro,
                         ),
-                      ),
-                      const SizedBox(width: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          calificacionMostrar.toStringAsFixed(1),
+                          style: TipografiaHaku.interfaz(
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -305,6 +316,7 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                           builder: (_) => PantallaPublicaciones(
                             rutaId: lugar.id,
                             rutaTitulo: lugar.nombre,
+                            irAComunidadAlPublicar: false,
                           ),
                         ),
                       );

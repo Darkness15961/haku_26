@@ -7,6 +7,9 @@ import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../../../nucleo/demo/senales_atencion.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
+import '../proveedores/proveedor_almacen_feed.dart';
 import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/barra_navegacion_curva.dart';
 import 'pantalla_feed_inicio.dart';
@@ -34,12 +37,12 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     ItemBarraNavegacion(
       iconoNormal: Icons.auto_awesome_outlined,
       iconoActivo: Icons.auto_awesome,
-      etiqueta: 'Descubre',
+      etiqueta: CopyHaku.tabInicio,
     ),
     ItemBarraNavegacion(
       iconoNormal: Icons.explore_outlined,
       iconoActivo: Icons.explore_rounded,
-      etiqueta: 'Explora',
+      etiqueta: CopyHaku.tabExplora,
     ),
     ItemBarraNavegacion(
       iconoNormal: Icons.add_rounded,
@@ -50,12 +53,12 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     ItemBarraNavegacion(
       iconoNormal: Icons.groups_outlined,
       iconoActivo: Icons.groups_rounded,
-      etiqueta: 'Comunidad',
+      etiqueta: CopyHaku.tabComunidad,
     ),
     ItemBarraNavegacion(
       iconoNormal: Icons.person_outline_rounded,
       iconoActivo: Icons.person_rounded,
-      etiqueta: 'Perfil',
+      etiqueta: CopyHaku.tabPerfil,
     ),
   ];
 
@@ -95,11 +98,15 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(almacenFeedProvider);
     ref.listen<int>(pestaniaShellInicioProvider, (prev, next) {
       if (next != _indiceSeleccionado && mounted) {
         setState(() => _indiceSeleccionado = next);
       }
     });
+
+    final pendientes = SenalesAtencion.totalPendientesComunidad();
+    final contadorNav = [0, 0, 0, pendientes, 0];
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -111,6 +118,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
       bottomNavigationBar: BarraNavegacionCurva(
         indiceActual: _indiceVisualDesdeStack(_indiceSeleccionado),
         items: _itemsNavegacion,
+        contadorPorIndice: contadorNav,
         onCambiar: _seleccionarPestaniaVisual,
       ),
     );

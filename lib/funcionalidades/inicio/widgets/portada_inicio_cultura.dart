@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import 'boton_favorito_card.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
@@ -35,8 +36,8 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
     return const [
       ModeloRuta(
         id: 'fallback_mistico',
-        titulo: 'Cusco de noche',
-        subtitulo: 'Calles y piedras que guardan silencio',
+        titulo: CopyHaku.portadaTituloFallback,
+        subtitulo: CopyHaku.portadaSubtituloFallback,
         descripcion: '',
         imagenUrl: CatalogoImagenesHaku.u46,
         categoria: CategoriaRuta.cultura,
@@ -205,7 +206,7 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
                                       vertical: 8,
                                     ),
                                     child: Text(
-                                      'Descubrir',
+                                      CopyHaku.portadaCta,
                                       style: TipografiaHaku.interfaz(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w800,

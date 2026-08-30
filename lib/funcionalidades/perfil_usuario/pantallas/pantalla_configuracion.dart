@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/almacenamiento/almacenamiento_haku.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../carga_inicial/pantallas/pantalla_onboarding_demo.dart';
+import '../../inicio/pantallas/pantalla_inicio.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -26,7 +29,7 @@ class _EstadoPantallaConfiguracion
   void initState() {
     super.initState();
     final u = ref.read(sesionProvider).usuario;
-    _nombre = TextEditingController(text: u?.nombreUsuario ?? 'Explorador HAKU');
+    _nombre = TextEditingController(text: u?.nombreUsuario ?? CopyHaku.nombreDefault);
   }
 
   @override
@@ -105,6 +108,17 @@ class _EstadoPantallaConfiguracion
     await ref.read(metricasDescubrimientoProvider.notifier).reiniciarDemo();
     if (!mounted) return;
     mostrarSnackHaku(context, 'Reiniciado', destacado: true);
+  }
+
+  Future<void> _verIntroduccion() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaOnboardingDemo(
+          siguiente: const PantallaInicio(),
+          alCompletarPop: true,
+        ),
+      ),
+    );
   }
 
   @override
@@ -241,16 +255,56 @@ class _EstadoPantallaConfiguracion
                       ),
                     ),
                     const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+                      decoration: BoxDecoration(
+                        color: PaletaRutas.carbon,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Modo demo',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Simulación local — sin servidor ni sync',
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 12,
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _TileConfig(
+                            icono: Icons.play_lesson_outlined,
+                            titulo: 'Ver introducción',
+                            subtitulo: 'Repasa cómo funciona HAKU en demo',
+                            onTap: _verIntroduccion,
+                            sinPadding: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     _TileConfig(
                       icono: Icons.logout_rounded,
                       titulo: 'Salir',
-                      subtitulo: '',
+                      subtitulo: 'Cierra la sesión simulada',
                       onTap: _cerrarSesion,
                     ),
                     _TileConfig(
                       icono: Icons.restart_alt_rounded,
-                      titulo: 'Reiniciar',
-                      subtitulo: '',
+                      titulo: 'Reiniciar datos',
+                      subtitulo: 'Semilla demo de nuevo',
                       onTap: _resetBd,
                     ),
                   ],
@@ -269,22 +323,27 @@ class _TileConfig extends StatelessWidget {
   final String titulo;
   final String subtitulo;
   final VoidCallback onTap;
+  final bool sinPadding;
 
   const _TileConfig({
     required this.icono,
     required this.titulo,
     required this.subtitulo,
     required this.onTap,
+    this.sinPadding = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: sinPadding ? 0 : 8),
       child: Material(
-        color: PaletaRutas.carbon,
+        color: sinPadding ? Colors.transparent : PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
+          contentPadding: sinPadding
+              ? const EdgeInsets.symmetric(horizontal: 0, vertical: 0)
+              : null,
           onTap: onTap,
           leading: Icon(icono, color: PaletaRutas.piedra),
           title: Text(

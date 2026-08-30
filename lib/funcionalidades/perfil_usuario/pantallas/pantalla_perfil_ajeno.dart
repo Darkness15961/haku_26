@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
@@ -538,7 +539,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
                           children: [
                             InsigniaPerfil(
                               icono: Icons.terrain_rounded,
-                              nombre: 'Explorador Inca',
+                              nombre: CopyHaku.insigniaVecinoMapa,
                               colorFondo: Color(0xFF1A1A1A),
                             ),
                             InsigniaPerfil(
@@ -599,7 +600,7 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
             children: [
               InsigniaPerfil(
                 icono: Icons.terrain_rounded,
-                nombre: 'Explorador Inca',
+                nombre: CopyHaku.insigniaVecinoMapa,
                 colorFondo: Color(0xFF1A1A1A),
               ),
               SizedBox(width: 8),

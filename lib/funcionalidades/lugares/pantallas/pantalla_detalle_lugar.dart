@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
-import '../../rutas/widgets/boton_icono_accion.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../../rutas/widgets/menu_acciones_detalle.dart';
+import '../../rutas/widgets/menu_acciones_flotante.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
+import '../widgets/fila_metricas_comunidad.dart';
 import '../widgets/lista_experiencias_lugar.dart';
-import '../widgets/menu_acciones_lugar.dart';
+import '../widgets/metricas_comunidad.dart';
+import '../widgets/recuerdos_comunidad.dart';
 
 /// Ficha de lugar — Conoce más (Descubre / Explora).
 class PantallaDetalleLugar extends ConsumerStatefulWidget {
@@ -23,9 +28,12 @@ class PantallaDetalleLugar extends ConsumerStatefulWidget {
 class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
   bool _menuAbierto = false;
 
+  void _toggleMenu() => setState(() => _menuAbierto = !_menuAbierto);
+
   @override
   Widget build(BuildContext context) {
-    final lugar = ref.watch(lugaresDataSourceProvider).porId(widget.lugarId);    if (lugar == null) {
+    final lugar = ref.watch(lugaresDataSourceProvider).porId(widget.lugarId);
+    if (lugar == null) {
       return Scaffold(
         backgroundColor: PaletaRutas.ink,
         appBar: AppBar(
@@ -42,8 +50,13 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
     }
 
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
+    final metricas = MetricasComunidad.calcular(
+      publicaciones,
+      lugarId: lugar.id,
+    );
     final desc = lugar.descripcion.trim().isEmpty
-        ? 'Un rincón de ${lugar.provincia} por descubrir con calma.'
+        ? CopyHaku.lugarSinDescripcion(lugar.provincia)
         : lugar.descripcion.trim();
 
     return Scaffold(
@@ -133,47 +146,9 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
               padding: EdgeInsets.fromLTRB(20, 12, 20, 100 + bottom),              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 20,
-                        color: PaletaRutas.oro,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        lugar.calificacion.toStringAsFixed(1),
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: PaletaRutas.piedra,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Icon(
-                        Icons.people_outline,
-                        size: 18,
-                        color: PaletaRutas.plomoClaro,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${lugar.exploradores} exploradores',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PaletaRutas.plomoClaro,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${lugar.fotos} fotos',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.oroSuave,
-                        ),
-                      ),
-                    ],
+                  FilaMetricasComunidad(
+                    metricas: metricas,
+                    calificacionCatalogo: lugar.calificacion,
                   ),
                   const SizedBox(height: 18),
                   Text(
@@ -227,37 +202,7 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                         ),
                     ],
                   ),
-                  if (lugar.galeria.isNotEmpty) ...[
-                    const SizedBox(height: 22),
-                    Text(
-                      'Galería',
-                      style: TipografiaHaku.titulo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 96,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: lugar.galeria.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (_, i) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: ImagenHaku(
-                              url: lugar.galeria[i],
-                              width: 120,
-                              height: 96,
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                  RecuerdosComunidad(lugarId: lugar.id),
                   const SizedBox(height: 22),
                   Text(
                     'Experiencias',
@@ -269,7 +214,7 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Lo que compartieron exploradores solos o en grupo',
+                    CopyHaku.seccionExperienciasSub,
                     style: TipografiaHaku.interfaz(
                       fontSize: 12,
                       color: PaletaRutas.plomoClaro,
@@ -292,10 +237,10 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
           Positioned(
             right: 20,
             bottom: 16 + bottom,
-            child: MenuAccionesLugar(
+            child: MenuAccionesDetalle.lugar(
               lugar: lugar,
               abierto: _menuAbierto,
-              onToggle: () => setState(() => _menuAbierto = !_menuAbierto),
+              onToggle: _toggleMenu,
               onCerrar: () => setState(() => _menuAbierto = false),
             ),
           ),

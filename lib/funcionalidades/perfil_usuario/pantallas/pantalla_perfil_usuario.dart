@@ -5,9 +5,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/recursos/copy_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../favoritos/indice.dart';
+import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../lugares/proveedores/proveedor_explora_ui.dart';
@@ -47,14 +50,12 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
     final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
     final bio = sesion.usuario?.bio ?? 'Cusco';
     final misPosts = store.publicaciones
-        .where((p) => p.autorId == AlmacenFeedNotifier.idUsuarioLocal)
+        .where(
+          (p) =>
+              p.autorId == AlmacenFeedNotifier.idUsuarioLocal &&
+              !p.esInvitacionSalida,
+        )
         .toList();
-    final urlsContenido = misPosts.isNotEmpty
-        ? [
-            for (final p in misPosts)
-              if ((p.imagenUrl ?? '').isNotEmpty) p.imagenUrl!,
-          ]
-        : <String>[];
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -161,7 +162,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                               )
                             : _ContenidoPublicaciones(
                                 key: const ValueKey('contenido'),
-                                urls: urlsContenido,
+                                publicaciones: misPosts,
                               ),
                       ),
                     ],
@@ -243,7 +244,7 @@ class _PortadaPerfil extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Explorador HAKU',
+                          CopyHaku.nombreDefault,
                           style: TipografiaHaku.interfaz(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -410,7 +411,11 @@ class _ContenidoPerfil extends ConsumerWidget {
     final store = ref.watch(almacenFeedProvider);
     final m = ref.watch(metricasDescubrimientoProvider);
     final nPosts = store.publicaciones
-        .where((p) => p.autorId == AlmacenFeedNotifier.idUsuarioLocal)
+        .where(
+          (p) =>
+              p.autorId == AlmacenFeedNotifier.idUsuarioLocal &&
+              !p.esInvitacionSalida,
+        )
         .length;
     final nRutas = store.favoritosRutaIds.length;
     final nLugares = m.documentados;
@@ -600,8 +605,8 @@ List<_InsigniaInfo> _insigniasDesde({
   return [
     _InsigniaInfo(
       icono: Icons.terrain_rounded,
-      nombre: 'Explorador Inca',
-      descripcion: 'Explora el mapa',
+      nombre: CopyHaku.insigniaVecinoMapa,
+      descripcion: CopyHaku.insigniaVecinoMapaDesc,
       color: const Color(0xFF1A1A1A),
       desbloqueada: true,
     ),
@@ -753,13 +758,13 @@ void _mostrarTodasInsignias(
 }
 
 class _ContenidoPublicaciones extends StatelessWidget {
-  final List<String> urls;
+  final List<PublicacionFeed> publicaciones;
 
-  const _ContenidoPublicaciones({super.key, required this.urls});
+  const _ContenidoPublicaciones({super.key, required this.publicaciones});
 
   @override
   Widget build(BuildContext context) {
-    if (urls.isEmpty) {
+    if (publicaciones.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
@@ -771,7 +776,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Aún no publicaste',
+              CopyHaku.perfilSinPublicaciones,
               style: TipografiaHaku.interfaz(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -780,7 +785,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Usa el botón + para compartir tu primera experiencia',
+              CopyHaku.perfilSinPublicacionesSub,
               textAlign: TextAlign.center,
               style: TipografiaHaku.interfaz(
                 fontSize: 12,
@@ -792,37 +797,17 @@ class _ContenidoPublicaciones extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: urls.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1,
-      ),
-      itemBuilder: (context, index) {
-        final grande = index == 0 && urls.length > 1;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(grande ? 14 : 10),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: PaletaRutas.ink.withValues(alpha: 0.12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ImagenHaku(
-              url: urls[index],
-              fit: BoxFit.cover,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < publicaciones.length; i++) ...[
+          PublicacionEstiloThreads(
+            publicacion: publicaciones[i],
+            indice: i,
           ),
-        );
-      },
+          if (i < publicaciones.length - 1) const SizedBox(height: 20),
+        ],
+      ],
     );
   }
 }
