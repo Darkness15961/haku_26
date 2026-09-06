@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../favoritos/indice.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
@@ -27,7 +26,7 @@ import 'pantalla_configuracion.dart';
 
 enum _SeccionPerfil { perfil, contenido }
 
-/// Perfil — identidad por contribuciones.
+/// Perfil â€” identidad por contribuciones.
 class PantallaPerfilUsuario extends ConsumerStatefulWidget {
   const PantallaPerfilUsuario({super.key});
 
@@ -43,10 +42,11 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 110;
+    final bottomPad = EspacioHaku.bottomNavClearance(context);
+    final padH = EspacioHaku.horizontal(context);
     final sesion = ref.watch(sesionProvider);
     final store = ref.watch(almacenFeedProvider);
-    final nombre = sesion.usuario?.nombreUsuario ?? 'Lucía';
+    final nombre = sesion.usuario?.nombreUsuario ?? 'LucÃ­a';
     final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
     final bio = sesion.usuario?.bio ?? 'Cusco';
     final misPosts = store.publicaciones
@@ -114,8 +114,10 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                           child: Text(
                             'Perfil',
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TipografiaHaku.titulo(
-                              fontSize: 22,
+                              fontSize: EspacioHaku.sp(context, 20),
                               fontWeight: FontWeight.w800,
                               color: PaletaRutas.piedra,
                             ),
@@ -138,7 +140,7 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                 opacidadImagen: 0,
                 opacidadVelo: 0,
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPad),
+                  padding: EdgeInsets.fromLTRB(padH, 12, padH, bottomPad),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -192,106 +194,80 @@ class _PortadaPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
+    final horizontal = EspacioHaku.esHorizontal(context);
+    final altoPortada = horizontal ? 88.0 : 140.0;
+    final avatarSize = horizontal ? 56.0 : 84.0;
+
+    final portada = ClipRRect(
+      borderRadius: BorderRadius.circular(horizontal ? 16 : 20),
+      child: SizedBox(
+        height: altoPortada,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: 140,
-                    width: double.infinity,
-                    child: Image.asset(
-                      'public/image/fondoHaku.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'public/image/FONDO_HAKU2.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            PaletaRutas.ink.withValues(alpha: 0.1),
-                            PaletaRutas.ink.withValues(alpha: 0.65),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    bottom: 14,
-                    child: Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/iconos/chacana.svg',
-                          width: 20,
-                          height: 20,
-                          colorFilter: const ColorFilter.mode(
-                            PaletaRutas.piedra,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          CopyHaku.nombreDefault,
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: PaletaRutas.plomoClaro,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            Image.asset(
+              'public/image/fondoHaku.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'public/image/FONDO_HAKU2.png',
+                fit: BoxFit.cover,
               ),
             ),
-            Positioned(
-              bottom: -42,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: PaletaRutas.piedra, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: PaletaRutas.ink.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    PaletaRutas.ink.withValues(alpha: 0.05),
+                    PaletaRutas.ink.withValues(alpha: 0.55),
                   ],
-                ),
-                child: AvatarHaku(
-                  url: avatarUrl,
-                  size: 84,
-                  borderWidth: 3,
-                  borderColor: PaletaRutas.piedra,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 52),
+      ),
+    );
+
+    final avatar = Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: PaletaRutas.piedra, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: PaletaRutas.ink.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: AvatarHaku(
+        url: avatarUrl,
+        size: avatarSize,
+        borderWidth: 0,
+        borderColor: Colors.transparent,
+      ),
+    );
+
+    final info = Column(
+      crossAxisAlignment:
+          horizontal ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
         Text(
           nombre,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TipografiaHaku.titulo(
-            fontSize: 24,
+            fontSize: EspacioHaku.sp(context, horizontal ? 18 : 24),
             fontWeight: FontWeight.w800,
           ),
         ),
         Text(
           bio,
+          maxLines: horizontal ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
           style: TipografiaHaku.interfaz(
             fontSize: 13,
             color: PaletaRutas.plomoClaro,
@@ -316,6 +292,45 @@ class _PortadaPerfil extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+
+    // Landscape: avatar + info centrados (no pegados a un borde).
+    if (horizontal) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          portada,
+          const SizedBox(height: 12),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  avatar,
+                  const SizedBox(width: 14),
+                  Expanded(child: info),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
+          children: [
+            portada,
+            Positioned(bottom: -avatarSize / 2, child: avatar),
+          ],
+        ),
+        SizedBox(height: avatarSize / 2 + 12),
+        info,
       ],
     );
   }
@@ -613,7 +628,7 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.grid_on_outlined,
       nombre: 'Tejedora',
-      descripcion: '1 publicación',
+      descripcion: '1 publicaciÃ³n',
       color: const Color(0xFF9C3B2E),
       desbloqueada: posts >= 1,
     ),
@@ -627,13 +642,13 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.coffee_outlined,
       nombre: 'Alfarera',
-      descripcion: 'Cerámica',
+      descripcion: 'CerÃ¡mica',
       color: const Color(0xFF1E4D6B),
       desbloqueada: rutas >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.filter_hdr_rounded,
-      nombre: 'Montañista',
+      nombre: 'MontaÃ±ista',
       descripcion: '1 ruta guardada',
       color: const Color(0xFF2D6A4F),
       desbloqueada: rutas >= 1,
@@ -647,14 +662,14 @@ List<_InsigniaInfo> _insigniasDesde({
     ),
     _InsigniaInfo(
       icono: Icons.photo_camera_outlined,
-      nombre: 'Fotógrafo',
-      descripcion: '1 publicación',
+      nombre: 'FotÃ³grafo',
+      descripcion: '1 publicaciÃ³n',
       color: const Color(0xFF1E4D6B),
       desbloqueada: posts >= 1,
     ),
     _InsigniaInfo(
       icono: Icons.place_outlined,
-      nombre: 'Cartógrafo',
+      nombre: 'CartÃ³grafo',
       descripcion: '3 lugares',
       color: const Color(0xFF6B4F1E),
       desbloqueada: lugares >= 3,
@@ -797,17 +812,39 @@ class _ContenidoPublicaciones extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < publicaciones.length; i++) ...[
-          PublicacionEstiloThreads(
-            publicacion: publicaciones[i],
-            indice: i,
-          ),
-          if (i < publicaciones.length - 1) const SizedBox(height: 20),
+    final cols = EspacioHaku.columnasPublicaciones(context);
+    if (cols <= 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < publicaciones.length; i++) ...[
+            PublicacionEstiloThreads(
+              publicacion: publicaciones[i],
+              indice: i,
+            ),
+            if (i < publicaciones.length - 1) const SizedBox(height: 20),
+          ],
         ],
-      ],
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: publicaciones.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: cols,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 12,
+        childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.85 : 0.72,
+      ),
+      itemBuilder: (context, i) {
+        return PublicacionEstiloThreads(
+          publicacion: publicaciones[i],
+          indice: i,
+          compacta: true,
+        );
+      },
     );
   }
 }

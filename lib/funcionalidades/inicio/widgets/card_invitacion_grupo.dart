@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/datos/salidas_datasource_local.dart';
 import '../../comunidad/pantallas/pantalla_salidas.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 
@@ -17,9 +19,17 @@ class CardInvitacionGrupo extends ConsumerWidget {
   const CardInvitacionGrupo({
     super.key,
     required this.publicacion,
+    this.enRejilla = false,
+    this.omitirPadding = false,
   });
 
   final PublicacionFeed publicacion;
+
+  /// Dentro de [RejillaLegoHaku] landscape: layout compacto con altura acotada.
+  final bool enRejilla;
+
+  /// El padre ya aplica padding horizontal (lista Lego 1 col).
+  final bool omitirPadding;
 
   String _fechaCorta(DateTime f) {
     const meses = [
@@ -83,263 +93,315 @@ class CardInvitacionGrupo extends ConsumerWidget {
     final imagen =
         publicacion.imagenUrl ?? CatalogoImagenesHaku.respaldo;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Material(
-        color: PaletaRutas.carbon,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () => _abrirDetalle(context),
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+    final imagenBloque = Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: ImagenHaku(url: imagen, fit: BoxFit.cover),
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x33000000), Color(0xCC141210)],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 12,
+          top: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: PaletaRutas.oro,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'SALIDA EN GRUPO',
+              style: TipografiaHaku.interfaz(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: PaletaRutas.ink,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ),
+        if (s != null)
+          Positioned(
+            right: 12,
+            top: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: s.llena ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: PaletaRutas.plomo.withValues(alpha: 0.35),
                 ),
-                child: AspectRatio(
-                  aspectRatio: 16 / 10,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ImagenHaku(url: imagen, fit: BoxFit.cover),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0x33000000),
-                              Color(0xCC141210),
-                            ],
-                          ),
+              ),
+              child: Text(
+                s.llena
+                    ? 'Sin cupos'
+                    : s.esDeGrupo
+                        ? '${s.inscritos}/${s.cuposTotales}'
+                        : '${s.inscritos}/${s.cupos} cupos',
+                style: TipografiaHaku.interfaz(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: s.llena ? PaletaRutas.plomoClaro : PaletaRutas.ink,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 10,
+          child: Text(
+            s?.lugarNombre ?? publicacion.lugarNombre ?? 'Nueva ruta',
+            maxLines: enRejilla || EspacioHaku.esHorizontal(context) ? 1 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: TipografiaHaku.titulo(
+              fontSize: enRejilla
+                  ? 14
+                  : (EspacioHaku.esHorizontal(context) ? 16 : 20),
+              fontWeight: FontWeight.w800,
+              color: PaletaRutas.piedra,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final meta = Padding(
+      padding: EdgeInsets.fromLTRB(14, enRejilla ? 8 : 12, 14, enRejilla ? 10 : 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () {
+              abrirPerfilAjeno(
+                context,
+                ref,
+                id: publicacion.autorId.isNotEmpty
+                    ? publicacion.autorId
+                    : publicacion.usuario,
+                nombre: publicacion.autor,
+                usuario: publicacion.usuario,
+                avatarUrl: publicacion.avatarUrl,
+              );
+            },
+            child: Text(
+              'Organiza ${publicacion.autor}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.oro,
+              ),
+            ),
+          ),
+          SizedBox(height: enRejilla ? 4 : 6),
+          Text(
+            publicacion.texto,
+            maxLines: enRejilla ? 2 : 3,
+            overflow: TextOverflow.ellipsis,
+            style: TipografiaHaku.interfaz(
+              fontSize: 13,
+              height: 1.35,
+              color: PaletaRutas.piedra.withValues(alpha: 0.92),
+            ),
+          ),
+          if (!enRejilla) ...[
+            const SizedBox(height: 12),
+            if (s != null) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _DatoChip(
+                    icono: Icons.event_outlined,
+                    texto: '${_fechaCorta(s.fecha)} · ${s.hora}',
+                  ),
+                  _DatoChip(
+                    icono: Icons.place_outlined,
+                    texto: s.puntoEncuentro,
+                  ),
+                  _DatoChip(
+                    icono: Icons.person_add_alt_1_outlined,
+                    texto: '${s.cupos} abiertos',
+                  ),
+                  if (s.esDeGrupo) ...[
+                    _DatoChip(
+                      icono: Icons.groups_outlined,
+                      texto: '${s.cuposGrupo} del grupo',
+                    ),
+                    _DatoChip(
+                      icono: Icons.hiking,
+                      texto: s.grupo,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _abrirDetalle(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PaletaRutas.piedra,
+                        side: BorderSide(
+                          color: PaletaRutas.plomo.withValues(alpha: 0.7),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      Positioned(
-                        left: 12,
-                        top: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: PaletaRutas.oro,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'SALIDA EN GRUPO',
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: PaletaRutas.ink,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
+                      child: Text(
+                        'Ver detalle',
+                        style: TipografiaHaku.interfaz(
+                          fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
                         ),
                       ),
-                      if (s != null)
-                        Positioned(
-                          right: 12,
-                          top: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: s.llena
-                                  ? PaletaRutas.plomoOscuro
-                                  : PaletaRutas.oro,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: PaletaRutas.plomo.withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: Text(
-                              s.llena
-                                  ? 'Sin cupos'
-                                  : s.esDeGrupo
-                                      ? '${s.inscritos}/${s.cuposTotales}'
-                                      : '${s.inscritos}/${s.cupos} cupos',
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: s.llena
-                                    ? PaletaRutas.plomoClaro
-                                    : PaletaRutas.ink,
-                              ),
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: Text(
-                          s?.lugarNombre ??
-                              publicacion.lugarNombre ??
-                              'Nueva ruta',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TipografiaHaku.titulo(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: PaletaRutas.piedra,
-                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: s.llena && !yaUnido
+                          ? null
+                          : () => _unirse(context, ref, s),
+                      style: FilledButton.styleFrom(
+                        backgroundColor:
+                            yaUnido ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+                        foregroundColor: PaletaRutas.ink,
+                        disabledBackgroundColor: PaletaRutas.plomoOscuro,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                    ],
+                      child: Text(
+                        yaUnido
+                            ? 'Ya unido'
+                            : s.llena
+                                ? 'Sin cupos'
+                                : 'Unirse',
+                        style: TipografiaHaku.interfaz(
+                          fontWeight: FontWeight.w800,
+                          color: yaUnido || s.llena
+                              ? PaletaRutas.piedra
+                              : PaletaRutas.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else
+              Text(
+                'Salida no disponible',
+                style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+              ),
+          ] else if (s != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${_fechaCorta(s.fecha)} · ${s.hora}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TipografiaHaku.interfaz(
+                fontSize: 11,
+                color: PaletaRutas.plomoClaro,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: s.llena && !yaUnido
+                    ? null
+                    : () => _unirse(context, ref, s),
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      yaUnido ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+                  foregroundColor: PaletaRutas.ink,
+                  disabledBackgroundColor: PaletaRutas.plomoOscuro,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  yaUnido
+                      ? 'Ya unido'
+                      : s.llena
+                          ? 'Sin cupos'
+                          : 'Unirse',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: yaUnido || s.llena
+                        ? PaletaRutas.piedra
+                        : PaletaRutas.ink,
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        abrirPerfilAjeno(
-                          context,
-                          ref,
-                          id: publicacion.autorId.isNotEmpty
-                              ? publicacion.autorId
-                              : publicacion.usuario,
-                          nombre: publicacion.autor,
-                          usuario: publicacion.usuario,
-                          avatarUrl: publicacion.avatarUrl,
-                        );
-                      },
-                      child: Text(
-                        'Organiza ${publicacion.autor}',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.oro,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      publicacion.texto,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        height: 1.35,
-                        color: PaletaRutas.piedra.withValues(alpha: 0.92),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (s != null) ...[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _DatoChip(
-                            icono: Icons.event_outlined,
-                            texto: '${_fechaCorta(s.fecha)} · ${s.hora}',
-                          ),
-                          _DatoChip(
-                            icono: Icons.place_outlined,
-                            texto: s.puntoEncuentro,
-                          ),
-                          _DatoChip(
-                            icono: Icons.person_add_alt_1_outlined,
-                            texto: '${s.cupos} abiertos',
-                          ),
-                          if (s.esDeGrupo) ...[
-                            _DatoChip(
-                              icono: Icons.groups_outlined,
-                              texto: '${s.cuposGrupo} del grupo',
-                            ),
-                            _DatoChip(
-                              icono: Icons.hiking,
-                              texto: s.grupo,
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _abrirDetalle(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: PaletaRutas.piedra,
-                                side: BorderSide(
-                                  color: PaletaRutas.plomo.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                'Ver detalle',
-                                style: TipografiaHaku.interfaz(
-                                  fontWeight: FontWeight.w700,
-                                  color: PaletaRutas.piedra,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: s.llena && !yaUnido
-                                  ? null
-                                  : () => _unirse(context, ref, s),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: yaUnido
-                                    ? PaletaRutas.plomoOscuro
-                                    : PaletaRutas.oro,
-                                foregroundColor: PaletaRutas.ink,
-                                disabledBackgroundColor:
-                                    PaletaRutas.plomoOscuro,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                yaUnido
-                                    ? 'Ya unido'
-                                    : s.llena
-                                        ? 'Sin cupos'
-                                        : 'Unirse',
-                                style: TipografiaHaku.interfaz(
-                                  fontWeight: FontWeight.w800,
-                                  color: yaUnido || s.llena
-                                      ? PaletaRutas.piedra
-                                      : PaletaRutas.ink,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else
-                      Text(
-                        'Salida no disponible',
-                        style: TipografiaHaku.interfaz(
-                          color: PaletaRutas.plomoClaro,
-                        ),
-                      ),
-                  ],
-                ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    final card = Material(
+      color: PaletaRutas.carbon,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _abrirDetalle(context),
+        borderRadius: BorderRadius.circular(16),
+        child: enRejilla
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: imagenBloque),
+                  const LineaEncabezadoInca(altura: 2.5),
+                  meta,
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AspectRatio(
+                    aspectRatio: EspacioHaku.aspectInvitacionSalida(context),
+                    child: imagenBloque,
+                  ),
+                  const LineaEncabezadoInca(altura: 2.5),
+                  meta,
+                ],
               ),
-            ],
+      ),
+    );
+
+    if (enRejilla || omitirPadding) return card;
+
+    return Align(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: EspacioHaku.esHorizontal(context) ? 480 : double.infinity,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: EspacioHaku.horizontal(context),
           ),
+          child: card,
         ),
       ),
     );

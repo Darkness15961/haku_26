@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
@@ -204,7 +205,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 88;
+    final bottomPad = EspacioHaku.bottomNavClearance(context);
     final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
     final indice = MetricasComunidad.indiceLugares(publicaciones);
     final indiceRutas = MetricasComunidad.indiceRutas(publicaciones);
@@ -334,7 +335,12 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+                padding: EdgeInsets.fromLTRB(
+                  EspacioHaku.horizontal(context),
+                  12,
+                  12,
+                  0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -345,7 +351,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                           Text(
                             CopyHaku.tituloInicio,
                             style: TipografiaHaku.titulo(
-                              fontSize: 28,
+                              fontSize: EspacioHaku.sp(context, 28),
                               fontWeight: FontWeight.w700,
                               color: PaletaRutas.piedra,
                               height: 1.05,
@@ -355,7 +361,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                           Text(
                             CopyHaku.subtituloInicio,
                             style: TipografiaHaku.interfaz(
-                              fontSize: 13,
+                              fontSize: EspacioHaku.sp(context, 13),
                               color: PaletaRutas.plomoClaro,
                             ),
                           ),
@@ -380,7 +386,12 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                padding: EdgeInsets.fromLTRB(
+                  EspacioHaku.horizontal(context),
+                  14,
+                  EspacioHaku.horizontal(context),
+                  0,
+                ),
                 child: Material(
                   color: PaletaRutas.carbon,
                   borderRadius: BorderRadius.circular(28),

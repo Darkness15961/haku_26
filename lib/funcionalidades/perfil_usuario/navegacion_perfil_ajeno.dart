@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../nucleo/navegacion/abrir_pantalla_haku.dart';
 import '../inicio/datos/feed_inicio_datasource_local.dart';
 import '../inicio/pantallas/pantalla_exploradores_deslizables.dart';
 import '../inicio/proveedores/proveedor_almacen_feed.dart';
@@ -33,12 +34,11 @@ void abrirPerfilAjeno(
       ? conocidos.indexWhere((s) => s.id == persona.id)
       : 0;
 
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => PantallaExploradoresDeslizables(
-        exploradores: match.isNotEmpty ? conocidos : [persona],
-        indiceInicial: indice < 0 ? 0 : indice,
-      ),
+  abrirPantallaHaku<void>(
+    context,
+    PantallaExploradoresDeslizables(
+      exploradores: match.isNotEmpty ? conocidos : [persona],
+      indiceInicial: indice < 0 ? 0 : indice,
     ),
   );
 }

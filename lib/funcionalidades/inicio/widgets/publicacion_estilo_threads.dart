@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../pantallas/pantalla_comentarios_publicacion.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 
-/// Post dark: foto grande; nombre sobre la imagen (sin avatar).
+/// Post dark: foto; en landscape proporción más baja (menos “chicle”).
 class PublicacionEstiloThreads extends ConsumerStatefulWidget {
   final PublicacionFeed publicacion;
   final int indice;
+  /// Si true, reduce paddings (útil en grilla).
+  final bool compacta;
 
   const PublicacionEstiloThreads({
     super.key,
     required this.publicacion,
     required this.indice,
+    this.compacta = false,
   });
 
   @override
@@ -76,21 +81,20 @@ class _EstadoPublicacionEstiloThreads
     final verificado = post.esVerificado;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: widget.compacta ? 0 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: AspectRatio(
-              aspectRatio: 4 / 5,
+              aspectRatio: EspacioHaku.aspectPublicacion(context),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   ImagenHaku(
                     url: imagen,
                     fit: BoxFit.cover,
-                    width: double.infinity,
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
@@ -143,8 +147,12 @@ class _EstadoPublicacionEstiloThreads
               ),
             ),
           ),
+          const Padding(
+            padding: EdgeInsets.only(top: 2, bottom: 2),
+            child: LineaEncabezadoInca(altura: 2.5),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(0, 6, 0, 0),
+            padding: const EdgeInsets.fromLTRB(0, 2, 0, 0),
             child: Row(
               children: [
                 IconButton(

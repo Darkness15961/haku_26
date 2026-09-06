@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -62,7 +63,9 @@ class _EstadoPantallaExploraLugares
     final modo = ref.watch(modoExploraProvider);
     final todos = ref.watch(lugaresListaProvider);
     final lugares = _filtrar(todos);
-    final bottom = MediaQuery.paddingOf(context).bottom + 110;
+    final bottom = EspacioHaku.bottomNavClearance(context);
+    final padH = EspacioHaku.horizontal(context);
+    final cols = EspacioHaku.columnasGrilla(context).clamp(2, 3);
     final destacado = lugares.isNotEmpty ? lugares.first : null;
     final huecos = todos
         .where(
@@ -91,6 +94,37 @@ class _EstadoPantallaExploraLugares
       if (fotosHero.isNotEmpty) fotosHero,
     ].join(' · ');
 
+    // Rutas: layout propio (Column+Expanded). Evita pantalla negra por
+    // SliverFillRemaining sin altura tras el hero en landscape.
+    if (modo == ModoExplora.rutas) {
+      return Scaffold(
+        backgroundColor: PaletaRutas.ink,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(padH, 8, padH, 8),
+                child: _FilaModosExplora(
+                  modo: modo,
+                  soloPocoExplorados: _soloPocoExplorados,
+                  onModo: (m) =>
+                      ref.read(modoExploraProvider.notifier).state = m,
+                  onTogglePoco: () => setState(
+                    () => _soloPocoExplorados = !_soloPocoExplorados,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListaRutasExplora(bottomPadding: bottom),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
       body: FondoSuaveSeccion(
@@ -108,8 +142,9 @@ class _EstadoPantallaExploraLugares
                   statsResumen: statsHero,
                   onSorpresa: _sorprendeme,
                   onRegistrar: () => abrirRegistrarLugarFlow(context, ref),
-                  onRutas: () => ref.read(modoExploraProvider.notifier).state =
-                      ModoExplora.rutas,
+                  onRutas: () =>
+                      ref.read(modoExploraProvider.notifier).state =
+                          ModoExplora.rutas,
                 ),
               ),
               if (modo == ModoExplora.lugares && recientes.isNotEmpty)
@@ -119,10 +154,25 @@ class _EstadoPantallaExploraLugares
                     onTap: (id) => abrirDetalleLugar(context, id),
                   ),
                 ),
+              // Modos debajo de Recién: separación clara y sin apretar el hero.
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(padH, 4, padH, 12),
+                  child: _FilaModosExplora(
+                    modo: modo,
+                    soloPocoExplorados: _soloPocoExplorados,
+                    onModo: (m) =>
+                        ref.read(modoExploraProvider.notifier).state = m,
+                    onTogglePoco: () => setState(
+                      () => _soloPocoExplorados = !_soloPocoExplorados,
+                    ),
+                  ),
+                ),
+              ),
               if (modo == ModoExplora.lugares && destacado != null)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: EdgeInsets.fromLTRB(padH, 0, padH, 16),
                     child: _TarjetaDestacadaLugar(
                       lugar: destacado,
                       onTap: () => abrirDetalleLugar(context, destacado.id),
@@ -130,56 +180,11 @@ class _EstadoPantallaExploraLugares
                   ),
                 ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                  child: Row(
-                    children: [
-                      _Segmento(
-                        label: 'Mapa',
-                        selected: modo == ModoExplora.mapa,
-                        onTap: () => ref
-                            .read(modoExploraProvider.notifier)
-                            .state = ModoExplora.mapa,
-                      ),
-                      const SizedBox(width: 8),
-                      _Segmento(
-                        label: 'Lugares',
-                        selected: modo == ModoExplora.lugares,
-                        onTap: () => ref
-                            .read(modoExploraProvider.notifier)
-                            .state = ModoExplora.lugares,
-                      ),
-                      const SizedBox(width: 8),
-                      _Segmento(
-                        label: 'Rutas',
-                        selected: modo == ModoExplora.rutas,
-                        onTap: () => ref
-                            .read(modoExploraProvider.notifier)
-                            .state = ModoExplora.rutas,
-                      ),
-                      if (modo != ModoExplora.rutas) ...[
-                        const Spacer(),
-                        Flexible(
-                          child: _ChipFiltro(
-                            label: 'Poco explorado',
-                            selected: _soloPocoExplorados,
-                            onTap: () => setState(
-                              () => _soloPocoExplorados = !_soloPocoExplorados,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              if (modo != ModoExplora.rutas)
-                SliverToBoxAdapter(
                   child: SizedBox(
                     height: 42,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: padH),
                       children: [
                         for (final c in CategoriaLugar.values)
                           Padding(
@@ -197,19 +202,17 @@ class _EstadoPantallaExploraLugares
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              if (modo == ModoExplora.rutas)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: ListaRutasExplora(bottomPadding: bottom),
-                )
-              else if (modo == ModoExplora.mapa)
+              if (modo == ModoExplora.mapa)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
+                    padding: EdgeInsets.fromLTRB(padH, 0, padH, bottom),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: SizedBox(
-                        height: MediaQuery.sizeOf(context).height * 0.52,
+                        height: EspacioHaku.esAlturaCorta(context)
+                            ? (MediaQuery.sizeOf(context).height * 0.62)
+                                .clamp(180.0, 320.0)
+                            : MediaQuery.sizeOf(context).height * 0.52,
                         child: Column(
                           children: [
                             Expanded(
@@ -268,13 +271,14 @@ class _EstadoPantallaExploraLugares
                 )
               else
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
+                  padding: EdgeInsets.fromLTRB(padH, 0, padH, bottom),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio:
+                          EspacioHaku.esTablet(context) ? 0.78 : 0.72,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, i) {
@@ -302,6 +306,56 @@ class _EstadoPantallaExploraLugares
   }
 }
 
+class _FilaModosExplora extends StatelessWidget {
+  const _FilaModosExplora({
+    required this.modo,
+    required this.soloPocoExplorados,
+    required this.onModo,
+    required this.onTogglePoco,
+  });
+
+  final ModoExplora modo;
+  final bool soloPocoExplorados;
+  final ValueChanged<ModoExplora> onModo;
+  final VoidCallback onTogglePoco;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _Segmento(
+            label: 'Mapa',
+            selected: modo == ModoExplora.mapa,
+            onTap: () => onModo(ModoExplora.mapa),
+          ),
+          const SizedBox(width: 8),
+          _Segmento(
+            label: 'Lugares',
+            selected: modo == ModoExplora.lugares,
+            onTap: () => onModo(ModoExplora.lugares),
+          ),
+          const SizedBox(width: 8),
+          _Segmento(
+            label: 'Rutas',
+            selected: modo == ModoExplora.rutas,
+            onTap: () => onModo(ModoExplora.rutas),
+          ),
+          if (modo != ModoExplora.rutas) ...[
+            const SizedBox(width: 12),
+            _ChipFiltro(
+              label: 'Poco explorado',
+              selected: soloPocoExplorados,
+              onTap: onTogglePoco,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _HeroExplora extends StatelessWidget {
   const _HeroExplora({
     required this.huecos,
@@ -321,12 +375,17 @@ class _HeroExplora extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padH = EspacioHaku.horizontal(context);
+    final compacto = EspacioHaku.esAlturaCorta(context);
+    final altoHero = EspacioHaku.altoHero(context);
+    final tituloSize = compacto ? 18.0 : 24.0;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      padding: EdgeInsets.fromLTRB(padH, 8, padH, compacto ? 8 : 12),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(compacto ? 16 : 20),
         child: SizedBox(
-          height: 188,
+          height: altoHero,
           width: double.infinity,
           child: Stack(
             fit: StackFit.expand,
@@ -335,7 +394,6 @@ class _HeroExplora extends StatelessWidget {
                 'public/image/fondo_explora.jpg',
                 fit: BoxFit.cover,
               ),
-              // Velo oscuro para legibilidad del texto blanco
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -348,88 +406,111 @@ class _HeroExplora extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              // Positioned evita Column+Spacer → overflow amarillo/negro.
+              Positioned(
+                left: 14,
+                right: 14,
+                top: compacto ? 10 : 14,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
                         SvgPicture.asset(
                           'assets/iconos/sol_inca.svg',
-                          width: 22,
-                          height: 22,
+                          width: compacto ? 16 : 20,
+                          height: compacto ? 16 : 20,
                           colorFilter: const ColorFilter.mode(
                             PaletaRutas.oro,
                             BlendMode.srcIn,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          CopyHaku.exploraHeroTitulo,
-                          style: TipografiaHaku.titulo(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: PaletaRutas.piedra,
+                        Expanded(
+                          child: Text(
+                            CopyHaku.exploraHeroTitulo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TipografiaHaku.titulo(
+                              fontSize: tituloSize,
+                              fontWeight: FontWeight.w800,
+                              color: PaletaRutas.piedra,
+                            ),
                           ),
                         ),
                       ],
                     ),
+                    if (!compacto) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        CopyHaku.exploraHeroSubtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 4),
                     Text(
-                      CopyHaku.exploraHeroSubtitulo,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: PaletaRutas.plomoClaro,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
                       statsResumen,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TipografiaHaku.interfaz(
-                        fontSize: 12,
+                        fontSize: compacto ? 10 : 12,
                         fontWeight: FontWeight.w600,
                         color: PaletaRutas.plomoClaro,
                       ),
                     ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: onSorpresa,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: PaletaRutas.oro,
-                              foregroundColor: PaletaRutas.ink,
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: Text(
-                              'Sorpréndeme',
-                              style: TipografiaHaku.interfaz(
-                                fontWeight: FontWeight.w800,
-                                color: PaletaRutas.ink,
-                                fontSize: 14,
-                              ),
-                            ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: compacto ? 8 : 12,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: onSorpresa,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: PaletaRutas.oro,
+                          foregroundColor: PaletaRutas.ink,
+                          minimumSize: Size(0, compacto ? 36 : 44),
+                          padding: EdgeInsets.symmetric(
+                            vertical: compacto ? 8 : 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        _BotonIconoHero(
-                          icono: Icons.add_location_alt_outlined,
-                          tooltip: 'Agregar lugar',
-                          onTap: onRegistrar,
+                        child: Text(
+                          'Sorpréndeme',
+                          style: TipografiaHaku.interfaz(
+                            fontWeight: FontWeight.w800,
+                            color: PaletaRutas.ink,
+                            fontSize: compacto ? 12 : 14,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        _BotonIconoHero(
-                          icono: Icons.route_outlined,
-                          tooltip: 'Itinerarios',
-                          onTap: onRutas,
-                        ),
-                      ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _BotonIconoHero(
+                      icono: Icons.add_location_alt_outlined,
+                      tooltip: 'Agregar lugar',
+                      onTap: onRegistrar,
+                      compacto: compacto,
+                    ),
+                    const SizedBox(width: 6),
+                    _BotonIconoHero(
+                      icono: Icons.route_outlined,
+                      tooltip: 'Itinerarios',
+                      onTap: onRutas,
+                      compacto: compacto,
                     ),
                   ],
                 ),
@@ -447,14 +528,17 @@ class _BotonIconoHero extends StatelessWidget {
     required this.icono,
     required this.tooltip,
     required this.onTap,
+    this.compacto = false,
   });
 
   final IconData icono;
   final String tooltip;
   final VoidCallback onTap;
+  final bool compacto;
 
   @override
   Widget build(BuildContext context) {
+    final lado = compacto ? 40.0 : 46.0;
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -464,13 +548,13 @@ class _BotonIconoHero extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Container(
-            width: 46,
-            height: 46,
+            width: lado,
+            height: lado,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.55)),
             ),
-            child: Icon(icono, color: PaletaRutas.oro, size: 22),
+            child: Icon(icono, color: PaletaRutas.oro, size: compacto ? 20 : 22),
           ),
         ),
       ),
@@ -489,13 +573,16 @@ class _CarruselRecientes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padH = EspacioHaku.horizontal(context);
+    final tam = EspacioHaku.tarjetaReciente(context);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: EspacioHaku.esAlturaCorta(context) ? 10 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: EdgeInsets.fromLTRB(padH, 0, padH, 10),
             child: Text(
               'Recién en HAKU',
               style: TipografiaHaku.titulo(
@@ -506,10 +593,10 @@ class _CarruselRecientes extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 120,
+            height: tam.height,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: padH),
               itemCount: lugares.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
@@ -520,7 +607,8 @@ class _CarruselRecientes extends StatelessWidget {
                     onTap: () => onTap(l.id),
                     borderRadius: BorderRadius.circular(14),
                     child: Ink(
-                      width: 160,
+                      width: tam.width,
+                      height: tam.height,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
@@ -536,37 +624,37 @@ class _CarruselRecientes extends StatelessWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            l.imagenUrl.startsWith('assets/')
-                                ? Image.asset(l.imagenUrl, fit: BoxFit.cover)
-                                : CachedNetworkImage(
-                                    imageUrl: l.imagenUrl,
-                                    fit: BoxFit.cover,
-                                  ),
-                            DecoratedBox(
+                            ImagenHaku(
+                              url: l.imagenUrl,
+                              fit: BoxFit.cover,
+                              width: tam.width,
+                              height: tam.height,
+                            ),
+                            const DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
+                                  end: Alignment.center,
                                   colors: [
-                                    PaletaRutas.ink.withValues(alpha: 0.7),
-                                    Colors.transparent,
+                                    Color(0xB3141210),
+                                    Color(0x00000000),
                                   ],
                                 ),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.all(8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 3,
+                                      horizontal: 6,
+                                      vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
                                       color: PaletaRutas.oro,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       'NUEVO',
@@ -583,9 +671,10 @@ class _CarruselRecientes extends StatelessWidget {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TipografiaHaku.titulo(
-                                      fontSize: 13,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       color: PaletaRutas.piedra,
+                                      height: 1.15,
                                     ),
                                   ),
                                 ],
@@ -654,9 +743,10 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final img = lugar.imagenUrl.startsWith('assets/')
-        ? Image.asset(lugar.imagenUrl, fit: BoxFit.cover)
-        : CachedNetworkImage(imageUrl: lugar.imagenUrl, fit: BoxFit.cover);
+    final img = ImagenHaku(
+      url: lugar.imagenUrl,
+      fit: BoxFit.cover,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -747,7 +837,7 @@ class _TarjetaDestacadaLugar extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${lugar.categoria.etiqueta} · ${lugar.provincia}',
+                        '${lugar.categoria.etiqueta} Â· ${lugar.provincia}',
                         style: TipografiaHaku.interfaz(
                           fontSize: 12,
                           color: PaletaRutas.plomoClaro,
@@ -808,12 +898,10 @@ class _CeldaLugar extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                lugar.imagenUrl.startsWith('assets/')
-                    ? Image.asset(lugar.imagenUrl, fit: BoxFit.cover)
-                    : CachedNetworkImage(
-                        imageUrl: lugar.imagenUrl,
-                        fit: BoxFit.cover,
-                      ),
+                ImagenHaku(
+                  url: lugar.imagenUrl,
+                  fit: BoxFit.cover,
+                ),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(

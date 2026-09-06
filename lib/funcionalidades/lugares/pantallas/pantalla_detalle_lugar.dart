@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -283,9 +284,8 @@ class _ChipDato extends StatelessWidget {
 }
 
 void abrirDetalleLugar(BuildContext context, String lugarId) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => PantallaDetalleLugar(lugarId: lugarId),
-    ),
+  abrirPantallaHaku<void>(
+    context,
+    PantallaDetalleLugar(lugarId: lugarId),
   );
 }

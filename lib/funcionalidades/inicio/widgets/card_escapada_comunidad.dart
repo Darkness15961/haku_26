@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import 'boton_favorito_card.dart';
 
-/// Card cuadrado — lugares descubiertos / votados por la comunidad.
+/// Card de “lo que dejó la gente” — tamaño acotado, overlay sin overflow.
 class CardEscapadaComunidad extends StatefulWidget {
   const CardEscapadaComunidad({
     super.key,
@@ -63,201 +64,90 @@ class _EstadoCardEscapadaComunidad extends State<CardEscapadaComunidad> {
     final items = _destacadas;
     if (items.isEmpty) return const SizedBox.shrink();
 
-    final ancho = MediaQuery.sizeOf(context).width - 32;
+    final lado = EspacioHaku.ladoCardCuadrada(context);
     final actual = items[_pagina.clamp(0, items.length - 1)];
+    final compacta = lado < 230;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        EspacioHaku.horizontal(context),
+        24,
+        EspacioHaku.horizontal(context),
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             CopyHaku.comunidadDestacadaTitulo,
             style: TipografiaHaku.titulo(
-              fontSize: 20,
+              fontSize: EspacioHaku.sp(context, 20),
               fontWeight: FontWeight.w700,
               color: PaletaRutas.piedra,
             ),
           ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: SizedBox(
-              width: ancho,
-              height: ancho,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PageView.builder(
-                    controller: _page,
-                    itemCount: items.length,
-                    onPageChanged: (i) => setState(() => _pagina = i),
-                    itemBuilder: (_, i) {
-                      final r = items[i];
-                      return ImagenHaku(
-                        key: ValueKey('${r.id}_${r.imagenUrl}'),
-                        url: r.imagenUrl,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                  IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            PaletaRutas.ink.withValues(alpha: 0.08),
-                            PaletaRutas.ink.withValues(alpha: 0.82),
-                          ],
-                          stops: const [0.0, 0.55, 1.0],
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                width: lado,
+                height: lado,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PageView.builder(
+                      controller: _page,
+                      itemCount: items.length,
+                      onPageChanged: (i) => setState(() => _pagina = i),
+                      itemBuilder: (_, i) {
+                        final r = items[i];
+                        return ImagenHaku(
+                          key: ValueKey('${r.id}_${r.imagenUrl}'),
+                          url: r.imagenUrl,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    ),
+                    const IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0x00000000),
+                              Color(0x14141210),
+                              Color(0xD9141210),
+                            ],
+                            stops: [0.0, 0.45, 1.0],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: BotonFavoritoCard(rutaId: actual.id),
-                  ),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Material(
-                                color: PaletaRutas.piedra,
-                                elevation: 2,
-                                shadowColor:
-                                    PaletaRutas.ink.withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(24),
-                                child: InkWell(
-                                  onTap: () =>
-                                      widget.onConocerMas?.call(actual),
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 9,
-                                    ),
-                                    child: Text(
-                                      CopyHaku.cardComunidadCta,
-                                      style: TipografiaHaku.interfaz(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: PaletaRutas.ink,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                actual.titulo,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TipografiaHaku.titulo(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: PaletaRutas.piedra,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.place_outlined,
-                                    size: 14,
-                                    color: PaletaRutas.piedra
-                                        .withValues(alpha: 0.85),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      actual.provincia,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TipografiaHaku.interfaz(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: PaletaRutas.piedra
-                                            .withValues(alpha: 0.88),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (items.length > 1) ...[
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: List.generate(items.length, (i) {
-                                    final activo = i == _pagina;
-                                    return AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 220),
-                                      margin: const EdgeInsets.only(right: 5),
-                                      width: activo ? 16 : 6,
-                                      height: 3,
-                                      decoration: BoxDecoration(
-                                        color: activo
-                                            ? PaletaRutas.oro
-                                            : PaletaRutas.piedra
-                                                .withValues(alpha: 0.4),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    );
-                                  }),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: PaletaRutas.oro.withValues(alpha: 0.92),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                _badge(_pagina),
-                                textAlign: TextAlign.right,
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: PaletaRutas.ink,
-                                  letterSpacing: 0.1,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ),
-                            if (actual.calificacion > 0) ...[
-                              const SizedBox(height: 8),
-                              _NotaComunidad(calificacion: actual.calificacion),
-                            ],
-                          ],
-                        ),
-                      ],
+                    Positioned(
+                      top: compacta ? 8 : 12,
+                      right: compacta ? 8 : 12,
+                      child: BotonFavoritoCard(rutaId: actual.id),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      left: compacta ? 10 : 14,
+                      right: compacta ? 10 : 14,
+                      bottom: compacta ? 10 : 14,
+                      child: _OverlayCard(
+                        titulo: actual.titulo,
+                        provincia: actual.provincia,
+                        badge: _badge(_pagina),
+                        calificacion: actual.calificacion,
+                        paginas: items.length,
+                        pagina: _pagina,
+                        compacta: compacta,
+                        onCta: () => widget.onConocerMas?.call(actual),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -267,43 +157,162 @@ class _EstadoCardEscapadaComunidad extends State<CardEscapadaComunidad> {
   }
 }
 
-/// Nota que la comunidad le dio al lugar (estrella + valor + votos).
-class _NotaComunidad extends StatelessWidget {
-  const _NotaComunidad({required this.calificacion});
+class _OverlayCard extends StatelessWidget {
+  const _OverlayCard({
+    required this.titulo,
+    required this.provincia,
+    required this.badge,
+    required this.calificacion,
+    required this.paginas,
+    required this.pagina,
+    required this.compacta,
+    required this.onCta,
+  });
 
+  final String titulo;
+  final String provincia;
+  final String badge;
   final double calificacion;
+  final int paginas;
+  final int pagina;
+  final bool compacta;
+  final VoidCallback onCta;
 
   @override
   Widget build(BuildContext context) {
-    final nota = calificacion.toStringAsFixed(1).replaceAll('.', ',');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: PaletaRutas.ink.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: PaletaRutas.oro.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.star_rounded,
-            size: 15,
-            color: PaletaRutas.oro,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            nota,
-            style: TipografiaHaku.interfaz(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: PaletaRutas.piedra,
+    final tituloSize = compacta ? 15.0 : 18.0;
+    final gap = compacta ? 4.0 : 8.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Material(
+                color: PaletaRutas.piedra,
+                elevation: 2,
+                shadowColor: PaletaRutas.ink.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: onCta,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compacta ? 12 : 16,
+                      vertical: compacta ? 6 : 8,
+                    ),
+                    child: Text(
+                      CopyHaku.cardComunidadCta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: compacta ? 11 : 13,
+                        fontWeight: FontWeight.w800,
+                        color: PaletaRutas.ink,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
+            SizedBox(width: gap),
+            Flexible(
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: compacta ? 8 : 10,
+                  vertical: compacta ? 4 : 6,
+                ),
+                decoration: BoxDecoration(
+                  color: PaletaRutas.oro.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  badge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: PaletaRutas.ink,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: gap),
+        Text(
+          titulo,
+          maxLines: compacta ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+          style: TipografiaHaku.titulo(
+            fontSize: tituloSize,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
+            height: 1.1,
+          ),
+        ),
+        SizedBox(height: compacta ? 2 : 4),
+        Row(
+          children: [
+            Icon(
+              Icons.place_outlined,
+              size: 13,
+              color: PaletaRutas.piedra.withValues(alpha: 0.85),
+            ),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                provincia,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: PaletaRutas.piedra.withValues(alpha: 0.88),
+                ),
+              ),
+            ),
+            if (calificacion > 0) ...[
+              const Icon(Icons.star_rounded, size: 14, color: PaletaRutas.oro),
+              const SizedBox(width: 2),
+              Text(
+                calificacion.toStringAsFixed(1).replaceAll('.', ','),
+                style: TipografiaHaku.interfaz(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: PaletaRutas.piedra,
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (paginas > 1) ...[
+          SizedBox(height: gap),
+          Row(
+            children: List.generate(paginas, (i) {
+              final activo = i == pagina;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(right: 4),
+                width: activo ? 14 : 5,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: activo
+                      ? PaletaRutas.oro
+                      : PaletaRutas.piedra.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              );
+            }),
           ),
         ],
-      ),
+      ],
     );
   }
 }

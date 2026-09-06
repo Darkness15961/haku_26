@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
@@ -25,6 +26,8 @@ class BarraNavegacionCurva extends StatelessWidget {
   final ValueChanged<int> onCambiar;
   /// Misma longitud que [items]: badge numérico en ese ítem (0 = oculto).
   final List<int> contadorPorIndice;
+  /// Landscape / altura corta: menos padding y sin etiquetas.
+  final bool compacta;
 
   const BarraNavegacionCurva({
     super.key,
@@ -32,6 +35,7 @@ class BarraNavegacionCurva extends StatelessWidget {
     required this.items,
     required this.onCambiar,
     this.contadorPorIndice = const [],
+    this.compacta = false,
   });
 
   int _contador(int index) =>
@@ -40,6 +44,14 @@ class BarraNavegacionCurva extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final escala = EspacioHaku.escala(context);
+    final altoBarra = compacta
+        ? 48.0
+        : (EspacioHaku.esTablet(context) ? 66.0 : 58.0);
+    final tamFab = (compacta ? 38.0 : 44.0) * escala.clamp(1.0, 1.12);
+    final tamIcono = EspacioHaku.sp(context, compacta ? 20 : 22);
+    final tamEtiqueta = EspacioHaku.sp(context, 10);
+    final mostrarEtiquetas = !compacta;
 
     return ColoredBox(
       color: PaletaRutas.ink,
@@ -51,9 +63,12 @@ class BarraNavegacionCurva extends StatelessWidget {
             color: PaletaRutas.plomoOscuro.withValues(alpha: 0.55),
           ),
           Padding(
-            padding: EdgeInsets.only(bottom: bottomInset, top: 6),
+            padding: EdgeInsets.only(
+              bottom: bottomInset,
+              top: compacta ? 2 : 6,
+            ),
             child: SizedBox(
-              height: 58,
+              height: altoBarra,
               child: Row(
                 children: List.generate(items.length, (index) {
                   final item = items[index];
@@ -69,16 +84,17 @@ class BarraNavegacionCurva extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: tamFab,
+                              height: tamFab,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: PaletaRutas.oro,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.add_rounded,
                                 color: PaletaRutas.ink,
-                                size: 28,
+                                size: (compacta ? 24 : 28) *
+                                    escala.clamp(1.0, 1.1),
                               ),
                             ),
                           ],
@@ -95,7 +111,7 @@ class BarraNavegacionCurva extends StatelessWidget {
                     child: Icon(
                       esActivo ? item.iconoActivo : item.iconoNormal,
                       color: color,
-                      size: 22,
+                      size: tamIcono,
                     ),
                   );
 
@@ -107,26 +123,29 @@ class BarraNavegacionCurva extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           icono,
-                          const SizedBox(height: 3),
-                          Text(
-                            item.etiqueta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 10,
-                              fontWeight:
-                                  esActivo ? FontWeight.w700 : FontWeight.w500,
-                              color: color,
+                          if (mostrarEtiquetas) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              item.etiqueta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TipografiaHaku.interfaz(
+                                fontSize: tamEtiqueta,
+                                fontWeight: esActivo
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: color,
+                              ),
                             ),
-                          ),
+                          ],
                           if (esActivo)
                             Container(
-                              margin: const EdgeInsets.only(top: 3),
+                              margin: EdgeInsets.only(top: mostrarEtiquetas ? 3 : 4),
                               width: 12,
                               height: 2,
                               color: PaletaRutas.oro,
                             )
-                          else
+                          else if (mostrarEtiquetas)
                             const SizedBox(height: 5),
                         ],
                       ),

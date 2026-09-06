@@ -8,13 +8,18 @@ import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../../nucleo/demo/senales_atencion.dart';
+import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
+import '../../../nucleo/navegacion/control_retroceso.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
 import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/barra_navegacion_curva.dart';
+import '../widgets/riel_navegacion_haku.dart';
 import 'pantalla_feed_inicio.dart';
 
-/// Shell Fase 1: Inicio (aportes) | Explora (lugares) | + (publicar) | Comunidad | Perfil
+/// Shell Fase 1: Inicio | Explora | + | Comunidad | Perfil
+/// Portrait → barra inferior · Landscape → riel lateral (libera altura).
 class PantallaInicio extends ConsumerStatefulWidget {
   const PantallaInicio({super.key});
 
@@ -69,6 +74,11 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     return visual < 2 ? visual : visual - 1;
   }
 
+  void _irATab(int stack) {
+    ref.read(pestaniaShellInicioProvider.notifier).state = stack;
+    setState(() => _indiceSeleccionado = stack);
+  }
+
   Future<void> _seleccionarPestaniaVisual(int visual) async {
     final stack = _indiceStackDesdeVisual(visual);
     if (stack == null) {
@@ -82,17 +92,24 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     }
 
     if (stack == _indiceSeleccionado) return;
-    ref.read(pestaniaShellInicioProvider.notifier).state = stack;
-    setState(() => _indiceSeleccionado = stack);
+    _irATab(stack);
   }
 
   Future<void> _abrirPublicar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PantallaPublicaciones(),
-      ),
+    await abrirPantallaHaku<void>(
+      context,
+      const PantallaPublicaciones(),
+    );
+  }
+
+  void _onRetrocesoSistema(bool didPop, Object? result) {
+    if (didPop) return;
+    ControlRetrocesoShell.alIntentarSalirDelShell(
+      context: context,
+      indiceTab: _indiceSeleccionado,
+      irATab: _irATab,
     );
   }
 
@@ -107,19 +124,50 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
     final pendientes = SenalesAtencion.totalPendientesComunidad();
     final contadorNav = [0, 0, 0, pendientes, 0];
+    final puedePopRuta = Navigator.of(context).canPop();
+    final riel = EspacioHaku.usarRielLateral(context);
 
-    return Scaffold(
-      backgroundColor: PaletaRutas.ink,
-      extendBody: true,
-      body: IndexedStack(
-        index: _indiceSeleccionado,
-        children: _pantallas,
-      ),
-      bottomNavigationBar: BarraNavegacionCurva(
-        indiceActual: _indiceVisualDesdeStack(_indiceSeleccionado),
-        items: _itemsNavegacion,
-        contadorPorIndice: contadorNav,
-        onCambiar: _seleccionarPestaniaVisual,
+    // Mismo árbol de contenido al rotar: solo aparece/desaparece el riel.
+    // Evita remount del IndexedStack (crash intermitente al voltear).
+    return PopScope(
+      canPop: puedePopRuta,
+      onPopInvokedWithResult: _onRetrocesoSistema,
+      child: Scaffold(
+        backgroundColor: PaletaRutas.ink,
+        extendBody: !riel,
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (riel) ...[
+              RielNavegacionHaku(
+                indiceActual: _indiceVisualDesdeStack(_indiceSeleccionado),
+                items: _itemsNavegacion,
+                contadorPorIndice: contadorNav,
+                onCambiar: _seleccionarPestaniaVisual,
+              ),
+              Container(
+                width: 0.6,
+                color: PaletaRutas.plomoOscuro.withValues(alpha: 0.55),
+              ),
+            ],
+            Expanded(
+              child: IndexedStack(
+                index: _indiceSeleccionado,
+                sizing: StackFit.expand,
+                children: _pantallas,
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: riel
+            ? null
+            : BarraNavegacionCurva(
+                indiceActual: _indiceVisualDesdeStack(_indiceSeleccionado),
+                items: _itemsNavegacion,
+                contadorPorIndice: contadorNav,
+                onCambiar: _seleccionarPestaniaVisual,
+                compacta: EspacioHaku.esAlturaCorta(context),
+              ),
       ),
     );
   }

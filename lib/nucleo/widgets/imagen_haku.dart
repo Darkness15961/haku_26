@@ -73,8 +73,27 @@ class ImagenHaku extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = _contenido();
-    if (borderRadius == null) return child;
-    return ClipRRect(borderRadius: borderRadius!, child: child);
+    Widget child = _contenido();
+    if (borderRadius != null) {
+      child = ClipRRect(borderRadius: borderRadius!, child: child);
+    }
+    // Solo expandir si el padre da tamaño acotado (Expanded / Positioned.fill).
+    // En Stack suelto, expandir rompe el layout.
+    if (width != null || height != null) return child;
+    return LayoutBuilder(
+      builder: (context, c) {
+        if (c.maxWidth.isFinite &&
+            c.maxHeight.isFinite &&
+            c.maxWidth > 0 &&
+            c.maxHeight > 0) {
+          return SizedBox(
+            width: c.maxWidth,
+            height: c.maxHeight,
+            child: child,
+          );
+        }
+        return child;
+      },
+    );
   }
 }

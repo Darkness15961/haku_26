@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'funcionalidades/carga_inicial/indice.dart';
 import 'funcionalidades/inicio/indice.dart';
 import 'funcionalidades/rutas/widgets/estilos_rutas.dart';
+import 'nucleo/responsive/lienzo_haku.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,10 +39,18 @@ class AplicacionHaku extends StatelessWidget {
           backgroundColor: PaletaRutas.carbon,
           contentTextStyle: TextStyle(color: PaletaRutas.piedra),
         ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          },
+        ),
       ),
       builder: (context, contenido) {
-        return ColoredBox(
-          color: PaletaRutas.ink,
+        return EnvoltorioAppResponsiva(
           child: contenido ?? const SizedBox.shrink(),
         );
       },

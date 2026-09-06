@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/demo/senales_atencion.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
+import '../../../nucleo/responsive/rejilla_lego_haku.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
@@ -16,6 +18,7 @@ import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
 import '../../inicio/widgets/card_invitacion_grupo.dart';
 import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/salidas_datasource_local.dart';
 import '../pantallas/pantalla_crear_salida.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
@@ -73,8 +76,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     });
 
     final pestania = ref.watch(pestaniaComunidadProvider);
-    final bottom = MediaQuery.paddingOf(context).bottom +
-        (widget.mostrarAtras ? 24 : 88);
+    final bottom = widget.mostrarAtras
+        ? MediaQuery.paddingOf(context).bottom + 24
+        : EspacioHaku.bottomNavClearance(context);
     final store = ref.watch(almacenFeedProvider);
     final publicaciones = store.listo
         ? store.publicaciones
@@ -120,7 +124,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                         'Comunidad',
                         textAlign: TextAlign.center,
                         style: TipografiaHaku.titulo(
-                          fontSize: 18,
+                          fontSize: EspacioHaku.sp(context, 18),
                           fontWeight: FontWeight.w800,
                           color: PaletaRutas.piedra,
                         ),
@@ -173,6 +177,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: LineaEncabezadoInca(altura: 3),
               ),
             ),
             SliverToBoxAdapter(
@@ -228,20 +238,48 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         ),
       ];
     }
-    return [
-      SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, i) {
-            final esUltima = i == posts.length - 1;
-            return Padding(
-              padding: EdgeInsets.only(bottom: esUltima ? bottom : 18),
+    final cols = EspacioHaku.columnasPublicaciones(context);
+    if (cols <= 1) {
+      return [
+        for (var i = 0; i < posts.length; i++)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: i == posts.length - 1 ? bottom : 18,
+              ),
               child: PublicacionEstiloThreads(
                 publicacion: posts[i],
                 indice: i,
               ),
-            );
-          },
-          childCount: posts.length,
+            ),
+          ),
+      ];
+    }
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(
+          EspacioHaku.horizontal(context),
+          0,
+          EspacioHaku.horizontal(context),
+          bottom,
+        ),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 12,
+            childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.85 : 0.72,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, i) {
+              return PublicacionEstiloThreads(
+                publicacion: posts[i],
+                indice: i,
+                compacta: true,
+              );
+            },
+            childCount: posts.length,
+          ),
         ),
       ),
     ];
@@ -289,21 +327,29 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       ];
     }
     return [
-      SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, i) {
-            final s = salidas[i];
-            final inv = invitaciones[s.id];
-            final esUltima = i == salidas.length - 1;
-            return Padding(
-              padding: EdgeInsets.only(bottom: esUltima ? bottom : 14),
-              child: inv != null
-                  ? CardInvitacionGrupo(publicacion: inv)
-                  : TarjetaSalidaComunidad(salida: s, indice: i),
+      ...RejillaLegoHaku.slivers(
+        context: context,
+        itemCount: salidas.length,
+        bottom: bottom,
+        childAspectRatio: 0.78,
+        itemBuilder: (context, i) {
+          final s = salidas[i];
+          final inv = invitaciones[s.id];
+          final enRejilla = RejillaLegoHaku.columnas(context) > 1;
+          if (inv != null) {
+            return CardInvitacionGrupo(
+              publicacion: inv,
+              enRejilla: enRejilla,
+              omitirPadding: true,
             );
-          },
-          childCount: salidas.length,
-        ),
+          }
+          return TarjetaSalidaComunidad(
+            salida: s,
+            indice: i,
+            enRejilla: enRejilla,
+            omitirPadding: true,
+          );
+        },
       ),
     ];
   }
@@ -349,29 +395,30 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         ),
       ];
     }
+    final enRejilla = RejillaLegoHaku.columnas(context) > 1;
     return [
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
-        sliver: SliverList.separated(
-          itemCount: comunidades.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, i) {
-            final c = comunidades[i];
-            final unida = store.comunidadIds.contains(c.id);
-            return _TarjetaGrupoComunidad(
-              comunidad: c,
-              unida: unida,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        PantallaDetalleComunidad(comunidadId: c.id),
-                  ),
-                );
-              },
-            );
-          },
-        ),
+      ...RejillaLegoHaku.slivers(
+        context: context,
+        itemCount: comunidades.length,
+        bottom: bottom,
+        childAspectRatio: enRejilla ? 0.95 : 2.6,
+        itemBuilder: (context, i) {
+          final c = comunidades[i];
+          final unida = store.comunidadIds.contains(c.id);
+          return _TarjetaGrupoComunidad(
+            comunidad: c,
+            unida: unida,
+            enRejilla: enRejilla,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      PantallaDetalleComunidad(comunidadId: c.id),
+                ),
+              );
+            },
+          );
+        },
       ),
     ];
   }
@@ -381,10 +428,31 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     List<GrupoRuta> gruposRuta,
     double bottom,
   ) {
+    final items = <Widget>[
+      for (final g in gruposRuta)
+        _TarjetaChatGrupoRuta(
+          grupo: g,
+          onTap: () async {
+            await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => PantallaDetalleGrupo(grupo: g),
+              ),
+            );
+            if (mounted) setState(() {});
+          },
+        ),
+      for (final c in chats) _TarjetaChatDirecto(chat: c),
+    ];
+
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: EdgeInsets.fromLTRB(
+            EspacioHaku.horizontal(context),
+            0,
+            EspacioHaku.horizontal(context),
+            12,
+          ),
           child: OutlinedButton.icon(
             onPressed: _abrirCrearGrupo,
             style: OutlinedButton.styleFrom(
@@ -402,7 +470,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
           ),
         ),
       ),
-      if (chats.isEmpty && gruposRuta.isEmpty)
+      if (items.isEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(24, 24, 24, bottom),
@@ -414,52 +482,13 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
           ),
         )
       else
-        SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              if (gruposRuta.isNotEmpty) ...[
-                Text(
-                  'Equipos de ruta',
-                  style: TipografiaHaku.titulo(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: PaletaRutas.plomoClaro,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                for (var i = 0; i < gruposRuta.length; i++) ...[
-                  _TarjetaChatGrupoRuta(
-                    grupo: gruposRuta[i],
-                    onTap: () async {
-                      await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              PantallaDetalleGrupo(grupo: gruposRuta[i]),
-                        ),
-                      );
-                      if (mounted) setState(() {});
-                    },
-                  ),
-                  if (i < gruposRuta.length - 1) const SizedBox(height: 10),
-                ],
-                const SizedBox(height: 18),
-              ],
-              Text(
-                'Chats',
-                style: TipografiaHaku.titulo(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: PaletaRutas.plomoClaro,
-                ),
-              ),
-              const SizedBox(height: 10),
-              for (var i = 0; i < chats.length; i++) ...[
-                _TarjetaChatDirecto(chat: chats[i]),
-                if (i < chats.length - 1) const SizedBox(height: 10),
-              ],
-            ]),
-          ),
+        ...RejillaLegoHaku.slivers(
+          context: context,
+          itemCount: items.length,
+          bottom: bottom,
+          // Filas chat: anchas y bajas (no cuadrados grandes).
+          childAspectRatio: 3.1,
+          itemBuilder: (context, i) => items[i],
         ),
     ];
   }
@@ -546,90 +575,142 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
     required this.comunidad,
     required this.unida,
     required this.onTap,
+    this.enRejilla = false,
   });
 
   final ComunidadHaku comunidad;
   final bool unida;
   final VoidCallback onTap;
+  final bool enRejilla;
 
   @override
   Widget build(BuildContext context) {
+    final texto = Padding(
+      padding: EdgeInsets.all(enRejilla ? 10 : 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  comunidad.nombre,
+                  maxLines: enRejilla ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: PaletaRutas.piedra,
+                  ),
+                ),
+              ),
+              if (unida)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: PaletaRutas.oro,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Unida',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: PaletaRutas.ink,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${comunidad.miembros} miembros',
+            style: TipografiaHaku.interfaz(
+              fontSize: 12,
+              color: PaletaRutas.oro,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (comunidad.categorias.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ChipCategoriaComunidad(
+              categoria: comunidad.categorias.first,
+              sobreOscuro: true,
+            ),
+          ],
+        ],
+      ),
+    );
+
     return Material(
       color: PaletaRutas.carbon,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 88,
-              height: 88,
-              child: ImagenHaku(url: comunidad.imagenUrl, fit: BoxFit.cover),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: enRejilla
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ImagenHaku(
+                      url: comunidad.imagenUrl,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const LineaEncabezadoInca(altura: 2.5),
+                  texto,
+                ],
+              )
+            : IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            comunidad.nombre,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TipografiaHaku.titulo(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: PaletaRutas.piedra,
-                            ),
-                          ),
-                        ),
-                        if (unida)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: PaletaRutas.oro,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Unida',
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: PaletaRutas.ink,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${comunidad.miembros} miembros',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 12,
-                        color: PaletaRutas.oro,
-                        fontWeight: FontWeight.w700,
+                    const _FranjaPolleraVertical(),
+                    SizedBox(
+                      width: 88,
+                      height: 88,
+                      child: ImagenHaku(
+                        url: comunidad.imagenUrl,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    if (comunidad.categorias.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      ChipCategoriaComunidad(
-                        categoria: comunidad.categorias.first,
-                        sobreOscuro: true,
-                      ),
-                    ],
+                    Expanded(child: texto),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+}
+
+/// Contraste tipo pollera al costado (vertical).
+class _FranjaPolleraVertical extends StatelessWidget {
+  const _FranjaPolleraVertical();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 4,
+      child: Column(
+        children: [
+          Expanded(flex: 5, child: ColoredBox(color: PaletaRutas.oro)),
+          Expanded(
+            flex: 2,
+            child: ColoredBox(color: PaletaRutas.piedra.withValues(alpha: 0.85)),
+          ),
+          Expanded(flex: 3, child: ColoredBox(color: PaletaRutas.oroOscuro)),
+          Expanded(
+            flex: 2,
+            child: ColoredBox(
+              color: PaletaRutas.plomoClaro.withValues(alpha: 0.7),
             ),
-          ],
-        ),
+          ),
+          Expanded(flex: 4, child: ColoredBox(color: PaletaRutas.oro)),
+        ],
       ),
     );
   }
@@ -662,58 +743,66 @@ class _TarjetaChatDirecto extends StatelessWidget {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const LineaEncabezadoInca(altura: 2.5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
                 children: [
-                  AvatarHaku(url: chat.avatarUrl, size: 48),
-                  if (chat.noLeidos > 0)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: BadgeContador(
-                        cantidad: chat.noLeidos,
-                        compacto: true,
-                      ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AvatarHaku(url: chat.avatarUrl, size: 48),
+                      if (chat.noLeidos > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: BadgeContador(
+                            cantidad: chat.noLeidos,
+                            compacto: true,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          chat.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TipografiaHaku.interfaz(
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                        Text(
+                          chat.ultimoMensaje,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 12,
+                            color: PaletaRutas.plomoClaro,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  Text(
+                    chat.hace,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      color: PaletaRutas.plomo,
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chat.nombre,
-                      style: TipografiaHaku.interfaz(
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    Text(
-                      chat.ultimoMensaje,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 12,
-                        color: PaletaRutas.plomoClaro,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                chat.hace,
-                style: TipografiaHaku.interfaz(
-                  fontSize: 11,
-                  color: PaletaRutas.plomo,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -737,43 +826,53 @@ class _TarjetaChatGrupoRuta extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: PaletaRutas.ink,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.hiking, color: PaletaRutas.oro),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      grupo.nombre,
-                      style: TipografiaHaku.interfaz(
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const LineaEncabezadoInca(altura: 2.5),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: PaletaRutas.ink,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    Text(
-                      grupo.rutaTitulo,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 12,
-                        color: PaletaRutas.plomoClaro,
-                      ),
+                    child: const Icon(Icons.hiking, color: PaletaRutas.oro),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          grupo.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TipografiaHaku.interfaz(
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                        Text(
+                          grupo.rutaTitulo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 12,
+                            color: PaletaRutas.plomoClaro,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

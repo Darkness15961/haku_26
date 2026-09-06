@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
+import '../../../nucleo/responsive/rejilla_lego_haku.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
 import '../datos/rutas_datasource_local.dart';
@@ -8,8 +11,9 @@ import '../dominio/modelos/modelo_ruta.dart';
 import '../pantallas/pantalla_detalle_ruta.dart';
 import 'estilos_rutas.dart';
 import 'tarjeta_ruta.dart';
+import 'tarjeta_ruta_lego.dart';
 
-/// Listado de rutas por categoría — embebido en Explora.
+/// Listado de rutas por categoría — Lego en landscape, lista en portrait.
 class ListaRutasExplora extends ConsumerStatefulWidget {
   const ListaRutasExplora({super.key, this.bottomPadding = 110});
 
@@ -45,10 +49,9 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
 
   void _abrirDetalle(ModeloRuta ruta) {
     final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaDetalleRuta(ruta: catalogo),
-      ),
+    abrirPantallaHaku<void>(
+      context,
+      PantallaDetalleRuta(ruta: catalogo),
     );
   }
 
@@ -57,6 +60,7 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
     final indiceRutas = MetricasComunidad.indiceRutas(
       ref.watch(almacenFeedProvider).publicaciones,
     );
+    final cols = RejillaLegoHaku.columnas(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,7 +68,7 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
         TabBar(
           controller: _tabs,
           isScrollable: true,
-          tabAlignment: TabAlignment.center,
+          tabAlignment: TabAlignment.start,
           labelStyle: TipografiaHaku.interfaz(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -98,15 +102,23 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
               if (rutas.isEmpty) {
                 return _EmptyRutas(onExplorar: () => _tabs.animateTo(0));
               }
-              return ListView.separated(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, widget.bottomPadding),
+              return RejillaLegoHaku.grid(
+                context: context,
                 itemCount: rutas.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                bottomPadding: widget.bottomPadding,
                 itemBuilder: (context, index) {
                   final ruta = rutas[index];
+                  if (cols > 1) {
+                    return TarjetaRutaLego(
+                      ruta: ruta,
+                      indice: index,
+                      onTap: () => _abrirDetalle(ruta),
+                    );
+                  }
                   return TarjetaRuta(
                     ruta: ruta,
                     indice: index,
+                    compacta: EspacioHaku.esHorizontal(context),
                     onTap: () => _abrirDetalle(ruta),
                   );
                 },

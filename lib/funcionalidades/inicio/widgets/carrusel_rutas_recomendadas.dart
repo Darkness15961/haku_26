@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -42,7 +43,8 @@ class CarruselRutasRecomendadas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = altura ?? 300;
+    final h = altura ?? EspacioHaku.altoCarrusel(context);
+    final wCard = anchoTarjeta ?? (EspacioHaku.esHorizontal(context) ? 150.0 : 176.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -103,7 +105,7 @@ class CarruselRutasRecomendadas extends StatelessWidget {
               final ruta = rutas[index];
               return _TarjetaCarrusel(
                 ruta: ruta,
-                ancho: anchoTarjeta ?? 176,
+                ancho: wCard,
                 estiloPie: estiloPie,
                 onTap: () => onTapRuta?.call(ruta),
               );
