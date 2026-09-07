@@ -40,6 +40,25 @@ abstract final class CopyHaku {
   static const exploraHeroSubtitulo =
       'Rincones con nombre y los que aún esperan el tuyo';
 
+  static const islasTitulo = 'Tus provincias';
+  static const islasSubtitulo =
+      'Desliza la isla · toca el terreno para ver rincones · toca la foto para entrar';
+  static const islasSegmento = 'Islas';
+  static const sheetProvinciaVerTodo = 'Rincones de acá';
+  static const sheetProvinciaVacia =
+      'Todavía no hay rincones nombrados aquí. Sé el primero de tu cuadrilla.';
+  static const sheetProvinciaCapitalPrefijo = 'Capital';
+  static const sheetCtaRegistrar = 'Nombrar un lugar';
+
+  static String islaLugares(int n) =>
+      n == 0 ? 'Sin rincones aún' : (n == 1 ? '1 lugar' : '$n lugares');
+
+  static String islaNuevos(int n) =>
+      n == 1 ? '1 nuevo' : '$n nuevos';
+
+  static String sheetSalidas(int n) =>
+      n == 0 ? 'Sin salidas abiertas' : (n == 1 ? '1 salida' : '$n salidas');
+
   static String huecosSinNombre(int n) =>
       n == 1 ? '1 hueco sin nombre todavía' : '$n huecos sin nombre todavía';
 

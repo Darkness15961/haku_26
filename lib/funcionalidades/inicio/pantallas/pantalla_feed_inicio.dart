@@ -9,7 +9,7 @@ import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
 import '../../../nucleo/demo/senales_atencion.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
-import '../../lugares/proveedores/proveedor_explora_ui.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
@@ -73,7 +73,9 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   }
 
   void _abrirRutas() {
-    irAExplora(ref, modo: ModoExplora.rutas);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PantallaRutas()),
+    );
   }
 
   ModeloRuta _desdeLugar(

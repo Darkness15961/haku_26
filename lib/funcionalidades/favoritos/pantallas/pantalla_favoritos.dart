@@ -6,7 +6,7 @@ import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
-import '../../lugares/proveedores/proveedor_explora_ui.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
@@ -91,8 +91,11 @@ class PantallaFavoritos extends ConsumerWidget {
                             texto: 'Rutas',
                             icono: Icons.map_outlined,
                             onPressed: () {
-                              irAExplora(ref, modo: ModoExplora.rutas);
-                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const PantallaRutas(),
+                                ),
+                              );
                             },
                           ),
                         ],

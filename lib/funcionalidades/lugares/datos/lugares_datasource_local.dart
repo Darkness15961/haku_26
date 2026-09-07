@@ -518,6 +518,228 @@ class LugaresDataSourceLocal {
       altitud: '2950 msnm',
       acceso: 'Tour / fiesta local',
     ),
+    // —— Provincias que faltaban en el path de islas ——
+    ModeloLugar(
+      id: 'termoas_laresa',
+      nombre: 'Termas de Lares',
+      descripcion:
+          'Pozas calientes entre cerros: agua mineral, niebla y silencio de valle.',
+      imagenUrl: CatalogoImagenesHaku.u20,
+      categoria: CategoriaLugar.naturaleza,
+      provincia: 'Calca',
+      distrito: 'Lares',
+      distanciaKm: 62,
+      calificacion: 4.6,
+      nivelExploracion: NivelExploracion.enCrecimiento,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Medio día',
+      altitud: '3200 msnm',
+      acceso: 'Combi + caminata corta',
+    ),
+    ModeloLugar(
+      id: 'mirador_zurite',
+      nombre: 'Mirador de Zurite',
+      descripcion:
+          'Andenes y vista al valle de Anta al atardecer. Poco visitado entre semana.',
+      imagenUrl: CatalogoImagenesHaku.u21,
+      categoria: CategoriaLugar.fotografia,
+      provincia: 'Anta',
+      distrito: 'Zurite',
+      distanciaKm: 35,
+      calificacion: 4.4,
+      nivelExploracion: NivelExploracion.pocoExplorado,
+      dificultad: 'Fácil',
+      tiempoEstimado: '2 h',
+      altitud: '3400 msnm',
+      acceso: 'Taxi / combi',
+    ),
+    ModeloLugar(
+      id: 'rumicolca',
+      nombre: 'Rumicolca',
+      descripcion:
+          'Portal inca de piedra en Quispicanchi: el paso antiguo hacia el Collasuyo.',
+      imagenUrl: CatalogoImagenesHaku.u22,
+      categoria: CategoriaLugar.cultura,
+      provincia: 'Quispicanchi',
+      distrito: 'Lucre',
+      distanciaKm: 32,
+      calificacion: 4.5,
+      nivelExploracion: NivelExploracion.enCrecimiento,
+      dificultad: 'Fácil',
+      tiempoEstimado: '1–2 h',
+      altitud: '3150 msnm',
+      acceso: 'Carretera Cusco–Puno',
+    ),
+    ModeloLugar(
+      id: 'rausana_canchis',
+      nombre: 'Rausana (Sicuani)',
+      descripcion:
+          'Cerro sagrado cerca de Sicuani: ritual, altura y vista al valle del Vilcanota.',
+      imagenUrl: CatalogoImagenesHaku.u23,
+      categoria: CategoriaLugar.misterioso,
+      provincia: 'Canchis',
+      distrito: 'Sicuani',
+      distanciaKm: 138,
+      calificacion: 4.3,
+      nivelExploracion: NivelExploracion.pocoExplorado,
+      dificultad: 'Moderada',
+      tiempoEstimado: '3–4 h',
+      altitud: '3800 msnm',
+      acceso: 'Taxi desde Sicuani',
+    ),
+    ModeloLugar(
+      id: 'aguas_calientes_canchis',
+      nombre: 'Aguas termales Combapata',
+      descripcion:
+          'Pozas familiares en Canchis: agua tibia, río cerca y poca gente fuera de feriado.',
+      imagenUrl: CatalogoImagenesHaku.u24,
+      categoria: CategoriaLugar.naturaleza,
+      provincia: 'Canchis',
+      distrito: 'Combapata',
+      distanciaKm: 115,
+      calificacion: 4.2,
+      nivelExploracion: NivelExploracion.nuevoEnHaku,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Medio día',
+      altitud: '3480 msnm',
+      acceso: 'Combi Sicuani–Combapata',
+    ),
+    ModeloLugar(
+      id: 'laguna_pomacanchi',
+      nombre: 'Laguna de Pomacanchi',
+      descripcion:
+          'Espejo de agua en Acomayo: pesca, viento y atardeceres largos.',
+      imagenUrl: CatalogoImagenesHaku.u25,
+      categoria: CategoriaLugar.naturaleza,
+      provincia: 'Acomayo',
+      distrito: 'Pomacanchi',
+      distanciaKm: 98,
+      calificacion: 4.4,
+      nivelExploracion: NivelExploracion.pocoExplorado,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Día',
+      altitud: '3670 msnm',
+      acceso: 'Combi desde Cusco',
+    ),
+    ModeloLugar(
+      id: 'templo_acomayo',
+      nombre: 'Iglesia de Acomayo',
+      descripcion:
+          'Pueblo tranquilo y templo colonial: piedra, campanas y plaza sin apuro.',
+      imagenUrl: CatalogoImagenesHaku.u26,
+      categoria: CategoriaLugar.cultura,
+      provincia: 'Acomayo',
+      distrito: 'Acomayo',
+      distanciaKm: 105,
+      calificacion: 4.1,
+      nivelExploracion: NivelExploracion.enCrecimiento,
+      dificultad: 'Fácil',
+      tiempoEstimado: '2 h',
+      altitud: '3200 msnm',
+      acceso: 'Combi',
+    ),
+    ModeloLugar(
+      id: 'huanca_paruro',
+      nombre: 'Santuario del Señor de Huanca',
+      descripcion:
+          'Peregrinación viva en Paruro: fe, comida de feria y cerros que guardan silencio.',
+      imagenUrl: CatalogoImagenesHaku.u27,
+      categoria: CategoriaLugar.cultura,
+      provincia: 'Paruro',
+      distrito: 'San Salvador',
+      distanciaKm: 28,
+      calificacion: 4.7,
+      nivelExploracion: NivelExploracion.enCrecimiento,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Medio día',
+      altitud: '3100 msnm',
+      acceso: 'Combi / taxi',
+    ),
+    ModeloLugar(
+      id: 'yacila_paruro',
+      nombre: 'Yacila (andenes)',
+      descripcion:
+          'Andenes poco visitados en Paruro: tierra labrada y vista al valle.',
+      imagenUrl: CatalogoImagenesHaku.u28,
+      categoria: CategoriaLugar.caminata,
+      provincia: 'Paruro',
+      distrito: 'Paruro',
+      distanciaKm: 72,
+      calificacion: 4.0,
+      nivelExploracion: NivelExploracion.nuevoEnHaku,
+      dificultad: 'Moderada',
+      tiempoEstimado: '3 h',
+      altitud: '3300 msnm',
+      acceso: 'Caminata',
+    ),
+    ModeloLugar(
+      id: 'qoyllur_rito_chumbivilcas',
+      nombre: 'Qoyllur Rit’i (camino alto)',
+      descripcion:
+          'Tramo alto hacia el santuario: frío, velas y fe andina. Solo con guía local.',
+      imagenUrl: CatalogoImagenesHaku.u29,
+      categoria: CategoriaLugar.misterioso,
+      provincia: 'Chumbivilcas',
+      distrito: 'Santo Tomás',
+      distanciaKm: 180,
+      calificacion: 4.9,
+      nivelExploracion: NivelExploracion.pocoExplorado,
+      dificultad: 'Difícil',
+      tiempoEstimado: '2–3 días',
+      altitud: '4600+ msnm',
+      acceso: 'Expedición / guía',
+    ),
+    ModeloLugar(
+      id: 'toro_pueblo_chumbivilcas',
+      nombre: 'Toropukllay (ensayo)',
+      descripcion:
+          'Ensayo de toros a pie en Chumbivilcas: fuerza, música y orgullo de pueblo.',
+      imagenUrl: CatalogoImagenesHaku.u30,
+      categoria: CategoriaLugar.magico,
+      provincia: 'Chumbivilcas',
+      distrito: 'Santo Tomás',
+      distanciaKm: 185,
+      calificacion: 4.6,
+      nivelExploracion: NivelExploracion.nuevoEnHaku,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Tarde',
+      altitud: '3700 msnm',
+      acceso: 'Fiesta local',
+    ),
+    ModeloLugar(
+      id: 'sillustani_espinar',
+      nombre: 'Chullpas de Espinar',
+      descripcion:
+          'Torres funerarias y viento de puna. Altura real: anda despacio.',
+      imagenUrl: CatalogoImagenesHaku.u31,
+      categoria: CategoriaLugar.cultura,
+      provincia: 'Espinar',
+      distrito: 'Yauri',
+      distanciaKm: 250,
+      calificacion: 4.5,
+      nivelExploracion: NivelExploracion.pocoExplorado,
+      dificultad: 'Moderada',
+      tiempoEstimado: 'Medio día',
+      altitud: '4000 msnm',
+      acceso: 'Taxi desde Yauri',
+    ),
+    ModeloLugar(
+      id: 'laguna_langui_layo',
+      nombre: 'Laguna Langui–Layo',
+      descripcion:
+          'Espejo alto entre Canas y Espinar: trucha, viento y cielo abierto.',
+      imagenUrl: CatalogoImagenesHaku.u32,
+      categoria: CategoriaLugar.naturaleza,
+      provincia: 'Espinar',
+      distrito: 'Yauri',
+      distanciaKm: 220,
+      calificacion: 4.4,
+      nivelExploracion: NivelExploracion.enCrecimiento,
+      dificultad: 'Fácil',
+      tiempoEstimado: 'Día',
+      altitud: '3950 msnm',
+      acceso: 'Carretera Sicuani–Yauri',
+    ),
   ];
 
   List<ModeloLugar> todos() {
@@ -583,11 +805,31 @@ class LugaresDataSourceLocal {
     return conFecha;
   }
 
-  ModeloLugar sorpresa({Set<CategoriaLugar> intereses = const {}}) {
-    final pool = intereses.isEmpty ? pocoExplorados() : porIntereses(intereses);
-    final base = pool.isEmpty ? todos() : pool;
-    base.shuffle();
-    return base.first;
+  ModeloLugar sorpresa({
+    Set<CategoriaLugar> intereses = const {},
+    String? evitarId,
+    String? preferirProvincia,
+  }) {
+    var pool = intereses.isEmpty ? pocoExplorados() : porIntereses(intereses);
+    if (pool.isEmpty) pool = todos();
+    if (preferirProvincia != null && preferirProvincia.isNotEmpty) {
+      final enProv = pool
+          .where((l) => l.provincia == preferirProvincia)
+          .toList();
+      if (enProv.isNotEmpty) pool = enProv;
+    }
+    if (evitarId != null && pool.length > 1) {
+      pool = pool.where((l) => l.id != evitarId).toList();
+    }
+    // Prefiere provincias con pocas fichas (simula “hueco” real).
+    pool = [...pool]..sort((a, b) {
+      final ca = todos().where((l) => l.provincia == a.provincia).length;
+      final cb = todos().where((l) => l.provincia == b.provincia).length;
+      return ca.compareTo(cb);
+    });
+    final top = pool.take((pool.length / 2).ceil().clamp(1, pool.length));
+    final elegibles = top.toList()..shuffle();
+    return elegibles.first;
   }
 
   void agregar(ModeloLugar lugar) {

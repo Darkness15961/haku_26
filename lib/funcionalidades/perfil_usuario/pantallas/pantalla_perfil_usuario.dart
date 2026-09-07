@@ -13,7 +13,7 @@ import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
-import '../../lugares/proveedores/proveedor_explora_ui.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
@@ -533,7 +533,13 @@ class _ContenidoPerfil extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () => irAExplora(ref, modo: ModoExplora.rutas),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PantallaRutas(),
+                  ),
+                );
+              },
               style: TextButton.styleFrom(
                 foregroundColor: PaletaRutas.oro,
                 padding: EdgeInsets.zero,
