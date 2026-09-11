@@ -167,6 +167,35 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                                 publicaciones: misPosts,
                               ),
                       ),
+                      if (sesion.autenticado) ...[
+                        const SizedBox(height: 28),
+                        Material(
+                          color: PaletaRutas.carbon,
+                          borderRadius: BorderRadius.circular(14),
+                          child: ListTile(
+                            onTap: () async {
+                              await ref
+                                  .read(sesionProvider.notifier)
+                                  .cerrarSesion();
+                            },
+                            leading: const Icon(
+                              Icons.logout_rounded,
+                              color: PaletaRutas.piedra,
+                            ),
+                            title: Text(
+                              'Cerrar sesión',
+                              style: TipografiaHaku.interfaz(
+                                fontWeight: FontWeight.w700,
+                                color: PaletaRutas.piedra,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.chevron_right,
+                              color: PaletaRutas.plomo,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

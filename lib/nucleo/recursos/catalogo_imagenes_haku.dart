@@ -201,7 +201,10 @@ abstract final class CatalogoImagenesHaku {
 
   static String resolverAvatar(String? url) {
     if (url == null || url.isEmpty) return avatar;
-    if (url.startsWith('http')) return avatar;
+    // URLs remotas (Storage / S3 / MinIO) se muestran tal cual.
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (esLocal(url)) return url;
+    // Archivo local (file path) también válido para previews.
     return url;
   }
 

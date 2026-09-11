@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
+import '../../../nucleo/supabase/config_supabase.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../datos/nacionalidad_datasource.dart';
+import '../dominio/modelos/modelo_nacionalidad.dart';
+import '../dominio/servicios/servicio_auth_supabase.dart';
 import '../proveedores/proveedor_sesion.dart';
+import '../widgets/selector_nacionalidad.dart';
 import 'pantalla_iniciar_sesion.dart';
 
-enum TipoDocumentoRegistro { dni, carnetExtranjeria }
-
-/// Registro con DNI / carnet, usuario, correo y contraseñas.
+/// Registro MVP alineado a `public.usuario`.
+/// Campos: nombres, apellidos, nickname, correo, contraseñas ×2, nacionalidad.
+/// Sin foto ni documento (después).
 class PantallaRegistro extends ConsumerStatefulWidget {
   const PantallaRegistro({super.key});
 
@@ -19,35 +25,139 @@ class PantallaRegistro extends ConsumerStatefulWidget {
 }
 
 class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
-  final _docCtrl = TextEditingController();
-  final _usuarioCtrl = TextEditingController();
+  final _nombresCtrl = TextEditingController();
+  final _apellidosCtrl = TextEditingController();
+  final _nickCtrl = TextEditingController();
   final _correoCtrl = TextEditingController();
   final _claveCtrl = TextEditingController();
   final _clave2Ctrl = TextEditingController();
-  TipoDocumentoRegistro _tipoDoc = TipoDocumentoRegistro.dni;
+  final _auth = ServicioAuthSupabase();
+  final _nacionalidadesDs = NacionalidadDataSource();
+
   bool _ocultar1 = true;
   bool _ocultar2 = true;
   bool _cargando = false;
+  bool _cargandoNac = true;
+  String? _errorNac;
+  List<ModeloNacionalidad> _nacionalidades = const [];
+  ModeloNacionalidad? _nacionalidad;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarNacionalidades();
+  }
 
   @override
   void dispose() {
-    _docCtrl.dispose();
-    _usuarioCtrl.dispose();
+    _nombresCtrl.dispose();
+    _apellidosCtrl.dispose();
+    _nickCtrl.dispose();
     _correoCtrl.dispose();
     _claveCtrl.dispose();
     _clave2Ctrl.dispose();
     super.dispose();
   }
 
+  Future<void> _cargarNacionalidades() async {
+    setState(() {
+      _cargandoNac = true;
+      _errorNac = null;
+    });
+    try {
+      if (!supabaseListo) {
+        throw StateError('Supabase no listo');
+      }
+      final lista = await _nacionalidadesDs.listar();
+      if (!mounted) return;
+      if (lista.isEmpty) {
+        setState(() {
+          _nacionalidades = const [];
+          _nacionalidad = null;
+          _cargandoNac = false;
+          _errorNac =
+              'Catálogo vacío en el servidor. Semilla public.nacionalidad.';
+        });
+        return;
+      }
+      setState(() {
+        _nacionalidades = lista;
+        _nacionalidad = NacionalidadDataSource.sugerida(
+          lista,
+          preferirId: ConfigSupabase.nacionalidadIdDefault,
+        );
+        _cargandoNac = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargandoNac = false;
+        _errorNac = 'No se pudo cargar nacionalidades';
+      });
+      debugPrint('Nacionalidades: $e');
+    }
+  }
+
+  Future<void> _abrirNacionalidad() async {
+    if (_nacionalidades.isEmpty) {
+      _aviso(_errorNac ?? 'Sin nacionalidades disponibles');
+      await _cargarNacionalidades();
+      return;
+    }
+    final elegida = await abrirBusquedaNacionalidad(
+      context,
+      opciones: _nacionalidades,
+      actual: _nacionalidad,
+    );
+    if (elegida != null && mounted) {
+      setState(() => _nacionalidad = elegida);
+    }
+  }
+
   Future<void> _crear() async {
-    final doc = _docCtrl.text.trim();
-    final usuario = _usuarioCtrl.text.trim();
+    final nombres = _nombresCtrl.text.trim();
+    final apellidos = _apellidosCtrl.text.trim();
+    final nickRaw = _nickCtrl.text.trim();
     final correo = _correoCtrl.text.trim();
     final clave = _claveCtrl.text;
     final clave2 = _clave2Ctrl.text;
+    final nac = _nacionalidad;
 
-    if (doc.isEmpty || usuario.isEmpty || correo.isEmpty || clave.isEmpty) {
+    if (nombres.isEmpty ||
+        apellidos.isEmpty ||
+        nickRaw.isEmpty ||
+        correo.isEmpty ||
+        clave.isEmpty) {
       _aviso('Completa todos los campos');
+      return;
+    }
+    if (nac == null) {
+      _aviso('Elige tu nacionalidad');
+      return;
+    }
+    if (nombres.length > 100 || apellidos.length > 100) {
+      _aviso('Nombres y apellidos: máximo 100 caracteres');
+      return;
+    }
+    if (!_correoOk(correo)) {
+      _aviso('Ingresa un correo válido');
+      return;
+    }
+    if (correo.length > 255) {
+      _aviso('El correo es demasiado largo');
+      return;
+    }
+    final nick = _normalizarNick(nickRaw);
+    if (nick.length < 3) {
+      _aviso('El nickname debe tener al menos 3 caracteres');
+      return;
+    }
+    if (nick.length > 50) {
+      _aviso('El nickname puede tener máximo 50 caracteres');
+      return;
+    }
+    if (!_nickOk(nick)) {
+      _aviso('Nickname: solo letras, números y _');
       return;
     }
     if (clave != clave2) {
@@ -58,39 +168,85 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
       _aviso('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+    if (ConfigSupabase.url.isEmpty || ConfigSupabase.anonKey.isEmpty) {
+      _aviso('Supabase no está configurado (URL / anon key)');
+      return;
+    }
+    if (!supabaseListo) {
+      _aviso(
+        'No hay conexión con Auth. Revisa la configuración / reinicia la app.',
+      );
+      return;
+    }
 
     setState(() => _cargando = true);
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
+    try {
+      final resultado = await _auth.registrarConCorreo(
+        correo: correo,
+        clave: clave,
+        nombreNick: nick,
+        nombres: nombres,
+        apellidos: apellidos,
+        nacionalidadId: nac.id,
+      );
 
-    ref.read(sesionProvider.notifier).iniciarSesion(
-          correo: correo,
-          nombreUsuario: usuario,
-          documento: doc,
-          tipoDocumento: _tipoDoc == TipoDocumentoRegistro.dni
-              ? 'DNI'
-              : 'Carnet de extranjería',
+      if (!resultado.tieneSesion) {
+        if (!mounted) return;
+        _aviso(
+          'Cuenta creada. Confirma el correo e inicia sesión '
+          '(el servidor aún pide verificación).',
         );
-    await ref.read(almacenFeedProvider.notifier).cargar();
-    if (!mounted) return;
-    setState(() => _cargando = false);
-    Navigator.of(context).pop(true);
+        return;
+      }
+      await ref
+          .read(sesionProvider.notifier)
+          .sincronizarDesdeAuth(resultado.usuario);
+      await ref.read(almacenFeedProvider.notifier).cargar();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _aviso(e.message);
+    } catch (e) {
+      if (!mounted) return;
+      _aviso('No se pudo registrar. Revisa conexión y configuración.');
+      debugPrint('Registro: $e');
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   Future<void> _google() async {
-    setState(() => _cargando = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    await ref.read(sesionProvider.notifier).iniciarConGoogle();
-    await ref.read(almacenFeedProvider.notifier).cargar();
-    await ref.read(metricasDescubrimientoProvider.notifier).reiniciarDemo();
-    if (!mounted) return;
-    setState(() => _cargando = false);
-    Navigator.of(context).pop(true);
+    _aviso('Google OAuth llega en el Bloque B');
   }
 
   void _aviso(String texto) {
     mostrarSnackHaku(context, texto);
+  }
+
+  static String _normalizarNick(String raw) {
+    var n = raw.trim();
+    if (n.startsWith('@')) n = n.substring(1);
+    return n;
+  }
+
+  static bool _nickOk(String nick) {
+    return RegExp(r'^[A-Za-z0-9_]+$').hasMatch(nick);
+  }
+
+  static bool _correoOk(String correo) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(correo);
+  }
+
+  Widget _etiqueta(String texto) {
+    return Text(
+      texto,
+      style: TipografiaHaku.interfaz(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: PaletaRutas.piedra,
+      ),
+    );
   }
 
   @override
@@ -136,294 +292,223 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(20, 18, 20, bottom),
                 children: [
-                  Text(
-                    'Documento',
+                  _etiqueta('Nombres'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _nombresCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
                     style: TipografiaHaku.interfaz(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                       color: PaletaRutas.piedra,
                     ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      'Tus nombres',
+                      icono: Icons.badge_outlined,
+                    ),
                   ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ChipDoc(
-                            etiqueta: 'DNI',
-                            activo: _tipoDoc == TipoDocumentoRegistro.dni,
-                            onTap: () => setState(
-                              () => _tipoDoc = TipoDocumentoRegistro.dni,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ChipDoc(
-                            etiqueta: 'Carnet de extranjería',
-                            activo: _tipoDoc ==
-                                TipoDocumentoRegistro.carnetExtranjeria,
-                            onTap: () => setState(
-                              () => _tipoDoc =
-                                  TipoDocumentoRegistro.carnetExtranjeria,
-                            ),
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 14),
+                  _etiqueta('Apellidos'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _apellidosCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Número de documento',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      'Tus apellidos',
+                      icono: Icons.badge_outlined,
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  _etiqueta('Nickname'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _nickCtrl,
+                    textInputAction: TextInputAction.next,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
+                    ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      '@cómo te ven en HAKU',
+                      icono: Icons.alternate_email_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _etiqueta('Correo electrónico'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _correoCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
+                    ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      'tu@correo.com',
+                      icono: Icons.mail_outline_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _etiqueta('Nacionalidad'),
+                  const SizedBox(height: 6),
+                  SelectorNacionalidad(
+                    seleccionada: _nacionalidad,
+                    cargando: _cargandoNac,
+                    error: _errorNac,
+                    onTap: _abrirNacionalidad,
+                  ),
+                  if (_errorNac != null && !_cargandoNac) ...[
                     const SizedBox(height: 6),
-                    TextField(
-                      controller: _docCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 14,
-                        color: PaletaRutas.piedra,
-                      ),
-                      cursorColor: PaletaRutas.oro,
-                      decoration: decoracionCampoAuth(
-                        _tipoDoc == TipoDocumentoRegistro.dni
-                            ? '8 dígitos'
-                            : 'Número de carnet',
-                        icono: Icons.badge_outlined,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Nombre de usuario',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _usuarioCtrl,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 14,
-                        color: PaletaRutas.piedra,
-                      ),
-                      cursorColor: PaletaRutas.oro,
-                      decoration: decoracionCampoAuth(
-                        '@tuusuario',
-                        icono: Icons.person_outline_rounded,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Correo',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _correoCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 14,
-                        color: PaletaRutas.piedra,
-                      ),
-                      cursorColor: PaletaRutas.oro,
-                      decoration: decoracionCampoAuth(
-                        'tu@correo.com',
-                        icono: Icons.mail_outline_rounded,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Contraseña',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _claveCtrl,
-                      obscureText: _ocultar1,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 14,
-                        color: PaletaRutas.piedra,
-                      ),
-                      cursorColor: PaletaRutas.oro,
-                      decoration: decoracionCampoAuth(
-                        'Mínimo 6 caracteres',
-                        icono: Icons.lock_outline_rounded,
-                        suffix: IconButton(
-                          onPressed: () =>
-                              setState(() => _ocultar1 = !_ocultar1),
-                          icon: Icon(
-                            _ocultar1
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: PaletaRutas.plomoClaro,
-                          ),
+                    TextButton(
+                      onPressed: _cargarNacionalidades,
+                      child: Text(
+                        'Reintentar catálogo',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 12,
+                          color: PaletaRutas.oro,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Confirmar contraseña',
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _clave2Ctrl,
-                      obscureText: _ocultar2,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 14,
-                        color: PaletaRutas.piedra,
-                      ),
-                      cursorColor: PaletaRutas.oro,
-                      decoration: decoracionCampoAuth(
-                        'Repite tu contraseña',
-                        icono: Icons.lock_outline_rounded,
-                        suffix: IconButton(
-                          onPressed: () =>
-                              setState(() => _ocultar2 = !_ocultar2),
-                          icon: Icon(
-                            _ocultar2
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: PaletaRutas.plomoClaro,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      height: 50,
-                      child: FilledButton(
-                        onPressed: _cargando ? null : _crear,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: PaletaRutas.oro,
-                          foregroundColor: PaletaRutas.ink,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _cargando
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: PaletaRutas.ink,
-                                ),
-                              )
-                            : Text(
-                                'Crear cuenta',
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: PaletaRutas.ink,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 50,
-                      child: OutlinedButton.icon(
-                        onPressed: _cargando ? null : _google,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: PaletaRutas.piedra,
-                          side: BorderSide(
-                            color: PaletaRutas.plomoOscuro.withValues(
-                              alpha: 0.7,
-                            ),
-                          ),
-                          backgroundColor: PaletaRutas.carbon,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                        label: Text(
-                          'Continuar con Google',
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: PaletaRutas.piedra,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Términos y Condiciones',
-                      textAlign: TextAlign.center,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 11,
-                        color: PaletaRutas.plomo,
                       ),
                     ),
                   ],
-                ),
+                  const SizedBox(height: 14),
+                  _etiqueta('Contraseña'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _claveCtrl,
+                    obscureText: _ocultar1,
+                    textInputAction: TextInputAction.next,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
+                    ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      'Mínimo 6 caracteres',
+                      icono: Icons.lock_outline_rounded,
+                      suffix: IconButton(
+                        onPressed: () =>
+                            setState(() => _ocultar1 = !_ocultar1),
+                        icon: Icon(
+                          _ocultar1
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _etiqueta('Confirmar contraseña'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _clave2Ctrl,
+                    obscureText: _ocultar2,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!_cargando) _crear();
+                    },
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      color: PaletaRutas.piedra,
+                    ),
+                    cursorColor: PaletaRutas.oro,
+                    decoration: decoracionCampoAuth(
+                      'Repite tu contraseña',
+                      icono: Icons.lock_outline_rounded,
+                      suffix: IconButton(
+                        onPressed: () =>
+                            setState(() => _ocultar2 = !_ocultar2),
+                        icon: Icon(
+                          _ocultar2
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _cargando ? null : _crear,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PaletaRutas.oro,
+                        foregroundColor: PaletaRutas.ink,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _cargando
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: PaletaRutas.ink,
+                              ),
+                            )
+                          : Text(
+                              'Crear cuenta',
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: PaletaRutas.ink,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: _cargando ? null : _google,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PaletaRutas.piedra,
+                        side: BorderSide(
+                          color: PaletaRutas.plomoOscuro.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        backgroundColor: PaletaRutas.carbon,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+                      label: Text(
+                        'Continuar con Google',
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: PaletaRutas.piedra,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Términos y Condiciones',
+                    textAlign: TextAlign.center,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      color: PaletaRutas.plomo,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-    );
-  }
-}
-
-class _ChipDoc extends StatelessWidget {
-  final String etiqueta;
-  final bool activo;
-  final VoidCallback onTap;
-
-  const _ChipDoc({
-    required this.etiqueta,
-    required this.activo,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: activo
-                ? PaletaRutas.oro.withValues(alpha: 0.18)
-                : PaletaRutas.carbon,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: activo
-                  ? PaletaRutas.oro
-                  : PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
             ),
-          ),
-          child: Text(
-            etiqueta,
-            textAlign: TextAlign.center,
-            style: TipografiaHaku.interfaz(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: activo ? PaletaRutas.oro : PaletaRutas.plomoClaro,
-            ),
-          ),
+          ],
         ),
       ),
     );

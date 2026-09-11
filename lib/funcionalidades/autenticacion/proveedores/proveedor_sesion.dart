@@ -1,14 +1,16 @@
-import 'dart:convert';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
-
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../dominio/servicios/servicio_auth_supabase.dart';
 
-/// Usuario autenticado (demo local persistente).
+/// Usuario en sesión de app (id = auth.users.id / public.usuario.id).
 class UsuarioSesion {
   final String id;
   final String nombreUsuario;
@@ -16,8 +18,9 @@ class UsuarioSesion {
   final String? avatarUrl;
   final String? bio;
   final String? provincia;
-  final String? documento;
-  final String? tipoDocumento;
+  final String? nombres;
+  final String? apellidos;
+  final int? nacionalidadId;
 
   const UsuarioSesion({
     required this.id,
@@ -26,11 +29,12 @@ class UsuarioSesion {
     this.avatarUrl,
     this.bio,
     this.provincia,
-    this.documento,
-    this.tipoDocumento,
+    this.nombres,
+    this.apellidos,
+    this.nacionalidadId,
   });
 
-  /// Usuario demo al iniciar con Google.
+  /// Placeholder UI hasta Bloque B (Google).
   static const demoGoogle = UsuarioSesion(
     id: AlmacenFeedNotifier.idUsuarioLocal,
     nombreUsuario: 'Lucía',
@@ -40,27 +44,27 @@ class UsuarioSesion {
     provincia: 'Cusco',
   );
 
-  Map<String, dynamic> aMapa() => {
-        'id': id,
-        'nombre_usuario': nombreUsuario,
-        'correo': correo,
-        'avatar_url': avatarUrl,
-        'bio': bio,
-        'provincia': provincia,
-        'documento': documento,
-        'tipo_documento': tipoDocumento,
-      };
-
-  factory UsuarioSesion.desdeMapa(Map<String, dynamic> m) {
+  UsuarioSesion copyWith({
+    String? id,
+    String? nombreUsuario,
+    String? correo,
+    String? avatarUrl,
+    String? bio,
+    String? provincia,
+    String? nombres,
+    String? apellidos,
+    int? nacionalidadId,
+  }) {
     return UsuarioSesion(
-      id: m['id'] as String? ?? AlmacenFeedNotifier.idUsuarioLocal,
-      nombreUsuario: m['nombre_usuario'] as String? ?? CopyHaku.nombreDefault,
-      correo: m['correo'] as String? ?? '',
-      avatarUrl: CatalogoImagenesHaku.resolverAvatar(m['avatar_url'] as String?),
-      bio: m['bio'] as String?,
-      provincia: m['provincia'] as String?,
-      documento: m['documento'] as String?,
-      tipoDocumento: m['tipo_documento'] as String?,
+      id: id ?? this.id,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+      correo: correo ?? this.correo,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bio: bio ?? this.bio,
+      provincia: provincia ?? this.provincia,
+      nombres: nombres ?? this.nombres,
+      apellidos: apellidos ?? this.apellidos,
+      nacionalidadId: nacionalidadId ?? this.nacionalidadId,
     );
   }
 }
@@ -90,92 +94,131 @@ class EstadoSesion {
   }
 }
 
+/// Sesión real: fuente de verdad = Supabase Auth (JWT).
 class SesionNotifier extends StateNotifier<EstadoSesion> {
-  static const _clave = 'haku_sesion_v1';
-
   SesionNotifier() : super(const EstadoSesion()) {
-    _restaurar();
+    _iniciar();
   }
 
-  Future<void> _restaurar() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_clave);
-    if (raw == null || raw.isEmpty) {
-      state = state.copyWith(listo: true);
-      return;
-    }
+  final _auth = ServicioAuthSupabase();
+  StreamSubscription<AuthState>? _authSub;
+
+  Future<void> _iniciar() async {
     try {
-      final m = jsonDecode(raw) as Map<String, dynamic>;
-      final u = UsuarioSesion.desdeMapa(m);
-      final nombreLegacy = u.nombreUsuario.trim();
-      final esLegacyNombre = nombreLegacy == 'Explorador Google' ||
-          _tieneApellidoDemo(nombreLegacy) ||
-          (u.avatarUrl == null || u.avatarUrl!.isEmpty);
-      final base = esLegacyNombre ? UsuarioSesion.demoGoogle : u;
-      state = EstadoSesion(
-        autenticado: true,
-        usuario: UsuarioSesion(
-          id: AlmacenFeedNotifier.idUsuarioLocal,
-          nombreUsuario: esLegacyNombre
-              ? UsuarioSesion.demoGoogle.nombreUsuario
-              : u.nombreUsuario,
-          correo: u.correo.isNotEmpty
-              ? u.correo
-              : UsuarioSesion.demoGoogle.correo,
-          avatarUrl: base.avatarUrl ?? UsuarioSesion.demoGoogle.avatarUrl,
-          bio: base.bio ?? UsuarioSesion.demoGoogle.bio,
-          provincia: base.provincia ?? UsuarioSesion.demoGoogle.provincia,
-          documento: u.documento,
-          tipoDocumento: u.tipoDocumento,
-        ),
-        listo: true,
-      );
-      if (esLegacyNombre) await _persistir();
-    } catch (_) {
-      state = state.copyWith(listo: true);
+      final session = clienteSupabase.auth.currentSession;
+      if (session?.user != null) {
+        await sincronizarDesdeAuth(session!.user);
+      } else {
+        state = const EstadoSesion(listo: true);
+      }
+
+      _authSub = clienteSupabase.auth.onAuthStateChange.listen((data) async {
+        final event = data.event;
+        final user = data.session?.user;
+        if (event == AuthChangeEvent.signedOut) {
+          state = const EstadoSesion(listo: true);
+          return;
+        }
+        if (event == AuthChangeEvent.signedIn ||
+            event == AuthChangeEvent.tokenRefreshed ||
+            event == AuthChangeEvent.userUpdated ||
+            event == AuthChangeEvent.initialSession) {
+          if (user != null) {
+            await sincronizarDesdeAuth(user);
+          } else {
+            state = const EstadoSesion(listo: true);
+          }
+        }
+      });
+    } catch (e, st) {
+      debugPrint('Sesión Auth: $e');
+      debugPrint('$st');
+      state = const EstadoSesion(listo: true);
     }
   }
 
-  Future<void> _persistir() async {
-    final prefs = await SharedPreferences.getInstance();
-    final u = state.usuario;
-    if (!state.autenticado || u == null) {
-      await prefs.remove(_clave);
-      return;
+  /// Hidrata UI desde Auth (+ fila `public.usuario` si RLS lo permite).
+  Future<void> sincronizarDesdeAuth(User user) async {
+    final nickMeta = (user.userMetadata?['nombre_nick'] as String?)?.trim();
+    var nick = (nickMeta != null && nickMeta.isNotEmpty)
+        ? nickMeta
+        : (user.email?.split('@').first ?? 'usuario');
+    var avatar = user.userMetadata?['avatar_url'] as String?;
+    var correo = user.email ?? '';
+    String? nombres;
+    String? apellidos;
+    int? nacionalidadId;
+
+    try {
+      final row = await clienteSupabase
+          .from('usuario')
+          .select(
+            'nombre_nick, foto_perfil, correo, nombres, apellidos, nacionalidad_id',
+          )
+          .eq('id', user.id)
+          .maybeSingle();
+      if (row != null) {
+        final n = (row['nombre_nick'] as String?)?.trim();
+        if (n != null && n.isNotEmpty) nick = n;
+        final foto = row['foto_perfil'] as String?;
+        if (foto != null && foto.isNotEmpty) avatar = foto;
+        final c = (row['correo'] as String?)?.trim();
+        if (c != null && c.isNotEmpty) correo = c;
+        nombres = (row['nombres'] as String?)?.trim();
+        apellidos = (row['apellidos'] as String?)?.trim();
+        final nacRaw = row['nacionalidad_id'];
+        if (nacRaw is int) {
+          nacionalidadId = nacRaw;
+        } else if (nacRaw != null) {
+          nacionalidadId = int.tryParse('$nacRaw');
+        }
+      }
+    } catch (e) {
+      debugPrint('Perfil public.usuario: $e');
     }
-    await prefs.setString(_clave, jsonEncode(u.aMapa()));
+
+    final avatarResuelto = CatalogoImagenesHaku.resolverAvatar(avatar);
+
+    state = EstadoSesion(
+      autenticado: true,
+      listo: true,
+      usuario: UsuarioSesion(
+        id: user.id,
+        nombreUsuario: nick,
+        correo: correo,
+        avatarUrl: avatarResuelto,
+        bio: CopyHaku.bioDefault,
+        provincia: 'Cusco',
+        nombres: nombres,
+        apellidos: apellidos,
+        nacionalidadId: nacionalidadId,
+      ),
+    );
   }
 
-  Future<void> iniciarSesion({
+  /// Tras signUp / signIn explícito (misma hidratación).
+  Future<void> aplicarSesionAuth({
+    required String id,
     required String correo,
     required String nombreUsuario,
-    String? documento,
-    String? tipoDocumento,
+    String? avatarUrl,
   }) async {
     state = EstadoSesion(
       autenticado: true,
       listo: true,
       usuario: UsuarioSesion(
-        id: AlmacenFeedNotifier.idUsuarioLocal,
+        id: id,
         nombreUsuario: nombreUsuario,
         correo: correo,
-        avatarUrl: UsuarioSesion.demoGoogle.avatarUrl,
+        avatarUrl: avatarUrl ?? CatalogoImagenesHaku.avatar,
         bio: CopyHaku.bioDefault,
         provincia: 'Cusco',
-        documento: documento,
-        tipoDocumento: tipoDocumento,
       ),
     );
-    await _persistir();
-  }
-
-  Future<void> iniciarConGoogle() async {
-    state = const EstadoSesion(
-      autenticado: true,
-      listo: true,
-      usuario: UsuarioSesion.demoGoogle,
-    );
-    await _persistir();
+    final user = _auth.usuarioActual;
+    if (user != null && user.id == id) {
+      await sincronizarDesdeAuth(user);
+    }
   }
 
   Future<void> actualizarNombre(String nombre) async {
@@ -184,41 +227,29 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     state = EstadoSesion(
       autenticado: true,
       listo: true,
-      usuario: UsuarioSesion(
-        id: AlmacenFeedNotifier.idUsuarioLocal,
-        nombreUsuario: nombre.trim(),
-        correo: u.correo,
-        avatarUrl: u.avatarUrl,
-        bio: u.bio,
-        provincia: u.provincia,
-        documento: u.documento,
-        tipoDocumento: u.tipoDocumento,
-      ),
+      usuario: u.copyWith(nombreUsuario: nombre.trim()),
     );
-    await _persistir();
   }
 
   Future<void> cerrarSesion() async {
+    try {
+      await _auth.cerrarSesion();
+    } catch (e) {
+      debugPrint('signOut: $e');
+    }
     state = const EstadoSesion(listo: true);
-    await _persistir();
   }
-}
 
-bool _tieneApellidoDemo(String nombre) {
-  final n = nombre.toLowerCase();
-  const apellidos = [
-    'quispe',
-    'mamani',
-    'ríos',
-    'rios',
-    'andes',
-    ' trek',
-    'community',
-  ];
-  for (final a in apellidos) {
-    if (n.contains(a.trim())) return true;
+  /// Solo Bloque B — no simular login Google aquí.
+  Future<void> iniciarConGoogle() async {
+    throw UnsupportedError('Google OAuth: Bloque B');
   }
-  return false;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
 }
 
 final sesionProvider =

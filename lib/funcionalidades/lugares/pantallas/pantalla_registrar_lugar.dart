@@ -14,7 +14,10 @@ import '../proveedores/proveedor_lugares.dart';
 
 /// Wizard corto: registrar un lugar nuevo (captura Fase 1).
 class PantallaRegistrarLugar extends ConsumerStatefulWidget {
-  const PantallaRegistrarLugar({super.key});
+  const PantallaRegistrarLugar({super.key, this.provinciaInicial});
+
+  /// Provincia sugerida (desde isla/sheet).
+  final String? provinciaInicial;
 
   @override
   ConsumerState<PantallaRegistrarLugar> createState() =>
@@ -66,7 +69,9 @@ class _EstadoPantallaRegistrarLugar
       imagenUrl: _foto?.path ??
           'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
       categoria: _categoria,
-      provincia: 'Cusco',
+      provincia: widget.provinciaInicial?.trim().isNotEmpty == true
+          ? widget.provinciaInicial!.trim()
+          : 'Cusco',
       distrito: _usandoUbicacion ? 'Ubicación actual' : 'Por confirmar',
       distanciaKm: 0,
       calificacion: 5,
@@ -230,6 +235,31 @@ class _EstadoPantallaRegistrarLugar
         return ListView(
           children: [
             Text('Lugar', style: _tituloPaso),
+            if (widget.provinciaInicial?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  avatar: const Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: PaletaRutas.oro,
+                  ),
+                  label: Text(
+                    widget.provinciaInicial!.trim(),
+                    style: TipografiaHaku.interfaz(
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.piedra,
+                      fontSize: 13,
+                    ),
+                  ),
+                  backgroundColor: PaletaRutas.carbon,
+                  side: BorderSide(
+                    color: PaletaRutas.oro.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {
@@ -354,13 +384,14 @@ class _EstadoPantallaRegistrarLugar
 
 Future<void> abrirRegistrarLugarFlow(
   BuildContext context,
-  WidgetRef ref,
-) async {
+  WidgetRef ref, {
+  String? provincia,
+}) async {
   final ok = await asegurarSesion(context, ref);
   if (!ok || !context.mounted) return;
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => const PantallaRegistrarLugar(),
+      builder: (_) => PantallaRegistrarLugar(provinciaInicial: provincia),
     ),
   );
 }

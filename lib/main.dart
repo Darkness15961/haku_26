@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,9 +6,22 @@ import 'funcionalidades/carga_inicial/indice.dart';
 import 'funcionalidades/inicio/indice.dart';
 import 'funcionalidades/rutas/widgets/estilos_rutas.dart';
 import 'nucleo/responsive/lienzo_haku.dart';
+import 'nucleo/supabase/cliente_supabase.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await inicializarSupabase();
+  } catch (e, st) {
+    debugPrint('Supabase init: $e');
+    debugPrint('$st');
+    if (kDebugMode) {
+      debugPrint(
+        'Revisa URL / anon key en lib/nucleo/supabase/config_supabase.dart '
+        'o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY',
+      );
+    }
+  }
   runApp(const ProviderScope(child: AplicacionHaku()));
 }
 

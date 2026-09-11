@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
-import '../../../nucleo/metricas/metricas_descubrimiento.dart';
+import '../dominio/servicios/servicio_auth_supabase.dart';
 import '../proveedores/proveedor_sesion.dart';
 import 'pantalla_recuperar_contrasena.dart';
 import 'pantalla_registro.dart';
@@ -24,6 +26,7 @@ class _EstadoPantallaIniciarSesion
     extends ConsumerState<PantallaIniciarSesion> {
   final _correoCtrl = TextEditingController();
   final _claveCtrl = TextEditingController();
+  final _auth = ServicioAuthSupabase();
   bool _ocultarClave = true;
   bool _cargando = false;
 
@@ -41,29 +44,36 @@ class _EstadoPantallaIniciarSesion
       _aviso('Ingresa correo y contraseña');
       return;
     }
+    if (!supabaseListo) {
+      _aviso('No hay conexión con Auth. Revisa la configuración / reinicia la app.');
+      return;
+    }
     setState(() => _cargando = true);
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
-    await ref.read(sesionProvider.notifier).iniciarSesion(
-          correo: correo,
-          nombreUsuario: correo.split('@').first,
-        );
-    await ref.read(almacenFeedProvider.notifier).cargar();
-    if (!mounted) return;
-    setState(() => _cargando = false);
-    Navigator.of(context).pop(true);
+    try {
+      final resultado = await _auth.iniciarSesionConCorreo(
+        correo: correo,
+        clave: clave,
+      );
+      await ref
+          .read(sesionProvider.notifier)
+          .sincronizarDesdeAuth(resultado.usuario);
+      await ref.read(almacenFeedProvider.notifier).cargar();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _aviso(e.message);
+    } catch (e) {
+      if (!mounted) return;
+      _aviso('No se pudo iniciar sesión. Revisa conexión y credenciales.');
+      debugPrint('Login: $e');
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   Future<void> _google() async {
-    setState(() => _cargando = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    await ref.read(sesionProvider.notifier).iniciarConGoogle();
-    await ref.read(almacenFeedProvider.notifier).cargar();
-    await ref.read(metricasDescubrimientoProvider.notifier).reiniciarDemo();
-    if (!mounted) return;
-    setState(() => _cargando = false);
-    Navigator.of(context).pop(true);
+    _aviso('Google OAuth llega en el Bloque B');
   }
 
   void _aviso(String texto) {
@@ -318,7 +328,7 @@ class _EstadoPantallaIniciarSesion
                                 builder: (_) => const PantallaRegistro(),
                               ),
                             );
-                            if (!mounted) return;
+                            if (!context.mounted) return;
                             if (ok == true) {
                               Navigator.of(context).pop(true);
                             }
