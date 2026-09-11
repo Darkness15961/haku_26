@@ -10,6 +10,9 @@ import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/nacionalidad_datasource.dart';
 import '../dominio/modelos/modelo_nacionalidad.dart';
 import '../dominio/servicios/servicio_auth_supabase.dart';
+import '../dialogo_cuenta_existente.dart';
+import '../flujo_google.dart';
+import '../mensajes_auth_haku.dart';
 import '../proveedores/proveedor_sesion.dart';
 import '../widgets/selector_nacionalidad.dart';
 import 'pantalla_iniciar_sesion.dart';
@@ -206,7 +209,13 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
       Navigator.of(context).pop(true);
     } on AuthException catch (e) {
       if (!mounted) return;
-      _aviso(e.message);
+      if (MensajesAuthHaku.esCorreoYaRegistrado(e)) {
+        await mostrarDialogoCorreoYaRegistrado(context);
+        return;
+      }
+      _aviso(
+        MensajesAuthHaku.desdeAuthException(e, ctx: AuthContexto.registro),
+      );
     } catch (e) {
       if (!mounted) return;
       _aviso('No se pudo registrar. Revisa conexión y configuración.');
@@ -217,7 +226,14 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
   }
 
   Future<void> _google() async {
-    _aviso('Google OAuth llega en el Bloque B');
+    setState(() => _cargando = true);
+    try {
+      final ok = await completarLoginConGoogle(context, ref, avisar: _aviso);
+      if (!mounted) return;
+      if (ok) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   void _aviso(String texto) {
@@ -396,8 +412,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       'Mínimo 6 caracteres',
                       icono: Icons.lock_outline_rounded,
                       suffix: IconButton(
-                        onPressed: () =>
-                            setState(() => _ocultar1 = !_ocultar1),
+                        onPressed: () => setState(() => _ocultar1 = !_ocultar1),
                         icon: Icon(
                           _ocultar1
                               ? Icons.visibility_outlined
@@ -426,8 +441,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       'Repite tu contraseña',
                       icono: Icons.lock_outline_rounded,
                       suffix: IconButton(
-                        onPressed: () =>
-                            setState(() => _ocultar2 = !_ocultar2),
+                        onPressed: () => setState(() => _ocultar2 = !_ocultar2),
                         icon: Icon(
                           _ocultar2
                               ? Icons.visibility_outlined
@@ -469,6 +483,31 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'o',
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 12,
+                            color: PaletaRutas.plomo,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   SizedBox(
                     height: 50,
                     child: OutlinedButton.icon(
@@ -476,9 +515,7 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: PaletaRutas.piedra,
                         side: BorderSide(
-                          color: PaletaRutas.plomoOscuro.withValues(
-                            alpha: 0.7,
-                          ),
+                          color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
                         ),
                         backgroundColor: PaletaRutas.carbon,
                         shape: RoundedRectangleBorder(

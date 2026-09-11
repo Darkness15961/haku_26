@@ -143,20 +143,27 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     var nick = (nickMeta != null && nickMeta.isNotEmpty)
         ? nickMeta
         : (user.email?.split('@').first ?? 'usuario');
-    var avatar = user.userMetadata?['avatar_url'] as String?;
+    var avatar = user.userMetadata?['avatar_url'] as String? ??
+        user.userMetadata?['picture'] as String?;
     var correo = user.email ?? '';
     String? nombres;
     String? apellidos;
     int? nacionalidadId;
 
+    // Tras Google, el trigger puede ir un pelín detrás del JWT.
+    Map<String, dynamic>? row;
     try {
-      final row = await clienteSupabase
-          .from('usuario')
-          .select(
-            'nombre_nick, foto_perfil, correo, nombres, apellidos, nacionalidad_id',
-          )
-          .eq('id', user.id)
-          .maybeSingle();
+      for (var i = 0; i < 4; i++) {
+        row = await clienteSupabase
+            .from('usuario')
+            .select(
+              'nombre_nick, foto_perfil, correo, nombres, apellidos, nacionalidad_id',
+            )
+            .eq('id', user.id)
+            .maybeSingle();
+        if (row != null) break;
+        await Future<void>.delayed(Duration(milliseconds: 150 * (i + 1)));
+      }
       if (row != null) {
         final n = (row['nombre_nick'] as String?)?.trim();
         if (n != null && n.isNotEmpty) nick = n;
@@ -172,6 +179,10 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
         } else if (nacRaw != null) {
           nacionalidadId = int.tryParse('$nacRaw');
         }
+      } else {
+        debugPrint(
+          'Perfil public.usuario aún null tras retries (id=${user.id})',
+        );
       }
     } catch (e) {
       debugPrint('Perfil public.usuario: $e');
@@ -240,9 +251,10 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     state = const EstadoSesion(listo: true);
   }
 
-  /// Solo Bloque B — no simular login Google aquí.
+  /// Google OAuth real (Bloque B). Sin pantalla extra de completar.
   Future<void> iniciarConGoogle() async {
-    throw UnsupportedError('Google OAuth: Bloque B');
+    final resultado = await _auth.iniciarConGoogle();
+    await sincronizarDesdeAuth(resultado.usuario);
   }
 
   @override

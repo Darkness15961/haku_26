@@ -31,9 +31,9 @@ class PerfilUsuarioDb {
 
 /// Actualización de perfil: `public.usuario` + Auth cuando aplica.
 ///
-/// Foto: sube a Storage (hoy bucket Supabase) y guarda **solo la URL** en
-/// `foto_perfil`. Mañana S3/MinIO: cambiar [subirFotoPerfil] y el string URL
-/// sigue siendo el contrato con la BD.
+/// Reglas: updates de ficha con RLS (`auth.uid() = id`). Correo/clave vía SDK Auth.
+/// Foto: Storage (o S3 después) → solo URL en `foto_perfil`.
+/// Ver `docs/fase-autenticacion.md` (Bloque B Etapa 4).
 class ServicioPerfilSupabase {
   ServicioPerfilSupabase({SupabaseClient? cliente})
       : _cliente = cliente ?? clienteSupabase;
@@ -130,6 +130,22 @@ class ServicioPerfilSupabase {
       password: claveActual,
     );
     await _cliente.auth.updateUser(UserAttributes(password: claveNueva));
+  }
+
+  /// Google-only (sesión JWT activa): añade clave sin pedir la actual ni SMTP.
+  /// Luego puede entrar con Google o con correo + esta clave.
+  Future<void> crearContrasena(String claveNueva) async {
+    final session = _cliente.auth.currentSession;
+    if (session == null) {
+      throw const AuthException('Tu sesión expiró. Vuelve a iniciar sesión.');
+    }
+    await _cliente.auth.updateUser(
+      UserAttributes(password: claveNueva),
+    );
+    // Refresca identidades locales (puede aparecer `email` tras set password).
+    try {
+      await _cliente.auth.getUser();
+    } catch (_) {}
   }
 
   /// Sube bytes y devuelve URL pública para guardar en `foto_perfil`.

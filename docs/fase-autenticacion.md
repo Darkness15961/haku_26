@@ -13,7 +13,7 @@ Tú diseñas/aplicas la base en el VPS; el frontend se integra contra lo que exi
 | Pull / push | Tú abres el túnel y ejecutas CLI. No compartir contraseñas del VPS en el chat. |
 | Edge Functions | Se usan **cuando el caso lo pida** (SMTP avanzado, webhooks, jobs). No son requisito del Bloque A. |
 | Decisiones | Lo más beneficioso para el proyecto en ese momento; no “porque es lo más rápido” a ciegas. |
-| SDK oficial | Auth solo con `supabase_flutter` (`signUp`, `signInWithPassword`, `signInWithOAuth`). Sin HTTP manual a GoTrue. |
+| SDK oficial | Auth solo con `supabase_flutter` (`signUp`, `signInWithPassword`, `signInWithIdToken` / Google nativo). Sin HTTP manual a GoTrue. |
 | Perfil público | Lecturas/updates de perfil van a `public.usuario` + RLS, no a `auth.users` desde la app. |
 
 ---
@@ -61,10 +61,10 @@ FASE AUTENTICACIÓN
 │   ├── Etapa 3  Trigger → public.usuario
 │   └── Etapa 4  Login (signInWithPassword + sesión)
 └── BLOQUE B — Google OAuth
-    ├── Etapa 1  GCP + .env VPS + redirect URLs
-    ├── Etapa 2  Deep link Android
-    ├── Etapa 3  signInWithOAuth + completar perfil
-    └── Etapa 4  Reglas de oro / hand-off equipo
+    ├── Etapa 1  GCP + .env VPS + redirect URLs          ← hecha (VPS)
+    ├── Etapa 2  Deep link Android                       ← hecha
+    ├── Etapa 3  signInWithOAuth (sin pantalla extra)    ← hecha
+    └── Etapa 4  Reglas de oro / hand-off                 ← hecha
 ```
 
 **Orden:** cerrar Bloque A usable → luego Bloque B.  
@@ -176,45 +176,108 @@ Empezar **después** de tener Bloque A estable (mismo trigger de perfil).
 
 ## Etapa 1 — Infraestructura y Google Cloud
 
+**Estado: HECHA en VPS** (según equipo). Confirmar que el redirect de app es exactamente `hakuapp://login-callback`.
+
 | Paso | Qué | Estado |
 |------|-----|--------|
-| 1.1 | OAuth Client ID en Google Cloud; redirect URI → GoTrue del VPS | Pendiente |
-| 1.2 | `.env` Docker: habilitar Google + Client ID / Secret | Pendiente |
-| 1.3 | `SITE_URL` + `ADDITIONAL_REDIRECT_URLS` (esquema app, ej. `hakuapp://login-callback`) | Pendiente |
-| 1.4 | `docker compose stop auth` + `up -d` | Pendiente |
+| 1.1 | OAuth Client ID en Google Cloud; redirect URI → GoTrue del VPS | Hecho (VPS) |
+| 1.2 | `.env` Docker: habilitar Google + Client ID / Secret | Hecho (VPS) |
+| 1.3 | `SITE_URL` + `ADDITIONAL_REDIRECT_URLS` incluye `hakuapp://login-callback` | Hecho (VPS) — verificar |
+| 1.4 | `docker compose stop auth` + `up -d` | Hecho (VPS) |
 
 ## Etapa 2 — Deep link Android (frontend)
 
+**Estado: HECHA** en este repo.
+
 | Paso | Qué | Estado |
 |------|-----|--------|
-| 2.1 | `AndroidManifest.xml` | Pendiente |
-| 2.2 | `<intent-filter>` esquema/host acordados | Pendiente |
-| 2.3 | iOS (si aplica más adelante): URL scheme / Associated Domains | Fuera de alcance inmediato |
+| 2.1 | `AndroidManifest.xml` + `INTERNET` | Hecho |
+| 2.2 | `<intent-filter>` `hakuapp` / `login-callback` | Hecho |
+| 2.3 | Constante Flutter `ConfigSupabase.oauthRedirectUri` | Hecho |
+| 2.4 | iOS URL scheme | Fuera de alcance inmediato |
 
 ## Etapa 3 — Flujo en Flutter
 
+**Estado: HECHA** — Google **nativo** (ventana de cuentas Android, no navegador externo).
+
 | Paso | Qué | Estado |
 |------|-----|--------|
-| 3.1 | `signInWithOAuth(Provider.google, redirectTo: …)` | Pendiente |
-| 3.2 | Trigger crea `usuario` con lo que dé Google (nombre/correo/foto) | Depende de A.3 |
-| 3.3 | Pantalla **Completa tu registro** si faltan `nombre_nick` o `nacionalidad_id` (u otros obligatorios) | Pendiente |
+| 3.1 | `google_sign_in` + `signInWithIdToken` (Web Client ID = `GOOGLE_WEB_CLIENT_ID`) | Hecho |
+| 3.1b | Cliente **Android** en Google Cloud: package `com.example.haku` + SHA-1 (debug/release) | Hecho por equipo — verificar |
+| 3.2 | Trigger crea `usuario`: correo, foto Google, nick del correo, PE por defecto | Hecho (`20260911060000_…`) |
+| 3.2b | Nick único si choca (sufijo uuid) | Hecho (`20260911070000_…` — **aplicar `db push`**) |
+| 3.3 | Completar nick/nacionalidad | En **Configuración** (después), no al primer login |
+
+**Por qué el SHA-1 no bastaba solo:** el flujo viejo abría el navegador (`signInWithOAuth`). El SHA-1 solo aplica al login nativo de Google Play Services. Hace falta además el **Web Client ID** en la app (mismo valor que Auth en el VPS).
+
+**Contrato Google → `public.usuario` (trigger):**
+
+| Campo | Origen |
+|-------|--------|
+| correo | Google |
+| foto_perfil | `avatar_url` / `picture` si viene |
+| nombre_nick | Parte antes de `@` (sanitizada) |
+| nombres | Nombre Google si viene; si no, el nick |
+| apellidos | Resto del nombre Google o `N/D` |
+| nacionalidad_id | PE (editable después) |
 
 ## Etapa 4 — Hand-off / reglas de oro
 
-| Regla | Detalle |
-|-------|---------|
-| Solo SDK | Login = métodos oficiales de Supabase Flutter. |
-| Editar perfil | `from('usuario').update(...)` + RLS; no mutar Auth salvo email/password del SDK. |
-| Equipo | Andrea / Saúl: no inventar clientes HTTP a `/auth/v1`. |
+**Estado: HECHA.** Contrato para el equipo (frontend Auth). No inventar clientes HTTP a GoTrue.
 
-**Criterio de salida Bloque B:** Google login → perfil creado o forzado a completar → entrada a la app.
+### Reglas de oro
+
+| # | Regla | Detalle |
+|---|--------|---------|
+| 0 | **1 correo = 1 usuario** | Misma cuenta aunque entre por Google o por contraseña (`auth.identities`). Correo→Google: auto-link. Google→registro correo: error amigable + «Olvidé mi contraseña» / Google. |
+| 1 | Solo SDK | Login/registro/logout/OAuth/reset = `supabase_flutter`. **Prohibido** HTTP manual a `/auth/v1`. |
+| 2 | Perfil en `public.usuario` | Lectura/update de nick, nombres, apellidos, nacionalidad, foto = `from('usuario')` + RLS (`auth.uid() = id`). |
+| 3 | Auth vs perfil | Correo/contraseña → SDK Auth. Datos de ficha → tabla `usuario`. Foto: Storage/S3 → solo URL en `foto_perfil`. |
+| 4 | Google nativo + deep link | Login Google = nativo + idToken. Deep link `hakuapp://login-callback` sigue para recuperar clave / flujos web. Web Client ID en app = mismo del VPS. |
+| 5 | Google sin pantalla extra | Trigger: nick (correo), PE, foto si viene. Nick/nacionalidad en **Configuración**. |
+| 6 | Credenciales | Anon key en cliente OK. **Nunca** `service_role` en la app. |
+
+#### Escenarios 1 correo = 1 usuario (UX)
+
+| Orden | Qué pasa | Frontend |
+|-------|----------|----------|
+| Primero correo → luego Google | Supabase vincula identidad Google a la misma cuenta | Flujo normal |
+| Primero Google → luego «Crear cuenta» con ese correo | Auth: user already registered | Diálogo amigable + ir a login / Olvidé contraseña |
+| Google-only quiere contraseña | Configuración → **Crear contraseña** (`updateUser` con JWT, sin SMTP). Luego Google **o** correo+clave | Misma fila `auth.users` |
+
+### Mapa de archivos (dónde tocar Auth)
+
+| Qué | Dónde |
+|-----|--------|
+| Init Supabase | `lib/nucleo/supabase/cliente_supabase.dart` + `config_supabase.dart` |
+| Correo / Google / sesión SDK | `lib/funcionalidades/autenticacion/dominio/servicios/servicio_auth_supabase.dart` |
+| Flujo UI Google | `lib/funcionalidades/autenticacion/flujo_google.dart` |
+| Estado sesión app | `lib/funcionalidades/autenticacion/proveedores/proveedor_sesion.dart` |
+| Update perfil / foto | `lib/funcionalidades/autenticacion/dominio/servicios/servicio_perfil_supabase.dart` |
+| Gate “necesita login” | `lib/funcionalidades/autenticacion/navegacion_auth.dart` |
+| Trigger → `usuario` | migraciones `handle_new_user` en `supabase/migrations/` |
+
+### No hacer
+
+- Llamadas REST propias a `/auth/v1/token`, `/authorize`, etc.
+- Insertar filas en `public.usuario` desde la app (lo hace el trigger).
+- Hardcodear `nacionalidad_id = 1` como verdad absoluta (preferir `codigo_iso`, p. ej. PE).
+- Mostrar textos técnicos (SMTP, Storage, tablas) al usuario final.
+
+### Criterio de salida Bloque B
+
+- [x] Correo/contraseña (Bloque A)
+- [x] Google nativo (`google_sign_in` + `signInWithIdToken`) + deep link (recuperar clave)
+- [x] Fila en `public.usuario` vía trigger
+- [x] Configuración: editar perfil / nick / nacionalidad / clave / foto
+- [x] Reglas de oro documentadas para el equipo
 
 ---
 
 ## Fuera de alcance inmediato (backlog Auth)
 
 - SMTP + `ENABLE_EMAIL_AUTOCONFIRM=false`
-- Recuperar contraseña real (`resetPasswordForEmail`)
+- Recuperar contraseña real (`resetPasswordForEmail`) — **cableado en app**; falta SMTP en VPS para que el correo salga
 - Edge Function solo si el proveedor SMTP o un webhook lo exige
 - Limpieza definitiva Bunny / `tabla_de_prueba` / policies Storage obsoletas
 - Unificar formulario Flutter (quitar demo DNI o mapearlo a columnas nuevas si el producto lo pide)
@@ -230,15 +293,15 @@ Empezar **después** de tener Bloque A estable (mismo trigger de perfil).
 - [x] Etapa 4 — Login + sesión real (`signInWithPassword` + `onAuthStateChange`)
 
 ### Bloque B
-- [ ] Etapa 1 — GCP + .env + redirects
-- [ ] Etapa 2 — Deep link Android
-- [ ] Etapa 3 — OAuth + completar perfil
-- [ ] Etapa 4 — Reglas de oro al equipo
+- [x] Etapa 1 — GCP + .env + redirects (VPS; verificar `hakuapp://login-callback`)
+- [x] Etapa 2 — Deep link Android (`hakuapp` / `login-callback`)
+- [x] Etapa 3 — OAuth Google (sin pantalla extra; nick del correo + PE; editar en Config)
+- [x] Etapa 4 — Reglas de oro / hand-off al equipo
 
 ---
 
 ## Próximo paso concreto
 
-1. Probar registro + login + reinicio de app (sesión debe volver) + logout.  
-2. Confirmar fila en `public.usuario` tras registro.  
-3. Luego **Bloque B (Google)** o pulir catálogo `nacionalidad` (FK por `id`; `codigo_iso` como dato estable de negocio — se afina después).
+1. Probar Google en Android (si aún no).
+2. Backlog Auth cuando toque: SMTP + verificación correo, recuperar contraseña real, iOS URL scheme.
+3. Fuera de Auth: unificar feed/comunidad al `id` real de sesión (hoy parte del demo sigue con id local).

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../dominio/servicios/servicio_auth_supabase.dart';
 import 'pantalla_iniciar_sesion.dart';
 
-/// Recuperación de contraseña por correo.
+/// Recuperación de contraseña por correo (SDK).
+/// También sirve si la cuenta nació en Google y quieres agregar clave (1 correo = 1 usuario).
 class PantallaRecuperarContrasena extends StatefulWidget {
   const PantallaRecuperarContrasena({super.key});
 
@@ -16,6 +20,7 @@ class PantallaRecuperarContrasena extends StatefulWidget {
 class _EstadoPantallaRecuperarContrasena
     extends State<PantallaRecuperarContrasena> {
   final _correoCtrl = TextEditingController();
+  final _auth = ServicioAuthSupabase();
   bool _enviado = false;
   bool _cargando = false;
 
@@ -31,13 +36,47 @@ class _EstadoPantallaRecuperarContrasena
       mostrarSnackHaku(context, 'Ingresa un correo válido');
       return;
     }
+    if (!supabaseListo) {
+      mostrarSnackHaku(
+        context,
+        'No hay conexión con Auth. Revisa la configuración / reinicia la app.',
+      );
+      return;
+    }
+
     setState(() => _cargando = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() {
-      _cargando = false;
-      _enviado = true;
-    });
+    try {
+      await _auth.enviarRecuperacionContrasena(correo);
+      if (!mounted) return;
+      setState(() {
+        _enviado = true;
+        _cargando = false;
+      });
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _cargando = false);
+      // Sin SMTP el servidor puede fallar: mensaje claro, sin jerga técnica.
+      final raw = e.message.toLowerCase();
+      if (raw.contains('smtp') ||
+          raw.contains('error sending') ||
+          raw.contains('email')) {
+        mostrarSnackHaku(
+          context,
+          'Ahora no pudimos enviar el correo. Si tu cuenta es de Google, '
+          'entra con Google. El envío de recuperación se activará con el correo del servidor.',
+        );
+      } else {
+        mostrarSnackHaku(context, e.message);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cargando = false);
+      mostrarSnackHaku(
+        context,
+        'No se pudo enviar el correo. Si tu cuenta es de Google, entra con Google.',
+      );
+      debugPrint('Recuperar clave: $e');
+    }
   }
 
   @override
@@ -84,7 +123,10 @@ class _EstadoPantallaRecuperarContrasena
                 padding: EdgeInsets.fromLTRB(20, 24, 20, bottom),
                 children: [
                   Text(
-                    'Te enviamos un enlace al correo.',
+                    _enviado
+                        ? 'Si ese correo tiene cuenta, te enviamos un enlace para crear o cambiar tu contraseña.'
+                        : 'Te enviaremos un enlace para crear o recuperar tu contraseña. '
+                            'También sirve si entraste primero con Google.',
                     textAlign: TextAlign.center,
                     style: TipografiaHaku.interfaz(
                       fontSize: 14,
@@ -139,7 +181,7 @@ class _EstadoPantallaRecuperarContrasena
                                 ),
                               )
                             : Text(
-                                'Enviar correo de recuperación',
+                                'Enviar enlace',
                                 style: TipografiaHaku.interfaz(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -159,7 +201,7 @@ class _EstadoPantallaRecuperarContrasena
                         ),
                       ),
                       child: Text(
-                        'Revisa tu correo.',
+                        'Revisa tu correo (y spam). Luego podrás entrar con contraseña o con Google: es la misma cuenta.',
                         textAlign: TextAlign.center,
                         style: TipografiaHaku.interfaz(
                           fontSize: 13,
@@ -177,15 +219,6 @@ class _EstadoPantallaRecuperarContrasena
                         fontWeight: FontWeight.w700,
                         color: PaletaRutas.oro,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    'Caduca en 24 h.',
-                    textAlign: TextAlign.center,
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 11,
-                      color: PaletaRutas.plomo,
                     ),
                   ),
                 ],

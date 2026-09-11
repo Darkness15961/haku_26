@@ -9,6 +9,8 @@ import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/servicios/servicio_auth_supabase.dart';
+import '../flujo_google.dart';
+import '../mensajes_auth_haku.dart';
 import '../proveedores/proveedor_sesion.dart';
 import 'pantalla_recuperar_contrasena.dart';
 import 'pantalla_registro.dart';
@@ -62,7 +64,9 @@ class _EstadoPantallaIniciarSesion
       Navigator.of(context).pop(true);
     } on AuthException catch (e) {
       if (!mounted) return;
-      _aviso(e.message);
+      _aviso(
+        MensajesAuthHaku.desdeAuthException(e, ctx: AuthContexto.login),
+      );
     } catch (e) {
       if (!mounted) return;
       _aviso('No se pudo iniciar sesión. Revisa conexión y credenciales.');
@@ -73,7 +77,18 @@ class _EstadoPantallaIniciarSesion
   }
 
   Future<void> _google() async {
-    _aviso('Google OAuth llega en el Bloque B');
+    setState(() => _cargando = true);
+    try {
+      final ok = await completarLoginConGoogle(
+        context,
+        ref,
+        avisar: _aviso,
+      );
+      if (!mounted) return;
+      if (ok) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   void _aviso(String texto) {

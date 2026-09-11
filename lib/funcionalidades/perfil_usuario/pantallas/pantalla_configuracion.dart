@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
@@ -9,6 +10,7 @@ import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/datos/nacionalidad_datasource.dart';
 import '../../autenticacion/dominio/modelos/modelo_nacionalidad.dart';
 import '../../autenticacion/dominio/servicios/servicio_perfil_supabase.dart';
+import '../../autenticacion/mensajes_auth_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../autenticacion/widgets/selector_nacionalidad.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -48,6 +50,10 @@ class _EstadoPantallaConfiguracion
   String? _fotoUrl;
   String? _errorNac;
 
+  /// Tiene identidad `email` en Auth (= puede cambiar clave con la actual).
+  /// Solo Google → UI de «Crear contraseña» (opción A, sin SMTP).
+  bool _tieneClaveEmail = false;
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +88,7 @@ class _EstadoPantallaConfiguracion
     }
 
     if (u != null && sesion.autenticado && supabaseListo) {
+      _tieneClaveEmail = await _resolverTieneClaveEmail(u.id);
       try {
         final perfil = await _perfilSvc.cargarPerfil(u.id);
         if (perfil != null) {
@@ -103,10 +110,40 @@ class _EstadoPantallaConfiguracion
         _aplicarDesdeSesion(u);
       }
     } else if (u != null) {
+      _tieneClaveEmail = false;
       _aplicarDesdeSesion(u);
     }
 
     if (mounted) setState(() => _cargando = false);
+  }
+
+  /// Identidad `email` en GoTrue = hay contraseña de HAKU.
+  /// Si solo hay Google, miramos flag local (tras «Crear contraseña» sin SMTP).
+  static bool _detectarIdentidadEmail() {
+    final identidades = clienteSupabase.auth.currentUser?.identities;
+    if (identidades == null || identidades.isEmpty) return false;
+    return identidades.any((i) => i.provider == 'email');
+  }
+
+  static String _prefsClaveCreada(String userId) => 'haku_clave_creada_$userId';
+
+  Future<bool> _resolverTieneClaveEmail(String userId) async {
+    if (_detectarIdentidadEmail()) return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefsClaveCreada(userId)) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _marcarClaveCreadaLocal(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefsClaveCreada(userId), true);
+    } catch (e) {
+      debugPrint('prefs clave: $e');
+    }
   }
 
   void _aplicarDesdeSesion(UsuarioSesion u) {
@@ -291,11 +328,18 @@ class _EstadoPantallaConfiguracion
       mostrarSnackHaku(context, 'Inicia sesión');
       return;
     }
-    final actual = _claveActual.text;
-    final nueva = _claveNueva.text;
-    final nueva2 = _claveNueva2.text;
-    if (actual.isEmpty || nueva.isEmpty) {
-      mostrarSnackHaku(context, 'Completa la contraseña actual y la nueva');
+    if (_guardando) return;
+
+    final nueva = _claveNueva.text.trim();
+    final nueva2 = _claveNueva2.text.trim();
+
+    if (nueva.isEmpty || nueva2.isEmpty) {
+      mostrarSnackHaku(
+        context,
+        _tieneClaveEmail
+            ? 'Completa la contraseña actual y la nueva'
+            : 'Completa la nueva contraseña y la confirmación',
+      );
       return;
     }
     if (nueva.length < 6) {
@@ -307,25 +351,64 @@ class _EstadoPantallaConfiguracion
       return;
     }
 
+    if (_tieneClaveEmail) {
+      final actual = _claveActual.text;
+      if (actual.isEmpty) {
+        mostrarSnackHaku(context, 'Completa la contraseña actual y la nueva');
+        return;
+      }
+      setState(() => _guardando = true);
+      try {
+        await _perfilSvc.actualizarContrasena(
+          correo: sesion.usuario!.correo,
+          claveActual: actual,
+          claveNueva: nueva,
+        );
+        _claveActual.clear();
+        _claveNueva.clear();
+        _claveNueva2.clear();
+        if (!mounted) return;
+        mostrarSnackHaku(context, 'Contraseña actualizada', destacado: true);
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        mostrarSnackHaku(
+          context,
+          MensajesAuthHaku.desdeAuthException(e, ctx: AuthContexto.clave),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        mostrarSnackHaku(context, 'No se pudo cambiar la contraseña');
+        debugPrint('Clave: $e');
+      } finally {
+        if (mounted) setState(() => _guardando = false);
+      }
+      return;
+    }
+
+    // Opción A: Google-only → crear clave con JWT.
     setState(() => _guardando = true);
     try {
-      await _perfilSvc.actualizarContrasena(
-        correo: sesion.usuario!.correo,
-        claveActual: actual,
-        claveNueva: nueva,
-      );
-      _claveActual.clear();
+      await _perfilSvc.crearContrasena(nueva);
       _claveNueva.clear();
       _claveNueva2.clear();
+      await _marcarClaveCreadaLocal(sesion.usuario!.id);
       if (!mounted) return;
-      mostrarSnackHaku(context, 'Contraseña actualizada', destacado: true);
+      setState(() => _tieneClaveEmail = true);
+      mostrarSnackHaku(
+        context,
+        'Contraseña agregada. Ya puedes usarla al iniciar sesión.',
+        destacado: true,
+      );
     } on AuthException catch (e) {
       if (!mounted) return;
-      mostrarSnackHaku(context, e.message);
+      mostrarSnackHaku(
+        context,
+        MensajesAuthHaku.desdeAuthException(e, ctx: AuthContexto.clave),
+      );
     } catch (e) {
       if (!mounted) return;
-      mostrarSnackHaku(context, 'No se pudo cambiar la contraseña');
-      debugPrint('Clave: $e');
+      mostrarSnackHaku(context, 'No se pudo crear la contraseña');
+      debugPrint('Crear clave: $e');
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
@@ -431,6 +514,92 @@ class _EstadoPantallaConfiguracion
                   color: PaletaRutas.ink,
                 ),
               ),
+      ),
+    );
+  }
+
+  /// Con clave HAKU: cambiar (actual + nueva).
+  /// Solo Google: crear clave con sesión activa (opción A, sin SMTP).
+  Widget _seccionClave() {
+    if (_tieneClaveEmail) {
+      return _seccion(
+        titulo: 'Contraseña',
+        subtitulo: 'Usa tu contraseña actual para cambiarla',
+        hijos: [
+          _campoClave(
+            controller: _claveActual,
+            label: 'Contraseña actual',
+            ocultar: _ocultarActual,
+            onToggle: () => setState(() => _ocultarActual = !_ocultarActual),
+          ),
+          const SizedBox(height: 10),
+          _campoClave(
+            controller: _claveNueva,
+            label: 'Nueva contraseña (mín. 6)',
+            ocultar: _ocultarNueva,
+            onToggle: () => setState(() => _ocultarNueva = !_ocultarNueva),
+          ),
+          const SizedBox(height: 10),
+          _campoClave(
+            controller: _claveNueva2,
+            label: 'Confirmar nueva',
+            ocultar: _ocultarNueva2,
+            onToggle: () => setState(() => _ocultarNueva2 = !_ocultarNueva2),
+          ),
+          const SizedBox(height: 14),
+          _botonOro('Cambiar contraseña', _guardarClave),
+        ],
+      );
+    }
+
+    return _seccion(
+      titulo: 'Contraseña',
+      subtitulo:
+          'Entraste con Google. Crea una contraseña para también '
+          'iniciar sesión con tu correo.',
+      hijos: [
+        _campoClave(
+          controller: _claveNueva,
+          label: 'Nueva contraseña (mín. 6)',
+          ocultar: _ocultarNueva,
+          onToggle: () => setState(() => _ocultarNueva = !_ocultarNueva),
+        ),
+        const SizedBox(height: 10),
+        _campoClave(
+          controller: _claveNueva2,
+          label: 'Confirmar nueva',
+          ocultar: _ocultarNueva2,
+          onToggle: () => setState(() => _ocultarNueva2 = !_ocultarNueva2),
+        ),
+        const SizedBox(height: 14),
+        _botonOro('Crear contraseña', _guardarClave),
+      ],
+    );
+  }
+
+  Widget _campoClave({
+    required TextEditingController controller,
+    required String label,
+    required bool ocultar,
+    required VoidCallback? onToggle,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: ocultar,
+      style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+      cursorColor: PaletaRutas.oro,
+      decoration: _deco(
+        label,
+        icono: Icons.lock_outline_rounded,
+        suffix: IconButton(
+          onPressed: onToggle,
+          icon: Icon(
+            ocultar
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: PaletaRutas.plomoClaro,
+          ),
+        ),
       ),
     );
   }
@@ -632,85 +801,7 @@ class _EstadoPantallaConfiguracion
                             ],
                           ),
                           const SizedBox(height: 14),
-                          _seccion(
-                            titulo: 'Contraseña',
-                            subtitulo: 'Usa tu contraseña actual para cambiarla',
-                            hijos: [
-                              TextField(
-                                controller: _claveActual,
-                                obscureText: _ocultarActual,
-                                style: TipografiaHaku.interfaz(
-                                  color: PaletaRutas.piedra,
-                                ),
-                                cursorColor: PaletaRutas.oro,
-                                decoration: _deco(
-                                  'Contraseña actual',
-                                  icono: Icons.lock_outline_rounded,
-                                  suffix: IconButton(
-                                    onPressed: () => setState(
-                                      () => _ocultarActual = !_ocultarActual,
-                                    ),
-                                    icon: Icon(
-                                      _ocultarActual
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: PaletaRutas.plomoClaro,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _claveNueva,
-                                obscureText: _ocultarNueva,
-                                style: TipografiaHaku.interfaz(
-                                  color: PaletaRutas.piedra,
-                                ),
-                                cursorColor: PaletaRutas.oro,
-                                decoration: _deco(
-                                  'Nueva contraseña (mín. 6)',
-                                  icono: Icons.lock_outline_rounded,
-                                  suffix: IconButton(
-                                    onPressed: () => setState(
-                                      () => _ocultarNueva = !_ocultarNueva,
-                                    ),
-                                    icon: Icon(
-                                      _ocultarNueva
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: PaletaRutas.plomoClaro,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _claveNueva2,
-                                obscureText: _ocultarNueva2,
-                                style: TipografiaHaku.interfaz(
-                                  color: PaletaRutas.piedra,
-                                ),
-                                cursorColor: PaletaRutas.oro,
-                                decoration: _deco(
-                                  'Confirmar nueva',
-                                  icono: Icons.lock_outline_rounded,
-                                  suffix: IconButton(
-                                    onPressed: () => setState(
-                                      () => _ocultarNueva2 = !_ocultarNueva2,
-                                    ),
-                                    icon: Icon(
-                                      _ocultarNueva2
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: PaletaRutas.plomoClaro,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              _botonOro('Cambiar contraseña', _guardarClave),
-                            ],
-                          ),
+                          _seccionClave(),
                         ],
                       ),
               ),
