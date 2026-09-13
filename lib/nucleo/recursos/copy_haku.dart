@@ -46,9 +46,15 @@ abstract final class CopyHaku {
   static const islasSegmento = 'Islas';
   static const sheetProvinciaVerTodo = 'Rincones de acá';
   static const sheetProvinciaVacia =
-      'Todavía no hay rincones nombrados aquí. Sé el primero de tu cuadrilla.';
+      'Todavía no hay rincones aquí. Sé el primero en crear uno.';
+  /// Contexto territorial (Explora = Cusco). Evita confundir capital ≠ provincia.
+  static const sheetProvinciaContexto = 'Provincia del Cusco';
   static const sheetProvinciaCapitalPrefijo = 'Capital';
-  static const sheetCtaRegistrar = 'Nombrar un lugar';
+  static const sheetFiltroTematica = 'Temática';
+  static const sheetFiltroActividad = 'Actividad';
+  static const sheetFiltroDistritoOpcional = 'Filtrar por distrito';
+  static const sheetFiltroVacio = 'No hay lugares con ese filtro.';
+  static const sheetCtaRegistrar = 'Crear un lugar';
 
   static String islaLugares(int n) =>
       n == 0 ? 'Sin rincones aún' : (n == 1 ? '1 lugar' : '$n lugares');
@@ -67,6 +73,30 @@ abstract final class CopyHaku {
 
   static const leyendaMapaPorExplorar = 'Sin nombre todavía';
   static const leyendaMapaConFotos = 'Con fotos de la gente';
+
+  // —— Mapa Explora (GPS + PostGIS 50 km + contorno Cusco) ——
+  static const mapaTitulo = 'Mapa';
+  static const mapaChipCerca = 'Cerca 50 km';
+  static const mapaCercaDeTi = 'Lugares a 50 km o menos de ti';
+  static const mapaCercaBuscandoGps = 'Buscando tu ubicación…';
+  static const mapaCercaSinGps =
+      'Activa tu ubicación para ver rincones cerca de ti';
+  static const mapaTodosActivos = 'Todos los lugares activos del Cusco';
+  static const mapaActivarUbicacionCta = 'Activar mi ubicación';
+  static const mapaCercaError =
+      'No se pudo consultar la cercanía. Intenta de nuevo.';
+  static const mapaGpsApagadoTitulo = 'GPS apagado';
+  static const mapaGpsApagadoMensaje =
+      'Activa la ubicación del teléfono para ver lugares cerca de ti.';
+  static const mapaPermisoTitulo = 'Permiso de ubicación';
+  static const mapaPermisoPermanenteMensaje =
+      'Antes se negó el permiso. Ábrelo en Ajustes de la app '
+      '(Ubicación → Permitir) y vuelve a intentar.';
+  static const mapaPermisoDenegado =
+      'Sin permiso no podemos mostrar lugares cerca de ti.';
+  static const mapaGpsError =
+      'No se pudo obtener tu ubicación. Revisa el GPS e intenta de nuevo.';
+  static const mapaAbrirAjustes = 'Abrir ajustes';
 
   // —— Onboarding ——
   static const onboarding1Titulo = 'Tu mapa, tu gente';

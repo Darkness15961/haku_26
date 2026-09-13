@@ -67,9 +67,20 @@ class PantallaSorpresaLugar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lugar = ref.watch(lugaresDataSourceProvider).porId(lugarId);
-    if (lugar == null) {
-      return Scaffold(
+    final asyncLugar = ref.watch(lugarDetalleProvider(lugarId));
+
+    return asyncLugar.when(
+      loading: () => Scaffold(
+        backgroundColor: PaletaRutas.ink,
+        appBar: AppBar(
+          backgroundColor: PaletaRutas.ink,
+          foregroundColor: PaletaRutas.piedra,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: PaletaRutas.oro),
+        ),
+      ),
+      error: (_, __) => Scaffold(
         backgroundColor: PaletaRutas.ink,
         appBar: AppBar(
           backgroundColor: PaletaRutas.ink,
@@ -77,13 +88,37 @@ class PantallaSorpresaLugar extends ConsumerWidget {
         ),
         body: Center(
           child: Text(
-            'Destino no encontrado',
+            'No se pudo cargar el destino.',
             style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
           ),
         ),
-      );
-    }
+      ),
+      data: (lugar) {
+        if (lugar == null) {
+          return Scaffold(
+            backgroundColor: PaletaRutas.ink,
+            appBar: AppBar(
+              backgroundColor: PaletaRutas.ink,
+              foregroundColor: PaletaRutas.piedra,
+            ),
+            body: Center(
+              child: Text(
+                'Destino no encontrado',
+                style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+              ),
+            ),
+          );
+        }
+        return _cuerpoSorpresa(context, ref, lugar);
+      },
+    );
+  }
 
+  Widget _cuerpoSorpresa(
+    BuildContext context,
+    WidgetRef ref,
+    ModeloLugar lugar,
+  ) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
     final metricas = MetricasComunidad.calcular(
@@ -291,19 +326,15 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _ChipOscuro(Icons.trending_up, lugar.dificultad),
-                      if (lugar.tiempoEstimado.isNotEmpty)
-                        _ChipOscuro(
-                          Icons.timer_outlined,
-                          lugar.tiempoEstimado,
-                        ),
+                      if (lugar.acceso.isNotEmpty)
+                        _ChipOscuro(Icons.directions_walk, lugar.acceso),
                       if (lugar.altitud.isNotEmpty)
                         _ChipOscuro(
                           Icons.landscape_outlined,
                           lugar.altitud,
                         ),
-                      if (lugar.acceso.isNotEmpty)
-                        _ChipOscuro(Icons.directions_walk, lugar.acceso),
+                      if (lugar.provincia.isNotEmpty)
+                        _ChipOscuro(Icons.map_outlined, lugar.provincia),
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -346,9 +377,19 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () {
-                      final ds = ref.read(lugaresDataSourceProvider);
+                      final todos = ref.read(lugaresListaProvider);
+                      if (todos.isEmpty) return;
                       final intereses = ref.read(interesesUsuarioProvider);
-                      final otro = ds.sorpresa(intereses: intereses);
+                      var pool = todos.where((l) => l.id != lugar.id).toList();
+                      if (pool.isEmpty) pool = todos;
+                      if (intereses.isNotEmpty) {
+                        final f = pool
+                            .where((l) => intereses.any(l.tieneCategoria))
+                            .toList();
+                        if (f.isNotEmpty) pool = f;
+                      }
+                      pool = [...pool]..shuffle();
+                      final otro = pool.first;
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute<void>(
                           builder: (_) =>

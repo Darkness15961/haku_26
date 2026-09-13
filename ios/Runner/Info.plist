@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HAKU usa tu ubicación para marcar el lugar que estás registrando.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>HAKU usa tu ubicación para marcar el lugar que estás registrando.</string>
 </dict>
 </plist>

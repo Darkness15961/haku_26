@@ -14,10 +14,11 @@ import '../proveedores/proveedor_lugares.dart';
 import '../widgets/mapa_islas_provincias.dart';
 import '../widgets/metricas_comunidad.dart';
 import 'pantalla_detalle_lugar.dart';
+import 'pantalla_mapa_explora.dart';
 import 'pantalla_registrar_lugar.dart';
 import 'pantalla_sorpresa_lugar.dart';
 
-/// Explora — carrusel de islas primero; acciones abajo (simulación local).
+/// Explora — islas, mapa remoto (Bloque C) y rutas.
 class PantallaExploraLugares extends ConsumerStatefulWidget {
   const PantallaExploraLugares({super.key});
 
@@ -32,13 +33,34 @@ class _EstadoPantallaExploraLugares
   String? _provinciaVisible;
 
   void _sorprendeme() {
-    final ds = ref.read(lugaresDataSourceProvider);
+    final todos = ref.read(lugaresListaProvider);
+    if (todos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Aún no hay lugares en el mapa. Sé el primero en registrar uno.',
+            style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+          ),
+          backgroundColor: PaletaRutas.carbon,
+        ),
+      );
+      return;
+    }
     final intereses = ref.read(interesesUsuarioProvider);
-    final l = ds.sorpresa(
-      intereses: intereses,
-      evitarId: _ultimaSorpresaId,
-      preferirProvincia: _provinciaVisible,
-    );
+    final poolProvincia = _provinciaVisible == null
+        ? todos
+        : todos.where((l) => l.provincia == _provinciaVisible).toList();
+    var pool = poolProvincia.isNotEmpty ? poolProvincia : todos;
+    if (_ultimaSorpresaId != null && pool.length > 1) {
+      pool = pool.where((l) => l.id != _ultimaSorpresaId).toList();
+    }
+    if (intereses.isNotEmpty) {
+      final filtrado =
+          pool.where((l) => intereses.any(l.tieneCategoria)).toList();
+      if (filtrado.isNotEmpty) pool = filtrado;
+    }
+    pool = [...pool]..shuffle();
+    final l = pool.first;
     _ultimaSorpresaId = l.id;
     abrirSorpresaLugar(context, l.id);
   }
@@ -49,6 +71,10 @@ class _EstadoPantallaExploraLugares
 
   void _abrirRutas() {
     ref.read(modoExploraProvider.notifier).state = ModoExplora.rutas;
+  }
+
+  void _abrirMapa() {
+    ref.read(modoExploraProvider.notifier).state = ModoExplora.mapa;
   }
 
   Future<void> _registrar({String? provincia}) async {
@@ -80,6 +106,13 @@ class _EstadoPantallaExploraLugares
     );
   }
 
+  Widget _vistaMapa(List<ModeloLugar> todos) {
+    return PantallaMapaExplora(
+      lugaresTodos: todos,
+      onVolver: _volverAIslas,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final modo = ref.watch(modoExploraProvider);
@@ -88,7 +121,16 @@ class _EstadoPantallaExploraLugares
     }
 
     ref.watch(lugaresVersionProvider);
+    final cargando = ref.watch(lugaresCargandoProvider);
+    final error = ref.watch(lugaresErrorProvider);
     final todos = ref.watch(lugaresListaProvider);
+
+    if (modo == ModoExplora.mapa) {
+      // Siempre montar el mapa: el vacío / carga se maneja dentro.
+      // Evita destruir GPS/contorno si el fetch remoto aún no llegó.
+      return _vistaMapa(todos);
+    }
+
     final bottom = MediaQuery.paddingOf(context).bottom + 100;
     final huecos = todos
         .where(
@@ -146,6 +188,14 @@ class _EstadoPantallaExploraLugares
                     ),
                     const Spacer(),
                     IconButton(
+                      tooltip: 'Mapa',
+                      onPressed: _abrirMapa,
+                      icon: const Icon(
+                        Icons.map_outlined,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                    IconButton(
                       tooltip: 'Rutas',
                       onPressed: _abrirRutas,
                       icon: const Icon(
@@ -157,21 +207,59 @@ class _EstadoPantallaExploraLugares
                 ),
               ),
               Expanded(
-                child: Center(
-                  child: MapaIslasProvincias(
-                    lugares: todos,
-                    fotosPorLugar: indice.fotos,
-                    onTapLugar: (id) => abrirDetalleLugar(context, id),
-                    onRegistrarEnProvincia: (prov) =>
-                        _registrar(provincia: prov),
-                    onProvinciaVisible: (nombre) {
-                      if (_provinciaVisible != nombre) {
-                        setState(() => _provinciaVisible = nombre);
-                      }
-                    },
-                    altura: MediaQuery.sizeOf(context).height * 0.42,
-                  ),
-                ),
+                child: cargando
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: PaletaRutas.oro,
+                        ),
+                      )
+                    : error != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'No se pudieron cargar los lugares.',
+                                    textAlign: TextAlign.center,
+                                    style: TipografiaHaku.interfaz(
+                                      color: PaletaRutas.piedra,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () => ref
+                                        .invalidate(lugaresRemotosProvider),
+                                    child: Text(
+                                      'Reintentar',
+                                      style: TipografiaHaku.interfaz(
+                                        color: PaletaRutas.oro,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: MapaIslasProvincias(
+                              lugares: todos,
+                              fotosPorLugar: indice.fotos,
+                              onTapLugar: (id) =>
+                                  abrirDetalleLugar(context, id),
+                              onRegistrarEnProvincia: (prov) =>
+                                  _registrar(provincia: prov),
+                              onProvinciaVisible: (nombre) {
+                                if (_provinciaVisible != nombre) {
+                                  setState(() => _provinciaVisible = nombre);
+                                }
+                              },
+                              altura: MediaQuery.sizeOf(context).height * 0.42,
+                            ),
+                          ),
               ),
               _PanelInferiorIslas(
                 statsResumen: statsHero,

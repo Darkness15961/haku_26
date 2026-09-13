@@ -168,11 +168,20 @@ abstract final class ProvinciasDataSourceLocal {
     return lista;
   }
 
+  static ProvinciaCatalogo? porCodigo(String codigo) {
+    final key = codigo.trim().toLowerCase();
+    if (key.isEmpty) return null;
+    for (final p in todas) {
+      if (p.id == key) return p;
+    }
+    return null;
+  }
+
   /// Todas las provincias del catálogo (también vacías, para el path completo).
   static List<IslaProvinciaData> construirIslas(List<ModeloLugar> lugares) {
     final porProvincia = <String, List<ModeloLugar>>{};
     for (final l in lugares) {
-      final cat = porNombre(l.provincia);
+      final cat = porCodigo(l.provinciaCodigo) ?? porNombre(l.provincia);
       if (cat == null) continue;
       (porProvincia[cat.id] ??= []).add(l);
     }
