@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
-import '../../comunidad/datos/salidas_datasource_local.dart';
+import '../../comunidad/proveedores/proveedor_salidas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/provincias_datasource_local.dart';
 import '../dominio/modelos/modelo_lugar.dart';
@@ -42,7 +43,7 @@ Future<void> abrirSheetProvinciaLugares(
 
 enum _EjeFiltro { tematica, actividad }
 
-class _SheetProvinciaLugares extends StatefulWidget {
+class _SheetProvinciaLugares extends ConsumerStatefulWidget {
   const _SheetProvinciaLugares({
     required this.data,
     required this.onTapLugar,
@@ -56,10 +57,12 @@ class _SheetProvinciaLugares extends StatefulWidget {
   final VoidCallback? onRegistrar;
 
   @override
-  State<_SheetProvinciaLugares> createState() => _EstadoSheetProvinciaLugares();
+  ConsumerState<_SheetProvinciaLugares> createState() =>
+      _EstadoSheetProvinciaLugares();
 }
 
-class _EstadoSheetProvinciaLugares extends State<_SheetProvinciaLugares> {
+class _EstadoSheetProvinciaLugares
+    extends ConsumerState<_SheetProvinciaLugares> {
   _EjeFiltro _eje = _EjeFiltro.tematica;
   String? _tematicaFiltro;
   String? _actividadFiltro;
@@ -135,7 +138,8 @@ class _EstadoSheetProvinciaLugares extends State<_SheetProvinciaLugares> {
     final data = widget.data;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final maxH = MediaQuery.sizeOf(context).height * 0.82;
-    final salidasDs = SalidasDataSourceLocal.instancia;
+    final salidasRemotas =
+        ref.watch(salidasRemotasProvider).valueOrNull ?? const [];
     final filtrados = _filtrados;
     final tematicas = _nombresFaceta(FacetaCategoriaLugar.tematica);
     final actividades = _nombresFaceta(FacetaCategoriaLugar.actividad);
@@ -462,7 +466,9 @@ class _EstadoSheetProvinciaLugares extends State<_SheetProvinciaLugares> {
                     );
                   }
                   final l = filtrados[i];
-                  final nSalidas = salidasDs.todas(lugarId: l.id).length;
+                  final nSalidas = salidasRemotas
+                      .where((s) => s.lugarId == l.id)
+                      .length;
                   final fotos = widget.fotosPorLugar[l.id] ?? 0;
                   final lineaTipo = l.subtituloClasificacion;
                   final lineaZona =

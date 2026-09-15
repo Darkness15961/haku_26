@@ -3,13 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../comunidad/proveedores/proveedor_comunidad.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
@@ -59,8 +63,11 @@ class _EstadoPantallaPublicaciones
   String? _lugarId;
   String? _rutaId;
   String? _lugarNombre;
+  String? _comunidadId;
+  String? _comunidadNombre;
   CategoriaLugar? _categoria;
   final List<String> _etiquetas = [];
+  bool _publicando = false;
 
   @override
   void initState() {
@@ -119,6 +126,10 @@ class _EstadoPantallaPublicaciones
   }
 
   Future<void> _elegirVideo() async {
+    if (supabaseListo) {
+      _aviso('Video en el servidor: próximamente. Usa una foto.');
+      return;
+    }
     try {
       final archivo = await _picker.pickVideo(source: ImageSource.gallery);
       if (archivo == null || !mounted) return;
@@ -174,15 +185,26 @@ class _EstadoPantallaPublicaciones
                   _elegirFoto();
                 },
               ),
-              const SizedBox(height: 8),
-              _OpcionSheet(
-                icono: Icons.videocam_outlined,
-                titulo: 'Video',
-                onTap: () {
-                  Navigator.pop(context);
-                  _elegirVideo();
-                },
-              ),
+              if (!supabaseListo) ...[
+                const SizedBox(height: 8),
+                _OpcionSheet(
+                  icono: Icons.videocam_outlined,
+                  titulo: 'Video',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _elegirVideo();
+                  },
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Video en servidor: próximamente',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: PaletaRutas.plomoClaro,
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -202,8 +224,26 @@ class _EstadoPantallaPublicaciones
     Navigator.of(context).maybePop();
   }
 
-  void _mostrarLugares() {
+  Future<void> _mostrarLugares() async {
+    if (supabaseListo) {
+      final async = ref.read(lugaresRemotosProvider);
+      if (async.isLoading) {
+        _aviso('Cargando lugares de Explora…');
+        try {
+          await ref.read(lugaresRemotosProvider.future);
+        } catch (_) {
+          _aviso('No se pudieron cargar los lugares');
+          return;
+        }
+        if (!mounted) return;
+      }
+    }
     final lugares = ref.read(lugaresListaProvider);
+    if (supabaseListo && lugares.isEmpty) {
+      _aviso('No hay lugares activos en Explora todavía');
+      return;
+    }
+    if (!mounted) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -212,6 +252,7 @@ class _EstadoPantallaPublicaciones
         return _SheetLugar(
           lugares: lugares,
           seleccionadoId: _lugarId,
+          permitirNuevo: !supabaseListo,
           onElegir: (lugar) {
             setState(() {
               _lugarId = lugar.id;
@@ -222,6 +263,10 @@ class _EstadoPantallaPublicaciones
             Navigator.pop(ctx);
           },
           onNuevo: (nombre) {
+            if (supabaseListo) {
+              _aviso('Elige un lugar de Explora (ya en el servidor).');
+              return;
+            }
             setState(() {
               _lugarId = null;
               _rutaId = null;
@@ -229,6 +274,99 @@ class _EstadoPantallaPublicaciones
             });
             Navigator.pop(ctx);
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _mostrarComunidades() async {
+    final uid = ref.read(sesionProvider).usuario?.id ?? '';
+    if (supabaseListo) {
+      final async = ref.read(comunidadesRemotasProvider);
+      if (async.isLoading) {
+        _aviso('Cargando tus comunidades…');
+        try {
+          await ref.read(comunidadesRemotasProvider.future);
+        } catch (_) {
+          _aviso('No se pudieron cargar las comunidades');
+          return;
+        }
+        if (!mounted) return;
+      }
+    }
+    final mias = ref
+        .read(comunidadesListaProvider)
+        .where((c) => uid.isNotEmpty && (c.esMiembro(uid) || c.creadorId == uid))
+        .toList();
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          decoration: BoxDecoration(
+            color: PaletaRutas.carbon,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Etiquetar comunidad',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.titulo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                title: Text(
+                  'Sin etiqueta',
+                  style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                ),
+                onTap: () {
+                  setState(() {
+                    _comunidadId = null;
+                    _comunidadNombre = null;
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              if (mias.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Únete a una comunidad para etiquetarla.',
+                    style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+                  ),
+                )
+              else
+                for (final c in mias)
+                  ListTile(
+                    title: Text(
+                      c.nombre,
+                      style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                    ),
+                    trailing: _comunidadId == c.id
+                        ? const Icon(Icons.check, color: PaletaRutas.oro)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _comunidadId = c.id;
+                        _comunidadNombre = c.nombre;
+                      });
+                      Navigator.pop(ctx);
+                    },
+                  ),
+            ],
+          ),
         );
       },
     );
@@ -418,6 +556,95 @@ class _EstadoPantallaPublicaciones
   }
 
   Future<void> _publicar() async {
+    if (_publicando) return;
+    setState(() => _publicando = true);
+    try {
+      if (supabaseListo) {
+        await _publicarRemoto();
+      } else {
+        await _publicarDemoLocal();
+      }
+    } finally {
+      if (mounted) setState(() => _publicando = false);
+    }
+  }
+
+  Future<void> _publicarRemoto() async {
+    if (_media == null || _esVideo) {
+      _aviso('Agrega una foto para publicar');
+      return;
+    }
+    final texto = _descripcion.text.trim();
+    final nombreLugar = _lugarNombre?.trim();
+    final lugarRaw = _lugarId?.trim();
+    final lugarIdValido =
+        (lugarRaw != null && int.tryParse(lugarRaw) != null) ? lugarRaw : null;
+
+    // Contenido obligatorio en BD: descripción o nombre de lugar elegido.
+    if (texto.isEmpty && (nombreLugar == null || nombreLugar.isEmpty)) {
+      _aviso('Escribe una descripción');
+      return;
+    }
+
+    final uid = clienteSupabase.auth.currentUser?.id;
+    if (uid == null) {
+      _aviso('Inicia sesión para publicar');
+      return;
+    }
+
+    try {
+      final ds = ref.read(publicacionRemotoDataSourceProvider);
+      final bytes = await _media!.readAsBytes();
+      final name = _media!.name.toLowerCase();
+      final ext = name.endsWith('.png')
+          ? 'png'
+          : (name.endsWith('.webp') ? 'webp' : 'jpg');
+      final contentType = ext == 'png'
+          ? 'image/png'
+          : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
+      final url = await ds.subirImagen(
+        userId: uid,
+        bytes: bytes,
+        contentType: contentType,
+        extension: ext,
+      );
+
+      final contenido =
+          texto.isNotEmpty ? texto : nombreLugar!;
+
+      await ds.crear(
+        contenido: contenido,
+        comunidadId: _comunidadId,
+        lugarId: lugarIdValido,
+        imagenUrl: url,
+      );
+      notificarPublicacionesCambiaron(ref);
+
+      if (!mounted) return;
+      if (widget.irAComunidadAlPublicar) {
+        ref.read(pestaniaShellInicioProvider.notifier).state = 2;
+        ref.read(pestaniaComunidadProvider.notifier).state = 0;
+      }
+      mostrarSnackHaku(
+        context,
+        nombreLugar == null || nombreLugar.isEmpty
+            ? 'Publicado en Comunidad'
+            : 'Publicado en $nombreLugar',
+        destacado: true,
+      );
+      Navigator.of(context).pop(true);
+    } on AuthException catch (e) {
+      if (mounted) _aviso(e.message);
+    } catch (_) {
+      if (mounted) {
+        _aviso(
+          'No se pudo publicar. Si etiquetaste comunidad, probá sin ella o revisá membresía.',
+        );
+      }
+    }
+  }
+
+  Future<void> _publicarDemoLocal() async {
     var lugarId = _lugarId;
     final nombreLugar = _lugarNombre?.trim();
     final rutaId = _rutaId?.trim();
@@ -538,8 +765,10 @@ class _EstadoPantallaPublicaciones
                   titulo: _paso == _PasoPublicacion.elegirMedia
                       ? 'NUEVA PUBLICACIÓN'
                       : 'PUBLICAR',
-                  onAtras: _atras,
-                  onListo: _paso == _PasoPublicacion.editar ? _publicar : null,
+                  onAtras: _publicando ? () {} : _atras,
+                  onListo: (_paso == _PasoPublicacion.editar && !_publicando)
+                      ? _publicar
+                      : null,
                 ),
                 Expanded(
                   child: _paso == _PasoPublicacion.elegirMedia
@@ -570,49 +799,65 @@ class _EstadoPantallaPublicaciones
                             ),
                             const SizedBox(height: 18),
                             BotonPrimarioRuta(
-                              texto: 'Publicar',
+                              texto: _publicando ? 'Publicando…' : 'Publicar',
                               icono: Icons.send_rounded,
-                              onPressed: _publicar,
+                              onPressed: _publicando ? null : _publicar,
                             ),
                             const SizedBox(height: 8),
                             TextButton(
-                              onPressed: () => setState(
-                                () => _opcionesAvanzadas = !_opcionesAvanzadas,
-                              ),
+                              onPressed: _publicando
+                                  ? null
+                                  : () => setState(
+                                        () => _opcionesAvanzadas =
+                                            !_opcionesAvanzadas,
+                                      ),
                               child: Text(
                                 _opcionesAvanzadas
                                     ? 'Ocultar opciones'
                                     : 'Más opciones',
                                 style: TipografiaHaku.interfaz(
                                   fontWeight: FontWeight.w700,
-                                  color: PaletaRutas.piedra.withValues(alpha: 0.85),
+                                  color: PaletaRutas.piedra
+                                      .withValues(alpha: 0.85),
                                 ),
                               ),
                             ),
                             if (_opcionesAvanzadas) ...[
-                              _CardOpcion(
-                                icono: Icons.music_note_rounded,
-                                titulo: 'Música',
-                                subtitulo: _musica ?? 'Opcional',
-                                onTap: _mostrarMusica,
-                              ),
-                              const SizedBox(height: 10),
-                              _CardOpcion(
-                                icono: Icons.category_outlined,
-                                titulo: 'Categoría',
-                                subtitulo: _categoria?.etiqueta ??
-                                    'Caminata, cultura, naturaleza…',
-                                onTap: _mostrarCategorias,
-                              ),
-                              const SizedBox(height: 10),
-                              _CardOpcion(
-                                icono: Icons.person_add_alt_1_rounded,
-                                titulo: 'Etiquetar',
-                                subtitulo: _etiquetas.isEmpty
-                                    ? 'Menciona compañeros'
-                                    : _etiquetas.join(', '),
-                                onTap: _mostrarEtiquetas,
-                              ),
+                              if (supabaseListo) ...[
+                                _CardOpcion(
+                                  icono: Icons.diversity_3_outlined,
+                                  titulo: 'Comunidad',
+                                  subtitulo: _comunidadNombre ??
+                                      'Opcional — etiquetar grupo',
+                                  onTap: _mostrarComunidades,
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              if (!supabaseListo) ...[
+                                _CardOpcion(
+                                  icono: Icons.music_note_rounded,
+                                  titulo: 'Música',
+                                  subtitulo: _musica ?? 'Opcional',
+                                  onTap: _mostrarMusica,
+                                ),
+                                const SizedBox(height: 10),
+                                _CardOpcion(
+                                  icono: Icons.category_outlined,
+                                  titulo: 'Categoría',
+                                  subtitulo: _categoria?.etiqueta ??
+                                      'Caminata, cultura, naturaleza…',
+                                  onTap: _mostrarCategorias,
+                                ),
+                                const SizedBox(height: 10),
+                                _CardOpcion(
+                                  icono: Icons.person_add_alt_1_rounded,
+                                  titulo: 'Etiquetar',
+                                  subtitulo: _etiquetas.isEmpty
+                                      ? 'Menciona compañeros'
+                                      : _etiquetas.join(', '),
+                                  onTap: _mostrarEtiquetas,
+                                ),
+                              ],
                             ],
                           ],
                         ),
@@ -1151,12 +1396,14 @@ class _SheetLugar extends StatefulWidget {
   final String? seleccionadoId;
   final ValueChanged<ModeloLugar> onElegir;
   final ValueChanged<String> onNuevo;
+  final bool permitirNuevo;
 
   const _SheetLugar({
     required this.lugares,
     required this.seleccionadoId,
     required this.onElegir,
     required this.onNuevo,
+    this.permitirNuevo = true,
   });
 
   @override
@@ -1256,36 +1503,49 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
               ),
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _nuevo,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
-              cursorColor: PaletaRutas.oro,
-              decoration: InputDecoration(
-                hintText: 'Nuevo lugar',
-                hintStyle: TipografiaHaku.interfaz(
-                  color: PaletaRutas.piedra.withValues(alpha: 0.45),
+            if (widget.permitirNuevo)
+              TextField(
+                controller: _nuevo,
+                style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                cursorColor: PaletaRutas.oro,
+                decoration: InputDecoration(
+                  hintText: 'Nuevo lugar',
+                  hintStyle: TipografiaHaku.interfaz(
+                    color: PaletaRutas.piedra.withValues(alpha: 0.45),
+                  ),
+                  filled: true,
+                  fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(
+                      Icons.check_rounded,
+                      color: PaletaRutas.piedra,
+                    ),
+                    onPressed: () {
+                      final n = _nuevo.text.trim();
+                      if (n.isEmpty) return;
+                      widget.onNuevo(n);
+                    },
+                  ),
                 ),
-                filled: true,
-                fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.check_rounded, color: PaletaRutas.piedra),
-                  onPressed: () {
-                    final n = _nuevo.text.trim();
-                    if (n.isEmpty) return;
-                    widget.onNuevo(n);
-                  },
+                onSubmitted: (v) {
+                  final n = v.trim();
+                  if (n.isEmpty) return;
+                  widget.onNuevo(n);
+                },
+              )
+            else
+              Text(
+                'Solo lugares de Explora (servidor).',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.interfaz(
+                  fontSize: 12,
+                  color: PaletaRutas.plomoClaro,
                 ),
               ),
-              onSubmitted: (v) {
-                final n = v.trim();
-                if (n.isEmpty) return;
-                widget.onNuevo(n);
-              },
-            ),
           ],
         ),
       ),

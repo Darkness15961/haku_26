@@ -98,10 +98,14 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
   Future<void> _abrirPublicar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await abrirPantallaHaku<void>(
+    final done = await abrirPantallaHaku<bool>(
       context,
       const PantallaPublicaciones(),
     );
+    // Cierra el hilo: feed remoto se refresca aunque Comunidad no estuviera visible.
+    if (done == true && mounted) {
+      notificarPublicacionesCambiaron(ref);
+    }
   }
 
   void _onRetrocesoSistema(bool didPop, Object? result) {

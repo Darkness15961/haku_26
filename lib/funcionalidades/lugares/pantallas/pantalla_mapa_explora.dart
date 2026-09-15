@@ -213,12 +213,12 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
     if (cercaActivo) {
       cargandoCerca = cercaAsync?.isLoading ?? false;
       errorCerca = cercaAsync?.whenOrNull(error: (e, _) => '$e');
-      // Mientras carga, no vaciar pines previos: se maneja con overlay.
+      // Mientras carga, conservar pines previos (no flash vacío).
       pines = cercaAsync?.maybeWhen(
             data: (d) => d,
-            orElse: () => const <ModeloLugar>[],
+            orElse: () => widget.lugaresTodos,
           ) ??
-          const [];
+          widget.lugaresTodos;
     } else if (_filtroCerca) {
       pines = const [];
     } else {

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/datos/salidas_datasource_local.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
+import '../../comunidad/widgets/tarjeta_publicacion_remota.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/pantallas/pantalla_comentarios_publicacion.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
@@ -36,6 +39,37 @@ class ListaExperienciasLugar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Remoto: posts reales con lugar_id → puente Explora ↔ Comunidad.
+    if (supabaseListo && lugarId != null && lugarId!.trim().isNotEmpty) {
+      final remotas =
+          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
+      final lid = lugarId!.trim();
+      final delLugar =
+          remotas.where((p) => (p.lugarId ?? '').trim() == lid).toList();
+      if (delLugar.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            CopyHaku.experienciasVacias,
+            style: TipografiaHaku.interfaz(
+              fontSize: 13,
+              height: 1.4,
+              color: PaletaRutas.plomoClaro,
+            ),
+          ),
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final p in delLugar) ...[
+            TarjetaPublicacionRemota(publicacion: p),
+            const SizedBox(height: 12),
+          ],
+        ],
+      );
+    }
+
     final experiencias = MetricasComunidad.experienciasDe(
       ref.watch(almacenFeedProvider).publicaciones,
       lugarId: lugarId,

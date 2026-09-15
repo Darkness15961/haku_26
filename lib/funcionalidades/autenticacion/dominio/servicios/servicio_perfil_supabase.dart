@@ -86,12 +86,22 @@ class ServicioPerfilSupabase {
     required int nacionalidadId,
   }) async {
     final nick = _normalizarNick(nombreNick);
-    await _cliente.from('usuario').update({
-      'nombres': nombres.trim(),
-      'apellidos': apellidos.trim(),
-      'nombre_nick': nick,
-      'nacionalidad_id': nacionalidadId,
-    }).eq('id', userId);
+    final row = await _cliente
+        .from('usuario')
+        .update({
+          'nombres': nombres.trim(),
+          'apellidos': apellidos.trim(),
+          'nombre_nick': nick,
+          'nacionalidad_id': nacionalidadId,
+        })
+        .eq('id', userId)
+        .select('id')
+        .maybeSingle();
+    if (row == null) {
+      throw const AuthException(
+        'No se pudo guardar el perfil. ¿Existe tu ficha en el servidor?',
+      );
+    }
 
     // Mantener metadata Auth alineada (útil para OAuth / claims).
     await _cliente.auth.updateUser(
@@ -114,9 +124,15 @@ class ServicioPerfilSupabase {
   }) async {
     final correo = correoNuevo.trim();
     await _cliente.auth.updateUser(UserAttributes(email: correo));
-    await _cliente.from('usuario').update({
-      'correo': correo,
-    }).eq('id', userId);
+    final row = await _cliente
+        .from('usuario')
+        .update({'correo': correo})
+        .eq('id', userId)
+        .select('id')
+        .maybeSingle();
+    if (row == null) {
+      throw const AuthException('No se pudo sincronizar el correo en el perfil.');
+    }
   }
 
   Future<void> actualizarContrasena({
@@ -166,9 +182,17 @@ class ServicioPerfilSupabase {
           ),
         );
     final url = _cliente.storage.from(bucketMedia).getPublicUrl(path);
-    await _cliente.from('usuario').update({
-      'foto_perfil': url,
-    }).eq('id', userId);
+    final row = await _cliente
+        .from('usuario')
+        .update({'foto_perfil': url})
+        .eq('id', userId)
+        .select('id')
+        .maybeSingle();
+    if (row == null) {
+      throw const AuthException(
+        'La foto subió al storage pero no se guardó en el perfil.',
+      );
+    }
     await _cliente.auth.updateUser(
       UserAttributes(data: {'avatar_url': url}),
     );

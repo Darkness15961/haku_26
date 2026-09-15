@@ -177,11 +177,29 @@ lugar_categoria (
     final idNum = lugarId is int ? lugarId : int.parse('$lugarId');
 
     if (categoriaIds.isNotEmpty) {
-      final filasCat = categoriaIds
-          .toSet()
-          .map((cid) => {'lugar_id': idNum, 'categoria_id': cid})
-          .toList();
-      await clienteSupabase.from('lugar_categoria').insert(filasCat);
+      try {
+        final filasCat = categoriaIds
+            .toSet()
+            .map((cid) => {'lugar_id': idNum, 'categoria_id': cid})
+            .toList();
+        await clienteSupabase.from('lugar_categoria').insert(filasCat);
+      } catch (_) {
+        final revertida = await clienteSupabase
+            .from('lugar')
+            .update({'estado': false})
+            .eq('id', idNum)
+            .eq('usuario_id', user.id)
+            .select('id')
+            .maybeSingle();
+        if (revertida == null) {
+          throw const AuthException(
+            'El lugar quedó a medias y no se pudo desactivar. Reintentá.',
+          );
+        }
+        throw const AuthException(
+          'El lugar se creó pero fallaron las categorías. Quedó inactivo.',
+        );
+      }
     }
 
     final creado = await porId('$idNum');

@@ -69,5 +69,7 @@ bool _esCategoriaLugarCatalogo(ModeloCategoriaDb c) {
       t.startsWith('temat') ||
       t == 'actividad' ||
       t.startsWith('activ') ||
-      t.contains('interes');
+      t.contains('interes') ||
+      // Catálogo legacy / seed parcial: tipo genérico "lugar".
+      t == 'lugar';
 }

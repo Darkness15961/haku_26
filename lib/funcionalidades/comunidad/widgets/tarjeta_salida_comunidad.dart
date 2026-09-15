@@ -6,7 +6,7 @@ import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/salidas_datasource_local.dart';
-import '../pantallas/pantalla_salidas.dart';
+import '../pantallas/pantalla_detalle_salida_local.dart';
 
 /// Tarjeta de salida (con foto del lugar; sin invitación de feed).
 class TarjetaSalidaComunidad extends StatelessWidget {

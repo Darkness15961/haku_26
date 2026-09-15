@@ -58,11 +58,14 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   void _abrirDetalle(ModeloRuta ruta) {
     if (ruta.id.startsWith('lugar_')) {
       final lugarId = ruta.id.substring('lugar_'.length);
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => PantallaDetalleLugar(lugarId: lugarId),
-        ),
-      );
+      // Solo ficha remota con id numérico; slugs demo no van a Supabase.
+      if (int.tryParse(lugarId) != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PantallaDetalleLugar(lugarId: lugarId),
+          ),
+        );
+      }
       return;
     }
     final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;

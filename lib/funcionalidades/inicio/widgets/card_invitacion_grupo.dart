@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/datos/salidas_datasource_local.dart';
-import '../../comunidad/pantallas/pantalla_salidas.dart';
+import '../../comunidad/pantallas/pantalla_detalle_salida_local.dart';
+import '../../comunidad/pantallas/pantalla_detalle_salida_remota.dart';
 import '../../perfil_usuario/navegacion_perfil_ajeno.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
@@ -52,6 +54,23 @@ class CardInvitacionGrupo extends ConsumerWidget {
   Future<void> _abrirDetalle(BuildContext context) async {
     final id = publicacion.salidaId;
     if (id == null || id.isEmpty) return;
+    // IDs numéricos → detalle remoto; slugs demo solo sin Supabase.
+    if (int.tryParse(id.trim()) != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PantallaDetalleSalidaRemota(salidaId: id.trim()),
+        ),
+      );
+      return;
+    }
+    if (supabaseListo) {
+      if (!context.mounted) return;
+      mostrarSnackHaku(
+        context,
+        'Esa invitación es demo local. Las salidas reales están en Comunidad → Salidas.',
+      );
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PantallaDetalleSalida(salidaId: id),

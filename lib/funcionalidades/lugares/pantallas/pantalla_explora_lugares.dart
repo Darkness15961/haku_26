@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -139,8 +141,16 @@ class _EstadoPantallaExploraLugares
               l.nivelExploracion == NivelExploracion.nuevoEnHaku,
         )
         .length;
-    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
-    final indice = MetricasComunidad.indiceLugares(publicaciones);
+    final IndiceMetricasLugares indice;
+    if (supabaseListo) {
+      final remotas =
+          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
+      indice = MetricasComunidad.indiceLugaresRemotos(remotas);
+    } else {
+      indice = MetricasComunidad.indiceLugares(
+        ref.watch(almacenFeedProvider).publicaciones,
+      );
+    }
     final totalFotos = indice.totalFotos();
     final fotosHero = MetricasComunidad.etiquetaFotos(totalFotos);
     final nProvinciasConLugar = ProvinciasDataSourceLocal.construirIslas(todos)

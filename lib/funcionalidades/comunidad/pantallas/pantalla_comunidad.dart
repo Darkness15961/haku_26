@@ -4,26 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/demo/senales_atencion.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/responsive/rejilla_lego_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
-import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../inicio/datos/feed_inicio_datasource_local.dart';
-import '../../inicio/datos/mensajes_datasource_local.dart';
-import '../../inicio/pantallas/pantalla_chat_directo.dart';
-import '../../inicio/pantallas/pantalla_crear_grupo_comunidad.dart';
-import '../../inicio/pantallas/pantalla_detalle_grupo.dart';
-import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
-import '../../inicio/widgets/card_invitacion_grupo.dart';
-import '../../inicio/widgets/publicacion_estilo_threads.dart';
+import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
-import '../datos/salidas_datasource_local.dart';
-import '../pantallas/pantalla_crear_salida.dart';
+import '../dominio/modelo_comunidad.dart';
+import '../dominio/modelo_publicacion.dart';
+import '../dominio/modelo_salida.dart';
+import '../pantallas/pantalla_crear_comunidad_remota.dart';
+import '../pantallas/pantalla_crear_salida_remota.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
+import '../proveedores/proveedor_comunidad.dart';
+import '../proveedores/proveedor_publicaciones.dart';
+import '../proveedores/proveedor_salidas.dart';
 import '../widgets/chip_categoria_comunidad.dart';
-import '../widgets/tarjeta_salida_comunidad.dart';
+import '../widgets/tarjeta_publicacion_remota.dart';
+import '../widgets/tarjeta_salida_remota.dart';
+import '../../chat/indice.dart';
 
 /// Comunidad unificada: Posts · Salidas · Comunidades · Mensajes.
 class PantallaComunidad extends ConsumerStatefulWidget {
@@ -38,35 +40,55 @@ class PantallaComunidad extends ConsumerStatefulWidget {
 class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   static const _tabs = ['Para ti', 'Salidas', 'Comunidades', 'Mensajes'];
 
+  /// Filtro bandeja: 0 todos · 1 comunidades · 2 salidas · 3 privados (stub).
+  int _filtroMensajes = 0;
+  final _buscaMensajes = TextEditingController();
+  String _queryMensajes = '';
+
+  @override
+  void dispose() {
+    _buscaMensajes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _abrirCrearPublicacion() async {
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+    final done = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const PantallaPublicaciones(),
+      ),
+    );
+    if (done == true && mounted) {
+      notificarPublicacionesCambiaron(ref);
+    }
+  }
+
   Future<void> _abrirCrearSalida() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PantallaCrearSalida(),
+    final done = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const PantallaCrearSalidaRemota(),
       ),
     );
-    if (mounted) setState(() {});
+    if (done == true && mounted) {
+      notificarSalidasCambiaron(ref);
+      setState(() {});
+    }
   }
 
   Future<void> _abrirCrearComunidad() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await Navigator.of(context).push(
+    final done = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => const PantallaCrearComunidad(),
+        builder: (_) => const PantallaCrearComunidadRemota(),
       ),
     );
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _abrirCrearGrupo() async {
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    final done = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const PantallaCrearGrupo()),
-    );
-    if (done == true && mounted) setState(() {});
+    if (done == true && mounted) {
+      notificarComunidadesCambiaron(ref);
+    }
   }
 
   @override
@@ -79,24 +101,14 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final bottom = widget.mostrarAtras
         ? MediaQuery.paddingOf(context).bottom + 24
         : EspacioHaku.bottomNavClearance(context);
-    final store = ref.watch(almacenFeedProvider);
-    final publicaciones = store.listo
-        ? store.publicaciones
-        : FeedInicioDataSourceLocal.publicaciones;
-    final posts = publicaciones.where((p) => !p.esInvitacionSalida).toList();
-    final invitacionesPorSalida = {
-      for (final p in publicaciones.where((p) => p.esInvitacionSalida))
-        if (p.salidaId != null && p.salidaId!.isNotEmpty) p.salidaId!: p,
-    };
-    final salidas = [
-      ...SalidasDataSourceLocal.instancia.todas(),
-    ]..sort((a, b) => a.fecha.compareTo(b.fecha));
-    final comunidades = store.comunidades;
-    final chats = [
-      for (final c in MensajesDataSourceLocal.chats)
-        _conUltimoChat(c, store),
-    ];
-    final gruposRuta = MensajeriaEstado.instancia.grupos;
+    final postsAsync = ref.watch(publicacionesRemotasProvider);
+    final salidasAsync = ref.watch(salidasRemotasProvider);
+    final comunidadesAsync = ref.watch(comunidadesRemotasProvider);
+    // Solo cargar previews en tab Mensajes (evita RPC/SELECT al abrir Comunidad).
+    final chatsAsync = pestania == 3
+        ? ref.watch(previewsChatBandejaProvider)
+        : const AsyncValue<List<PreviewChatSala>>.data([]);
+    final uidSesion = ref.watch(sesionProvider).usuario?.id ?? '';
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -133,7 +145,16 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (pestania == 1)
+                        if (pestania == 0)
+                          IconButton(
+                            tooltip: 'Crear publicación',
+                            onPressed: _abrirCrearPublicacion,
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: PaletaRutas.oro,
+                            ),
+                          )
+                        else if (pestania == 1)
                           IconButton(
                             tooltip: 'Crear salida',
                             onPressed: _abrirCrearSalida,
@@ -198,7 +219,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                         selected: pestania == i,
                         contador: switch (i) {
                           1 => SenalesAtencion.salidasAbiertas(),
-                          3 => SenalesAtencion.mensajesSinLeer(),
+                          // Sin tabla de no-leídos: no inventar badge en Mensajes.
                           _ => 0,
                         },
                         onTap: () => ref
@@ -211,33 +232,170 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            if (pestania == 0) ..._sliverPosts(posts, bottom),
-            if (pestania == 1)
-              ..._sliverSalidas(salidas, invitacionesPorSalida, bottom),
-            if (pestania == 2) ..._sliverGrupos(comunidades, store, bottom),
-            if (pestania == 3)
-              ..._sliverMensajes(chats, gruposRuta, bottom),
+            if (pestania == 0) ..._sliverPostsRemotos(postsAsync, bottom),
+            if (pestania == 1) ..._sliverSalidasRemotas(salidasAsync, bottom),
+            if (pestania == 2)
+              ..._sliverGruposRemotos(comunidadesAsync, uidSesion, bottom),
+            if (pestania == 3) ...[
+              SliverToBoxAdapter(child: _barraBandejaMensajes()),
+              ..._sliverMensajesRemotos(chatsAsync, uidSesion, bottom),
+            ],
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _sliverPosts(List<PublicacionFeed> posts, double bottom) {
-    if (posts.isEmpty) {
+  Widget _barraBandejaMensajes() {
+    Widget chip(String label, int value, {bool pronto = false}) {
+      final sel = _filtroMensajes == value;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: FilterChip(
+          label: Text(label),
+          selected: sel,
+          onSelected: pronto
+              ? null
+              : (_) => setState(() => _filtroMensajes = value),
+          selectedColor: PaletaRutas.oro.withValues(alpha: 0.25),
+          checkmarkColor: PaletaRutas.oro,
+          labelStyle: TipografiaHaku.interfaz(
+            fontSize: 12,
+            fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+            color: pronto
+                ? PaletaRutas.plomo
+                : (sel ? PaletaRutas.oro : PaletaRutas.piedra),
+          ),
+          backgroundColor: PaletaRutas.carbon,
+          side: BorderSide(
+            color: sel
+                ? PaletaRutas.oro
+                : PaletaRutas.plomoOscuro.withValues(alpha: 0.5),
+          ),
+          showCheckmark: false,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _buscaMensajes,
+            onChanged: (v) => setState(() => _queryMensajes = v.trim()),
+            style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+            cursorColor: PaletaRutas.oro,
+            decoration: InputDecoration(
+              hintText: 'Buscar chat…',
+              hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: PaletaRutas.plomoClaro,
+              ),
+              filled: true,
+              fillColor: PaletaRutas.carbon,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                chip('Todos', 0),
+                chip('Comunidades', 1),
+                chip('Salidas', 2),
+                chip('Privados', 3, pronto: true),
+              ],
+            ),
+          ),
+          if (_filtroMensajes == 3)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Los chats privados llegan pronto.',
+                style: TipografiaHaku.interfaz(
+                  fontSize: 12,
+                  color: PaletaRutas.plomoClaro,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<PreviewChatSala> _filtrarBandeja(List<PreviewChatSala> all) {
+    Iterable<PreviewChatSala> list = all;
+    switch (_filtroMensajes) {
+      case 1:
+        list = list.where((p) => p.esComunidad);
+      case 2:
+        list = list.where((p) => p.esSalida);
+      case 3:
+        return const [];
+      default:
+        break;
+    }
+    final q = _queryMensajes.toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((p) => p.titulo.toLowerCase().contains(q));
+    }
+    return list.toList();
+  }
+
+  List<Widget> _sliverPostsRemotos(
+    AsyncValue<List<ModeloPublicacionRemota>> async,
+    double bottom,
+  ) {
+    if (!supabaseListo) {
       return [
-        SliverToBoxAdapter(
+        _sliverMsgCentro(
+          'Conectá Supabase para ver publicaciones.',
+          bottom,
+        ),
+      ];
+    }
+    if (async.isLoading && !async.hasValue) {
+      return [
+        const SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
-            child: Text(
-              'Todavía no hay publicaciones',
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            padding: EdgeInsets.only(top: 48),
+            child: Center(
+              child: CircularProgressIndicator(color: PaletaRutas.oro),
             ),
           ),
         ),
       ];
     }
+    if (async.hasError && !async.hasValue) {
+      return [
+        _sliverMsgCentro(
+          'No se pudieron cargar las publicaciones.\n'
+          'Si acabas de desplegar, confirma el push de RLS (Bloque E).',
+          bottom,
+        ),
+      ];
+    }
+    final posts = async.valueOrNull ?? const <ModeloPublicacionRemota>[];
+    if (posts.isEmpty) {
+      return [
+        _sliverMsgCentro(
+          'Todavía no hay publicaciones públicas.\n'
+          'Tocá + para crear la primera (sin likes inventados).',
+          bottom,
+        ),
+      ];
+    }
+
     final cols = EspacioHaku.columnasPublicaciones(context);
     if (cols <= 1) {
       return [
@@ -247,14 +405,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
               padding: EdgeInsets.only(
                 bottom: i == posts.length - 1 ? bottom : 18,
               ),
-              child: PublicacionEstiloThreads(
-                publicacion: posts[i],
-                indice: i,
-              ),
+              child: TarjetaPublicacionRemota(publicacion: posts[i]),
             ),
           ),
       ];
     }
+
     return [
       SliverPadding(
         padding: EdgeInsets.fromLTRB(
@@ -268,16 +424,13 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             crossAxisCount: cols,
             mainAxisSpacing: 14,
             crossAxisSpacing: 12,
-            childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.85 : 0.72,
+            childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.78 : 0.72,
           ),
           delegate: SliverChildBuilderDelegate(
-            (context, i) {
-              return PublicacionEstiloThreads(
-                publicacion: posts[i],
-                indice: i,
-                compacta: true,
-              );
-            },
+            (context, i) => TarjetaPublicacionRemota(
+              publicacion: posts[i],
+              compacta: true,
+            ),
             childCount: posts.length,
           ),
         ),
@@ -285,11 +438,38 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     ];
   }
 
-  List<Widget> _sliverSalidas(
-    List<ModeloSalida> salidas,
-    Map<String, PublicacionFeed> invitaciones,
+  List<Widget> _sliverSalidasRemotas(
+    AsyncValue<List<ModeloSalidaRemota>> async,
     double bottom,
   ) {
+    if (async.isLoading && !async.hasValue) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
+            child: const Center(
+              child: CircularProgressIndicator(color: PaletaRutas.oro),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (async.hasError && !async.hasValue) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 32, 24, bottom),
+            child: Text(
+              'No se pudieron cargar las salidas.',
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final salidas = async.value ?? const <ModeloSalidaRemota>[];
     if (salidas.isEmpty) {
       return [
         SliverToBoxAdapter(
@@ -298,7 +478,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             child: Column(
               children: [
                 Text(
-                  'Aún no hay salidas',
+                  !supabaseListo
+                      ? 'Sin conexión con el servidor.'
+                      : 'Aún no hay salidas.',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(
                     color: PaletaRutas.plomoClaro,
@@ -331,22 +513,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         context: context,
         itemCount: salidas.length,
         bottom: bottom,
-        childAspectRatio: 0.78,
+        // Landscape: más “tarjeta”; portrait usa lista fila (enRejilla false).
+        childAspectRatio: 0.92,
         itemBuilder: (context, i) {
-          final s = salidas[i];
-          final inv = invitaciones[s.id];
-          final enRejilla = RejillaLegoHaku.columnas(context) > 1;
-          if (inv != null) {
-            return CardInvitacionGrupo(
-              publicacion: inv,
-              enRejilla: enRejilla,
-              omitirPadding: true,
-            );
-          }
-          return TarjetaSalidaComunidad(
-            salida: s,
-            indice: i,
-            enRejilla: enRejilla,
+          return TarjetaSalidaRemota(
+            salida: salidas[i],
+            enRejilla: RejillaLegoHaku.columnas(context) > 1,
             omitirPadding: true,
           );
         },
@@ -354,11 +526,39 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     ];
   }
 
-  List<Widget> _sliverGrupos(
-    List<ComunidadHaku> comunidades,
-    EstadoAlmacenFeed store,
+  List<Widget> _sliverGruposRemotos(
+    AsyncValue<List<ComunidadHaku>> async,
+    String uidSesion,
     double bottom,
   ) {
+    if (async.isLoading && !async.hasValue) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
+            child: const Center(
+              child: CircularProgressIndicator(color: PaletaRutas.oro),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (async.hasError && !async.hasValue) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 32, 24, bottom),
+            child: Text(
+              'No se pudieron cargar las comunidades.',
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final comunidades = async.value ?? const <ComunidadHaku>[];
     if (comunidades.isEmpty) {
       return [
         SliverToBoxAdapter(
@@ -367,7 +567,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             child: Column(
               children: [
                 Text(
-                  'Únete o crea una comunidad temática',
+                  !supabaseListo
+                      ? 'Sin conexión con el servidor.'
+                      : 'Aún no hay comunidades visibles.',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(
                     color: PaletaRutas.plomoClaro,
@@ -401,10 +603,11 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         context: context,
         itemCount: comunidades.length,
         bottom: bottom,
-        childAspectRatio: enRejilla ? 0.95 : 2.6,
+        childAspectRatio: enRejilla ? 0.92 : 2.8,
         itemBuilder: (context, i) {
           final c = comunidades[i];
-          final unida = store.comunidadIds.contains(c.id);
+          final unida = uidSesion.isNotEmpty &&
+              (c.esMiembro(uidSesion) || c.creadorId == uidSesion);
           return _TarjetaGrupoComunidad(
             comunidad: c,
             unida: unida,
@@ -423,96 +626,130 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     ];
   }
 
-  List<Widget> _sliverMensajes(
-    List<ChatConversacion> chats,
-    List<GrupoRuta> gruposRuta,
+
+  List<Widget> _sliverMensajesRemotos(
+    AsyncValue<List<PreviewChatSala>> async,
+    String uidSesion,
     double bottom,
   ) {
-    final items = <Widget>[
-      for (final g in gruposRuta)
-        _TarjetaChatGrupoRuta(
-          grupo: g,
-          onTap: () async {
-            await Navigator.of(context).push<bool>(
-              MaterialPageRoute(
-                builder: (_) => PantallaDetalleGrupo(grupo: g),
-              ),
-            );
-            if (mounted) setState(() {});
-          },
+    if (!supabaseListo) {
+      return [
+        _sliverMsgCentro(
+          'Conectá Supabase para ver tus chats.',
+          bottom,
         ),
-      for (final c in chats) _TarjetaChatDirecto(chat: c),
-    ];
+      ];
+    }
+    if (uidSesion.isEmpty) {
+      return [
+        _sliverMsgCentro(
+          'Iniciá sesión para ver tus mensajes.',
+          bottom,
+        ),
+      ];
+    }
+    if (_filtroMensajes == 3) {
+      return [
+        _sliverMsgCentro(
+          'Pronto vas a poder chatear en privado.\nPor ahora usá comunidades y salidas.',
+          bottom,
+        ),
+      ];
+    }
+    if (async.isLoading && !async.hasValue) {
+      return [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(top: 48),
+            child: Center(
+              child: CircularProgressIndicator(color: PaletaRutas.oro),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (async.hasError && !async.hasValue) {
+      return [
+        _sliverMsgCentro(
+          'No se pudieron cargar los chats.',
+          bottom,
+        ),
+      ];
+    }
+    final previews = _filtrarBandeja(async.valueOrNull ?? const []);
+    if (previews.isEmpty) {
+      final vacio = _queryMensajes.isNotEmpty
+          ? 'No hay chats con ese nombre.'
+          : (_filtroMensajes == 2
+              ? 'Todavía no tenés chats de salidas.\nEntrá a una salida e abrí el chat.'
+              : (_filtroMensajes == 1
+                  ? 'Todavía no tenés chats de comunidades.\nEl admin debe abrir el chat una vez.'
+                  : 'Acá vas a ver tus chats de comunidades y salidas.'));
+      return [_sliverMsgCentro(vacio, bottom)];
+    }
 
     return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            EspacioHaku.horizontal(context),
-            0,
-            EspacioHaku.horizontal(context),
-            12,
-          ),
-          child: OutlinedButton.icon(
-            onPressed: _abrirCrearGrupo,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: PaletaRutas.piedra,
-              side: BorderSide(
-                color: PaletaRutas.plomo.withValues(alpha: 0.65),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            icon: const Icon(Icons.group_add_outlined, size: 18),
-            label: Text(
-              'Nuevo equipo de ruta',
-              style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ),
+      ...RejillaLegoHaku.slivers(
+        context: context,
+        itemCount: previews.length,
+        bottom: bottom,
+        childAspectRatio: 3.1,
+        itemBuilder: (context, i) {
+          final p = previews[i];
+          return _TarjetaChatComunidadRemota(
+            preview: p,
+            onTap: () {
+              if (!p.puedeAbrir) {
+                mostrarSnackHaku(
+                  context,
+                  p.esSalida
+                      ? 'Cuando el organizador abra el chat, aparece acá.'
+                      : 'Cuando el admin active el chat, aparece acá.',
+                );
+                return;
+              }
+              if (p.esSalida) {
+                final sid = p.salidaId;
+                if (sid == null || sid.isEmpty) return;
+                abrirChatSalida(
+                  context,
+                  ref,
+                  salidaId: sid,
+                  titulo: p.titulo,
+                );
+                return;
+              }
+              final cid = p.comunidadId;
+              if (cid == null || cid.isEmpty) return;
+              abrirChatComunidad(
+                context,
+                ref,
+                comunidadId: cid,
+                titulo: p.titulo,
+              );
+            },
+          );
+        },
       ),
-      if (items.isEmpty)
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 24, 24, bottom),
-            child: Text(
-              'Sin conversaciones aún',
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
-            ),
-          ),
-        )
-      else
-        ...RejillaLegoHaku.slivers(
-          context: context,
-          itemCount: items.length,
-          bottom: bottom,
-          // Filas chat: anchas y bajas (no cuadrados grandes).
-          childAspectRatio: 3.1,
-          itemBuilder: (context, i) => items[i],
-        ),
     ];
   }
 
-  ChatConversacion _conUltimoChat(
-    ChatConversacion c,
-    EstadoAlmacenFeed store,
-  ) {
-    final conv = store.mensajesDirectos
-        .where((m) => m.conversacionId == c.id)
-        .toList()
-      ..sort((a, b) => a.creadoEn.compareTo(b.creadoEn));
-    if (conv.isEmpty) return c;
-    final last = conv.last;
-    final mio = last.autorId == AlmacenFeedNotifier.idUsuarioLocal;
-    return c.copyWith(
-      ultimoMensaje: last.texto,
-      hace: _hace(last.creadoEn),
-      noLeidos: mio ? 0 : c.noLeidos,
+  SliverToBoxAdapter _sliverMsgCentro(String texto, double bottom) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
+        child: Text(
+          texto,
+          textAlign: TextAlign.center,
+          style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+        ),
+      ),
     );
   }
 
   static String _hace(DateTime d) {
     final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'ahora';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return '${diff.inDays}d';
@@ -627,14 +864,15 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${comunidad.miembros} miembros',
+            '${comunidad.miembros} miembros'
+            '${comunidad.esPrivada ? ' · privada' : ''}',
             style: TipografiaHaku.interfaz(
               fontSize: 12,
               color: PaletaRutas.oro,
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (comunidad.categorias.isNotEmpty) ...[
+          if (!comunidad.remoto && comunidad.categorias.isNotEmpty) ...[
             const SizedBox(height: 6),
             ChipCategoriaComunidad(
               categoria: comunidad.categorias.first,
@@ -644,6 +882,16 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
         ],
       ),
     );
+
+    Widget portada() {
+      if (comunidad.imagenUrl.trim().isEmpty) {
+        return const _PortadaComunidadVacia();
+      }
+      return ImagenHaku(
+        url: comunidad.imagenUrl,
+        fit: BoxFit.cover,
+      );
+    }
 
     return Material(
       color: PaletaRutas.carbon,
@@ -655,28 +903,20 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: ImagenHaku(
-                      url: comunidad.imagenUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  Expanded(child: portada()),
                   const LineaEncabezadoInca(altura: 2.5),
                   texto,
                 ],
               )
-            : IntrinsicHeight(
+            : SizedBox(
+                height: 88,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _FranjaPolleraVertical(),
                     SizedBox(
                       width: 88,
-                      height: 88,
-                      child: ImagenHaku(
-                        url: comunidad.imagenUrl,
-                        fit: BoxFit.cover,
-                      ),
+                      child: portada(),
                     ),
                     Expanded(child: texto),
                   ],
@@ -687,192 +927,186 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
   }
 }
 
-/// Contraste tipo pollera al costado (vertical).
-class _FranjaPolleraVertical extends StatelessWidget {
-  const _FranjaPolleraVertical();
+/// Sin `foto_portada` en BD: placeholder neutro (no inventa foto de lugar).
+class _PortadaComunidadVacia extends StatelessWidget {
+  const _PortadaComunidadVacia();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 4,
-      child: Column(
-        children: [
-          Expanded(flex: 5, child: ColoredBox(color: PaletaRutas.oro)),
-          Expanded(
-            flex: 2,
-            child: ColoredBox(color: PaletaRutas.piedra.withValues(alpha: 0.85)),
-          ),
-          Expanded(flex: 3, child: ColoredBox(color: PaletaRutas.oroOscuro)),
-          Expanded(
-            flex: 2,
-            child: ColoredBox(
-              color: PaletaRutas.plomoClaro.withValues(alpha: 0.7),
-            ),
-          ),
-          Expanded(flex: 4, child: ColoredBox(color: PaletaRutas.oro)),
-        ],
-      ),
-    );
-  }
-}
-
-class _TarjetaChatDirecto extends StatelessWidget {
-  const _TarjetaChatDirecto({required this.chat});
-
-  final ChatConversacion chat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
+    return ColoredBox(
       color: PaletaRutas.carbon,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => PantallaChatDirecto(
-                persona: SugerenciaSeguimiento(
-                  id: chat.id,
-                  nombre: chat.nombre,
-                  usuario: chat.usuario,
-                  avatarUrl: chat.avatarUrl,
-                  bioCorta: '',
-                ),
-              ),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const LineaEncabezadoInca(altura: 2.5),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      AvatarHaku(url: chat.avatarUrl, size: 48),
-                      if (chat.noLeidos > 0)
-                        Positioned(
-                          right: -4,
-                          top: -4,
-                          child: BadgeContador(
-                            cantidad: chat.noLeidos,
-                            compacto: true,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          chat.nombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TipografiaHaku.interfaz(
-                            fontWeight: FontWeight.w700,
-                            color: PaletaRutas.piedra,
-                          ),
-                        ),
-                        Text(
-                          chat.ultimoMensaje,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 12,
-                            color: PaletaRutas.plomoClaro,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    chat.hace,
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 11,
-                      color: PaletaRutas.plomo,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      child: Center(
+        child: Icon(
+          Icons.diversity_3_outlined,
+          color: PaletaRutas.plomo.withValues(alpha: 0.85),
+          size: 28,
         ),
       ),
     );
   }
 }
 
-class _TarjetaChatGrupoRuta extends StatelessWidget {
-  const _TarjetaChatGrupoRuta({
-    required this.grupo,
+/// Contraste tipo pollera al costado (vertical).
+/// Gradient fijo: sin Column/Expanded/LayoutBuilder (evita layout roto en IntrinsicHeight).
+class _FranjaPolleraVertical extends StatelessWidget {
+  const _FranjaPolleraVertical();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 4,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              PaletaRutas.oro,
+              Color(0xFFD4C4A8), // piedra aprox
+              PaletaRutas.oroOscuro,
+              Color(0xFFB8B0A4), // plomoClaro aprox
+              PaletaRutas.oro,
+            ],
+            stops: [0.0, 0.31, 0.50, 0.69, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _TarjetaChatComunidadRemota extends StatelessWidget {
+  const _TarjetaChatComunidadRemota({
+    required this.preview,
     required this.onTap,
   });
 
-  final GrupoRuta grupo;
+  final PreviewChatSala preview;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final ultimo = preview.ultimo;
+    final previewTxt =
+        ultimo == null ? preview.previewVacioEtiqueta : ultimo.contenidoVisible;
+
+    final hace = ultimo == null
+        ? ''
+        : _EstadoPantallaComunidad._hace(ultimo.fechaEnvio);
+    final foto = preview.fotoPortada?.trim() ?? '';
+    final badge = preview.noLeidos;
+
     return Material(
       color: PaletaRutas.carbon,
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const LineaEncabezadoInca(altura: 2.5),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: PaletaRutas.ink,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.hiking, color: PaletaRutas.oro),
+        child: SizedBox(
+          height: 72,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _FranjaPolleraVertical(),
+              if (foto.isEmpty)
+                Container(
+                  width: 56,
+                  color: PaletaRutas.ink,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    preview.esSalida
+                        ? Icons.hiking
+                        : Icons.forum_outlined,
+                    color: PaletaRutas.oro,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          grupo.nombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TipografiaHaku.interfaz(
-                            fontWeight: FontWeight.w700,
-                            color: PaletaRutas.piedra,
-                          ),
+                )
+              else
+                SizedBox(
+                  width: 56,
+                  child: ImagenHaku(url: foto, fit: BoxFit.cover),
+                ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    preview.titulo,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TipografiaHaku.interfaz(
+                                      fontWeight: FontWeight.w700,
+                                      color: PaletaRutas.piedra,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: PaletaRutas.ink,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    preview.etiquetaTipo,
+                                    style: TipografiaHaku.interfaz(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: PaletaRutas.oro,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              previewTxt,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 12,
+                                color: PaletaRutas.plomoClaro,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          grupo.rutaTitulo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TipografiaHaku.interfaz(
-                            fontSize: 12,
-                            color: PaletaRutas.plomoClaro,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (hace.isNotEmpty)
+                            Text(
+                              hace,
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 11,
+                                color: PaletaRutas.plomo,
+                              ),
+                            ),
+                          if (badge > 0) ...[
+                            const SizedBox(height: 4),
+                            BadgeContador(cantidad: badge, compacto: true),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

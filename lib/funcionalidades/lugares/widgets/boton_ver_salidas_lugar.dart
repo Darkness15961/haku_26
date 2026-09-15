@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../comunidad/datos/salidas_datasource_local.dart';
 import '../../comunidad/pantallas/pantalla_salidas.dart';
+import '../../comunidad/proveedores/proveedor_salidas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
-/// Botón «Ver salidas» — brilla en oro si hay salidas grupales.
-class BotonVerSalidasLugar extends StatefulWidget {
+/// Botón «Ver salidas» — cuenta remota por `punto_encuentro_lugar_id`.
+class BotonVerSalidasLugar extends ConsumerStatefulWidget {
   const BotonVerSalidasLugar({
     super.key,
     required this.lugarId,
@@ -16,18 +17,14 @@ class BotonVerSalidasLugar extends StatefulWidget {
   final String? lugarNombre;
 
   @override
-  State<BotonVerSalidasLugar> createState() => _EstadoBotonVerSalidasLugar();
+  ConsumerState<BotonVerSalidasLugar> createState() =>
+      _EstadoBotonVerSalidasLugar();
 }
 
-class _EstadoBotonVerSalidasLugar extends State<BotonVerSalidasLugar>
+class _EstadoBotonVerSalidasLugar extends ConsumerState<BotonVerSalidasLugar>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
   late final Animation<double> _glow;
-
-  int get _nSalidas =>
-      SalidasDataSourceLocal.instancia.todas(lugarId: widget.lugarId).length;
-
-  bool get _haySalidas => _nSalidas > 0;
 
   @override
   void initState() {
@@ -39,26 +36,21 @@ class _EstadoBotonVerSalidasLugar extends State<BotonVerSalidasLugar>
     _glow = Tween<double>(begin: 0.35, end: 1).animate(
       CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
     );
-    if (_haySalidas) {
-      _pulse.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant BotonVerSalidasLugar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_haySalidas && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!_haySalidas && _pulse.isAnimating) {
-      _pulse.stop();
-      _pulse.value = 0.35;
-    }
   }
 
   @override
   void dispose() {
     _pulse.dispose();
     super.dispose();
+  }
+
+  void _syncPulse(bool hay) {
+    if (hay && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!hay && _pulse.isAnimating) {
+      _pulse.stop();
+      _pulse.value = 0.35;
+    }
   }
 
   void _abrir() {
@@ -71,14 +63,18 @@ class _EstadoBotonVerSalidasLugar extends State<BotonVerSalidasLugar>
 
   @override
   Widget build(BuildContext context) {
-    final n = _nSalidas;
+    final async = ref.watch(salidasPorLugarProvider(widget.lugarId));
+    final n = async.valueOrNull?.length ?? 0;
+    final hay = n > 0;
+    _syncPulse(hay);
+
     final label = n == 0
         ? 'Ver salidas'
         : n == 1
-            ? 'Ver salidas grupales (1)'
-            : 'Ver salidas grupales ($n)';
+            ? 'Ver salidas (1)'
+            : 'Ver salidas ($n)';
 
-    if (!_haySalidas) {
+    if (!hay) {
       return OutlinedButton.icon(
         onPressed: _abrir,
         style: OutlinedButton.styleFrom(

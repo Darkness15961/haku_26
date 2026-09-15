@@ -56,15 +56,19 @@ final lugaresRemotosProvider = FutureProvider<List<ModeloLugar>>((ref) async {
 
 final lugaresListaProvider = Provider<List<ModeloLugar>>((ref) {
   final async = ref.watch(lugaresRemotosProvider);
-  return async.maybeWhen(data: (d) => d, orElse: () => const []);
+  // Conserva pines/lista en reload (evita mapa vacío / flicker).
+  return async.valueOrNull ?? const [];
 });
 
 final lugaresCargandoProvider = Provider<bool>((ref) {
-  return ref.watch(lugaresRemotosProvider).isLoading;
+  final async = ref.watch(lugaresRemotosProvider);
+  return async.isLoading && !async.hasValue;
 });
 
 final lugaresErrorProvider = Provider<Object?>((ref) {
-  return ref.watch(lugaresRemotosProvider).whenOrNull(error: (e, _) => e);
+  final async = ref.watch(lugaresRemotosProvider);
+  if (async.hasValue) return null;
+  return async.whenOrNull(error: (e, _) => e);
 });
 
 final lugarDetalleProvider =
@@ -118,6 +122,5 @@ final lugaresCercaProvider =
 
 void notificarLugaresCambiaron(WidgetRef ref) {
   ref.read(lugaresVersionProvider.notifier).state++;
-  ref.invalidate(lugaresRemotosProvider);
   ref.invalidate(lugaresCercaProvider);
 }

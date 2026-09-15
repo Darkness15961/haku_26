@@ -1,4 +1,5 @@
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
 import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 
@@ -254,5 +255,60 @@ abstract final class MetricasComunidad {
     final e = etiquetaExploradores(exploradores);
     if (e.isNotEmpty) partes.add(e);
     return partes.join(' · ');
+  }
+
+  /// Métricas desde publicaciones remotas ligadas a `lugar_id` numérico.
+  static MetricasExperienciaComunidad calcularRemotas(
+    List<ModeloPublicacionRemota> pubs, {
+    required String lugarId,
+  }) {
+    final lid = lugarId.trim();
+    if (lid.isEmpty) return MetricasExperienciaComunidad.vacias;
+    final delLugar = pubs.where((p) => (p.lugarId ?? '').trim() == lid).toList();
+    if (delLugar.isEmpty) return MetricasExperienciaComunidad.vacias;
+
+    final fotosVistas = <String>{};
+    final fotosUrls = <String>[];
+    final autores = <String>{};
+    for (final p in delLugar) {
+      final url = p.imagenUrl?.trim();
+      if (url != null && url.isNotEmpty && fotosVistas.add(url)) {
+        fotosUrls.add(url);
+      }
+      final autor = p.usuarioId.trim();
+      if (autor.isNotEmpty) autores.add(autor);
+    }
+    return MetricasExperienciaComunidad(
+      experiencias: const [],
+      fotosUrls: fotosUrls,
+      exploradores: autores.length,
+      valoraciones: 0,
+    );
+  }
+
+  static IndiceMetricasLugares indiceLugaresRemotos(
+    List<ModeloPublicacionRemota> pubs,
+  ) {
+    final fotosSets = <String, Set<String>>{};
+    final autores = <String, Set<String>>{};
+
+    for (final p in pubs) {
+      final id = p.lugarId?.trim();
+      if (id == null || id.isEmpty) continue;
+      final url = p.imagenUrl?.trim();
+      if (url != null && url.isNotEmpty) {
+        fotosSets.putIfAbsent(id, () => <String>{}).add(url);
+      }
+      final autor = p.usuarioId.trim();
+      if (autor.isNotEmpty) {
+        autores.putIfAbsent(id, () => <String>{}).add(autor);
+      }
+    }
+
+    return IndiceMetricasLugares(
+      fotos: {for (final e in fotosSets.entries) e.key: e.value.length},
+      exploradores: {for (final e in autores.entries) e.key: e.value.length},
+      calificaciones: const {},
+    );
   }
 }

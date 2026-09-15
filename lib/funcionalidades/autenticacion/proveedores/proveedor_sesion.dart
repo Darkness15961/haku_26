@@ -251,6 +251,17 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
     state = const EstadoSesion(listo: true);
   }
 
+  /// Espera a que [_iniciar]/sincronizar terminen (evita pedir login con JWT ya vivo).
+  Future<void> esperarListo({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (state.listo) return;
+    final fin = DateTime.now().add(timeout);
+    while (!state.listo && DateTime.now().isBefore(fin)) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
   /// Google OAuth real (Bloque B). Sin pantalla extra de completar.
   Future<void> iniciarConGoogle() async {
     final resultado = await _auth.iniciarConGoogle();

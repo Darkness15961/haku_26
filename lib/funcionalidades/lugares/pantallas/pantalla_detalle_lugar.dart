@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/menu_acciones_detalle.dart';
 import '../../rutas/widgets/menu_acciones_flotante.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
+import '../widgets/boton_ver_salidas_lugar.dart';
 import '../widgets/fila_metricas_comunidad.dart';
 import '../widgets/lista_experiencias_lugar.dart';
 import '../widgets/metricas_comunidad.dart';
 import '../widgets/recuerdos_comunidad.dart';
+
+export '../navegacion_lugar.dart' show abrirDetalleLugar;
 
 /// Ficha de lugar — ordenada para el turista (Explora / isla / mapa).
 class PantallaDetalleLugar extends ConsumerStatefulWidget {
@@ -82,11 +86,17 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
 
   Widget _construirDetalle(BuildContext context, ModeloLugar lugar) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
-    final metricas = MetricasComunidad.calcular(
-      publicaciones,
-      lugarId: lugar.id,
-    );
+    final MetricasExperienciaComunidad metricas;
+    if (supabaseListo) {
+      final remotas =
+          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
+      metricas = MetricasComunidad.calcularRemotas(remotas, lugarId: lugar.id);
+    } else {
+      metricas = MetricasComunidad.calcular(
+        ref.watch(almacenFeedProvider).publicaciones,
+        lugarId: lugar.id,
+      );
+    }
     final desc = lugar.descripcion.trim().isEmpty
         ? CopyHaku.lugarSinDescripcion(lugar.provincia)
         : lugar.descripcion.trim();
@@ -211,6 +221,11 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                         metricas: metricas,
                         calificacionCatalogo: lugar.calificacion,
                       ),
+                      if (supabaseListo &&
+                          int.tryParse(lugar.id.trim()) != null) ...[
+                        const SizedBox(height: 14),
+                        BotonVerSalidasLugar(lugarId: lugar.id),
+                      ],
                       const SizedBox(height: 22),
                       _TituloBloque('Sobre este lugar'),
                       const SizedBox(height: 10),
@@ -456,9 +471,5 @@ class _FilaDato extends StatelessWidget {
   }
 }
 
-void abrirDetalleLugar(BuildContext context, String lugarId) {
-  abrirPantallaHaku<void>(
-    context,
-    PantallaDetalleLugar(lugarId: lugarId),
-  );
-}
+// abrirDetalleLugar vive en ../navegacion_lugar.dart (exportado arriba).
+

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/demo/senales_atencion.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../comunidad/datos/salidas_datasource_local.dart';
 import '../../comunidad/pantallas/pantalla_salidas.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
@@ -126,14 +125,12 @@ class MenuAccionesDetalle extends ConsumerWidget {
   }
 
   List<Widget> _opcionesLugar(BuildContext context) {
-    final nSalidas =
-        SalidasDataSourceLocal.instancia.todas(lugarId: lugar!.id).length;
     final badge = SenalesAtencion.contadorSalidasLugar(lugar!.id);
     return [
       BotonIconoAccion(
-        tooltip: nSalidas == 0 ? 'Ver salidas' : 'Ver salidas ($nSalidas)',
+        tooltip: 'Ver salidas',
         icono: Icons.groups_rounded,
-        destacado: nSalidas > 0,
+        destacado: false,
         badge: badge,
         onTap: () => _salidas(context),
       ),

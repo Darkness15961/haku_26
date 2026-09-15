@@ -660,6 +660,8 @@ class _EstadoPantallaRegistrarLugar
                     distritos: distritosAsync.asData?.value ?? const [],
                     categorias: categoriasAsync.asData?.value ?? const [],
                     cargandoGeo: provinciasAsync.isLoading,
+                    cargandoDistritos: distritosAsync.isLoading,
+                    cargandoCategorias: categoriasAsync.isLoading,
                   ),
                 ),
                 if (_paso > 0) ...[
@@ -683,7 +685,9 @@ class _EstadoPantallaRegistrarLugar
                   onPressed: (_publicando ||
                           _ubicando ||
                           (_paso == 0 && _distrito == null) ||
-                          (_paso == 1 && _tematicaIds.isEmpty))
+                          (_paso == 1 &&
+                              (_tematicaIds.isEmpty ||
+                                  categoriasAsync.isLoading)))
                       ? null
                       : _siguiente,
                 ),
@@ -701,6 +705,8 @@ class _EstadoPantallaRegistrarLugar
     required List<ModeloDistritoDb> distritos,
     required List<ModeloCategoriaDb> categorias,
     required bool cargandoGeo,
+    required bool cargandoDistritos,
+    required bool cargandoCategorias,
   }) {
     final tematicas = categorias
         .where((c) => c.faceta == FacetaCategoriaLugar.tematica)
@@ -778,7 +784,12 @@ class _EstadoPantallaRegistrarLugar
               ),
             if (_provincia != null) ...[
               const SizedBox(height: 14),
-              if (distritos.isEmpty)
+              if (cargandoDistritos)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: LinearProgressIndicator(color: PaletaRutas.oro),
+                )
+              else if (distritos.isEmpty)
                 Text(
                   'No hay distritos cargados para esta provincia.',
                   style: _ayudaPaso,
@@ -875,7 +886,14 @@ class _EstadoPantallaRegistrarLugar
               style: _ayudaPaso,
             ),
             const SizedBox(height: 22),
-            if (tematicas.isEmpty && actividades.isEmpty)
+            if (cargandoCategorias)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: CircularProgressIndicator(color: PaletaRutas.oro),
+                ),
+              )
+            else if (tematicas.isEmpty && actividades.isEmpty)
               Text(
                 'No hay categorías cargadas. Revisa la conexión.',
                 style: _ayudaPaso,

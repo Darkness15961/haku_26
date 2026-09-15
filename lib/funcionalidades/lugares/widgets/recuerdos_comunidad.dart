@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import 'metricas_comunidad.dart';
@@ -22,12 +24,20 @@ class RecuerdosComunidad extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final metricas = MetricasComunidad.calcular(
-      ref.watch(almacenFeedProvider).publicaciones,
-      lugarId: lugarId,
-      rutaId: rutaId,
-    );
-    if (metricas.fotosUrls.isEmpty) return const SizedBox.shrink();
+    final List<String> fotos;
+    if (supabaseListo && lugarId != null) {
+      final remotas =
+          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
+      fotos = MetricasComunidad.calcularRemotas(remotas, lugarId: lugarId!)
+          .fotosUrls;
+    } else {
+      fotos = MetricasComunidad.calcular(
+        ref.watch(almacenFeedProvider).publicaciones,
+        lugarId: lugarId,
+        rutaId: rutaId,
+      ).fotosUrls;
+    }
+    if (fotos.isEmpty) return const SizedBox.shrink();
 
     final subtitulo = rutaId != null
         ? 'Fotos que dejó la comunidad en esta ruta'
@@ -58,13 +68,13 @@ class RecuerdosComunidad extends ConsumerWidget {
           height: 96,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: metricas.fotosUrls.length,
+            itemCount: fotos.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) {
               return ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: ImagenHaku(
-                  url: metricas.fotosUrls[i],
+                  url: fotos[i],
                   width: 120,
                   height: 96,
                   fit: BoxFit.cover,
