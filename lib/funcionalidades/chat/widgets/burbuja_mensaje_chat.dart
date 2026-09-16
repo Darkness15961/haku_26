@@ -13,12 +13,14 @@ class BurbujaMensajeChat extends StatelessWidget {
     required this.mio,
     required this.onLongPress,
     required this.onToggleReaccion,
+    this.onTapAutor,
   });
 
   final ModeloMensajeChat mensaje;
   final bool mio;
   final VoidCallback? onLongPress;
   final void Function(String emoji) onToggleReaccion;
+  final VoidCallback? onTapAutor;
 
   @override
   Widget build(BuildContext context) {
@@ -35,18 +37,26 @@ class BurbujaMensajeChat extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Column(
-              crossAxisAlignment:
-                  mio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: mio
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!mio)
                   Padding(
                     padding: const EdgeInsets.only(left: 4, bottom: 2),
-                    child: Text(
-                      m.etiquetaAutor,
-                      style: TipografiaHaku.interfaz(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: PaletaRutas.plomoClaro,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTapAutor,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text(
+                          m.etiquetaAutor,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: PaletaRutas.oro,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -97,18 +107,26 @@ class BurbujaMensajeChat extends StatelessWidget {
             ),
           ),
           child: Column(
-            crossAxisAlignment:
-                mio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: mio
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               if (!mio && !eliminado)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    m.etiquetaAutor,
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: PaletaRutas.plomoClaro,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onTapAutor,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        m.etiquetaAutor,
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: PaletaRutas.oro,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -128,10 +146,7 @@ class BurbujaMensajeChat extends StatelessWidget {
                       )
                     : Text(
                         '📍 Ubicación',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 14,
-                          color: fg,
-                        ),
+                        style: TipografiaHaku.interfaz(fontSize: 14, color: fg),
                       )
               else if (m.esImagen)
                 ClipRRect(
@@ -160,10 +175,7 @@ class BurbujaMensajeChat extends StatelessWidget {
                 claro: !mio || eliminado,
               ),
               if (!eliminado && m.reacciones.isNotEmpty)
-                _Reacciones(
-                  reacciones: m.reacciones,
-                  onTap: onToggleReaccion,
-                ),
+                _Reacciones(reacciones: m.reacciones, onTap: onToggleReaccion),
             ],
           ),
         ),
@@ -203,25 +215,24 @@ class _MetaFila extends StatelessWidget {
         if (editado) ...[
           Text(
             'editado',
-            style: TipografiaHaku.interfaz(fontSize: 10, color: color)
-                .copyWith(fontStyle: FontStyle.italic),
+            style: TipografiaHaku.interfaz(
+              fontSize: 10,
+              color: color,
+            ).copyWith(fontStyle: FontStyle.italic),
           ),
-          Text(' · ', style: TipografiaHaku.interfaz(fontSize: 10, color: color)),
+          Text(
+            ' · ',
+            style: TipografiaHaku.interfaz(fontSize: 10, color: color),
+          ),
         ],
-        Text(
-          hora,
-          style: TipografiaHaku.interfaz(fontSize: 10, color: color),
-        ),
+        Text(hora, style: TipografiaHaku.interfaz(fontSize: 10, color: color)),
       ],
     );
   }
 }
 
 class _Reacciones extends StatelessWidget {
-  const _Reacciones({
-    required this.reacciones,
-    required this.onTap,
-  });
+  const _Reacciones({required this.reacciones, required this.onTap});
 
   final List<ReaccionMensajeAgregada> reacciones;
   final void Function(String emoji) onTap;

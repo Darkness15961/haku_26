@@ -38,7 +38,7 @@ Esquema canónico: `supabase/migrations/` (base `20260912220617_remote_schema.sq
 | Fecha/hora | Un campo: `fecha_hora_inicio` timestamptz. |
 | Dificultad en salida | **No** en `salida`. Mostrar solo si hay `ruta_id` (fase Rutas) o quitar chip en UI salida remota. |
 | Check-in GPS | **Fuera** del primer corte. UI check-in queda deshabilitada o local hasta tabla dedicada. |
-| Chat 1:1 / GrupoRuta | `GrupoRuta` en mensajería = **concepto paralelo demo**. Tab Mensajes: primero `comunidad_mensaje`; DMs remotos = fase posterior. |
+| Chat 1:1 / GrupoRuta | Chat remoto 1:1 implementado después de esta fase; nace desde roster compartido. Ver `docs/fase-mensajes.md`. |
 | Feed “Para ti” | **Bloque E**, después de miembros + salidas estables. |
 | Foto portada comunidad | URL en `comunidad.foto_portada`; subida vía bucket `haku-storage-produccion-2026` (mismo patrón que `lugar.foto_portada`). |
 | Rutas | `salida.ruta_id` opcional; no implementar editor de rutas en Comunidad MVP. |

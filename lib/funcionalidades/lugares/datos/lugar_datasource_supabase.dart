@@ -51,6 +51,25 @@ lugar_categoria (
         .toList();
   }
 
+  /// Lugares registrados por el usuario (perfil).
+  Future<List<ModeloLugar>> listarDeUsuario(String usuarioId) async {
+    if (!supabaseListo) return const [];
+    final uid = usuarioId.trim();
+    if (uid.isEmpty) return const [];
+
+    final rows = await clienteSupabase
+        .from('lugar')
+        .select(_selectFicha)
+        .eq('usuario_id', uid)
+        .eq('estado', true)
+        .order('fecha_creacion', ascending: false);
+
+    return (rows as List<dynamic>)
+        .map((e) => ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(e as Map)))
+        .where((l) => l.id.isNotEmpty && l.nombre.isNotEmpty)
+        .toList();
+  }
+
   Future<List<ModeloLugar>> listarPorProvinciaCodigo(String codigo) async {
     final codigoNorm = codigo.trim().toLowerCase();
     if (codigoNorm.isEmpty) return const [];

@@ -49,5 +49,11 @@
 	<string>HAKU usa tu ubicación para marcar el lugar que estás registrando.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>HAKU usa tu ubicación para marcar el lugar que estás registrando.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HAKU usa la cámara para enviar fotos en el chat.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HAKU accede a tu galería para enviar imágenes en el chat.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HAKU puede usar el micrófono al grabar video con la cámara.</string>
 </dict>
 </plist>

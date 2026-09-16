@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
+import '../../chat/pantallas/pantalla_chat_sala.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
-import 'pantalla_chat_directo.dart';
 
 /// Visor vertical de clips de un perfil (estilo TikTok).
 class PantallaClipsPerfil extends ConsumerStatefulWidget {
@@ -57,12 +57,11 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
   }
 
   Future<void> _mensaje() async {
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaChatDirecto(persona: widget.persona),
-      ),
+    await abrirChatPrivadoExistente(
+      context,
+      ref,
+      usuarioId: widget.persona.id,
+      titulo: widget.persona.nombre,
     );
   }
 
@@ -126,9 +125,7 @@ class _EstadoPantallaClipsPerfil extends ConsumerState<PantallaClipsPerfil> {
                           icono: liked
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          etiqueta: formatearConteo(
-                            c.likes + (liked ? 1 : 0),
-                          ),
+                          etiqueta: formatearConteo(c.likes + (liked ? 1 : 0)),
                           color: liked ? PaletaRutas.oro : PaletaRutas.piedra,
                           onTap: () => _like(c),
                         ),

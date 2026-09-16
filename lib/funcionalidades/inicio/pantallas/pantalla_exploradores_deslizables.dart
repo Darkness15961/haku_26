@@ -6,13 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
+import '../../chat/pantallas/pantalla_chat_sala.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
-import 'pantalla_chat_directo.dart';
 import 'pantalla_clips_perfil.dart';
 
 /// Perfil estilo TikTok: stats, seguir, mensaje, grid con vistas y favoritos.
@@ -50,12 +50,11 @@ class _EstadoPantallaExploradoresDeslizables
   }
 
   Future<void> _escribir(SugerenciaSeguimiento s) async {
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaChatDirecto(persona: s),
-      ),
+    await abrirChatPrivadoExistente(
+      context,
+      ref,
+      usuarioId: s.id,
+      titulo: s.nombre,
     );
   }
 
@@ -100,13 +99,15 @@ class _EstadoPantallaExploradoresDeslizables
                         IconButton(
                           tooltip: 'Compartir',
                           onPressed: () async {
-                            final texto =
-                                CopyHaku.compartirPerfil(persona.usuario);
-                            await Clipboard.setData(
-                              ClipboardData(text: texto),
+                            final texto = CopyHaku.compartirPerfil(
+                              persona.usuario,
                             );
+                            await Clipboard.setData(ClipboardData(text: texto));
                             if (!context.mounted) return;
-                            mostrarSnackHaku(context, 'Enlace del perfil copiado');
+                            mostrarSnackHaku(
+                              context,
+                              'Enlace del perfil copiado',
+                            );
                           },
                           icon: const Icon(
                             Icons.ios_share_rounded,
@@ -293,9 +294,7 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
             hasScrollBody: false,
             child: Center(
               child: Text(
-                _tab == 1
-                    ? 'Sin favoritos'
-                    : 'Sin publicaciones',
+                _tab == 1 ? 'Sin favoritos' : 'Sin publicaciones',
                 style: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
               ),
             ),
@@ -310,60 +309,57 @@ class _EstadoPerfilTikTok extends State<_PerfilTikTok> {
                 crossAxisSpacing: 2,
                 childAspectRatio: 0.72,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, i) {
-                  final c = clips[i];
-                  return GestureDetector(
-                    onTap: () => _abrirClip(i),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CachedNetworkImage(
-                          imageUrl: c.imagenUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) =>
-                              const ColoredBox(color: Color(0xFFD4C8B8)),
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.center,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                PaletaRutas.ink.withValues(alpha: 0),
-                                PaletaRutas.ink.withValues(alpha: 0.72),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 6,
-                          bottom: 6,
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.play_arrow_rounded,
-                                color: PaletaRutas.piedra,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                formatearConteo(c.vistas),
-                                style: TipografiaHaku.interfaz(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: PaletaRutas.piedra,
-                                ),
-                              ),
+              delegate: SliverChildBuilderDelegate((context, i) {
+                final c = clips[i];
+                return GestureDetector(
+                  onTap: () => _abrirClip(i),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: c.imagenUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) =>
+                            const ColoredBox(color: Color(0xFFD4C8B8)),
+                      ),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.center,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              PaletaRutas.ink.withValues(alpha: 0),
+                              PaletaRutas.ink.withValues(alpha: 0.72),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-                childCount: clips.length,
-              ),
+                      ),
+                      Positioned(
+                        left: 6,
+                        bottom: 6,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.play_arrow_rounded,
+                              color: PaletaRutas.piedra,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              formatearConteo(c.vistas),
+                              style: TipografiaHaku.interfaz(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: PaletaRutas.piedra,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }, childCount: clips.length),
             ),
           ),
       ],
@@ -435,7 +431,9 @@ class _BotonIcono extends StatelessWidget {
           side: BorderSide(
             color: PaletaRutas.plomoOscuro.withValues(alpha: 0.7),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Icon(icono, size: 20),
       ),

@@ -1,6 +1,7 @@
 /// Fila de `public.sala_chat`.
 class ModeloSalaChat {
   final String id;
+
   /// `comunidad` | `salida` | `privado`
   final String tipo;
   final String? comunidadId;

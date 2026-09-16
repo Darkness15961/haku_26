@@ -7,6 +7,7 @@ import '../../autenticacion/navegacion_auth.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../comunidad/dominio/modelo_comunidad.dart';
 import '../../comunidad/proveedores/proveedor_comunidad.dart';
+import '../../comunidad/proveedores/proveedor_salidas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/chat_datasource_supabase.dart';
@@ -14,7 +15,9 @@ import '../dominio/contenido_chat_especial.dart';
 import '../dominio/modelo_mensaje_chat.dart';
 import '../proveedores/proveedor_chat.dart';
 import '../widgets/burbuja_mensaje_chat.dart';
+import '../widgets/sheet_crear_chat_grupal.dart';
 import 'pantalla_gestion_participantes_chat.dart';
+import 'pantalla_perfil_participante_chat.dart';
 
 /// Chat genérico por `sala_id` (comunidad o salida).
 class PantallaChatSala extends ConsumerStatefulWidget {
@@ -45,6 +48,7 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
   bool _cargandoMas = false;
   bool _hayMas = true;
   List<ModeloMensajeChat> _extraAntiguos = const [];
+
   /// Mensajes enviados locales hasta que Realtime / seed los confirme.
   List<ModeloMensajeChat> _enviadosLocal = const [];
 
@@ -68,13 +72,12 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(chatDataSourceProvider).marcarLeido(widget.salaId);
+      ref.invalidate(mensajesSalaProvider(widget.salaId));
       notificarChatCambio(ref);
     }
   }
 
-  List<ModeloMensajeChat> _fusionar(
-    List<ModeloMensajeChat> live,
-  ) {
+  List<ModeloMensajeChat> _fusionar(List<ModeloMensajeChat> live) {
     final ids = <String>{};
     final out = <ModeloMensajeChat>[];
     for (final m in [..._extraAntiguos, ...live]) {
@@ -95,6 +98,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     out.sort((a, b) {
       final c = a.fechaEnvio.compareTo(b.fechaEnvio);
       if (c != 0) return c;
+      final ai = int.tryParse(a.id);
+      final bi = int.tryParse(b.id);
+      if (ai != null && bi != null) return ai.compareTo(bi);
       return a.id.compareTo(b.id);
     });
     return out;
@@ -109,7 +115,8 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
 
   Future<void> _cargarMas() async {
     if (_cargandoMas || !_hayMas) return;
-    final live = ref.read(mensajesSalaProvider(widget.salaId)).valueOrNull ??
+    final live =
+        ref.read(mensajesSalaProvider(widget.salaId)).valueOrNull ??
         const <ModeloMensajeChat>[];
     final todos = _fusionar(live);
     if (todos.isEmpty) return;
@@ -124,7 +131,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     final maxBefore = _scroll.position.maxScrollExtent;
 
     try {
-      final page = await ref.read(chatDataSourceProvider).listarMensajes(
+      final page = await ref
+          .read(chatDataSourceProvider)
+          .listarMensajes(
             widget.salaId,
             limite: ChatDataSourceSupabase.pageSizeDefault,
             antesDe: CursorMensajeChat(
@@ -180,7 +189,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
         _ctrl.text = texto;
         return;
       }
-      final enviado = await ref.read(chatDataSourceProvider).enviarTexto(
+      final enviado = await ref
+          .read(chatDataSourceProvider)
+          .enviarTexto(
             salaId: widget.salaId,
             texto: texto,
             comunidadId: widget.comunidadId,
@@ -209,13 +220,13 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     }
   }
 
-  Future<void> _enviarImagen() async {
+  Future<void> _enviarImagen(ImageSource source) async {
     if (_enviando) return;
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
 
     final file = await _picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 82,
       maxWidth: 1600,
     );
@@ -224,7 +235,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     setState(() => _enviando = true);
     try {
       final bytes = await file.readAsBytes();
-      final enviado = await ref.read(chatDataSourceProvider).enviarImagen(
+      final enviado = await ref
+          .read(chatDataSourceProvider)
+          .enviarImagen(
             salaId: widget.salaId,
             bytes: bytes,
             comunidadId: widget.comunidadId,
@@ -256,12 +269,13 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
 
     setState(() => _enviando = true);
     try {
-      final enviado =
-          await ref.read(chatDataSourceProvider).enviarUbicacionActual(
-                salaId: widget.salaId,
-                comunidadId: widget.comunidadId,
-                salidaId: widget.salidaId,
-              );
+      final enviado = await ref
+          .read(chatDataSourceProvider)
+          .enviarUbicacionActual(
+            salaId: widget.salaId,
+            comunidadId: widget.comunidadId,
+            salidaId: widget.salidaId,
+          );
       if (!mounted) return;
       setState(() {
         if (_enviadosLocal.every((m) => m.id != enviado.id)) {
@@ -347,7 +361,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
 
     setState(() => _enviando = true);
     try {
-      final enviado = await ref.read(chatDataSourceProvider).enviarSticker(
+      final enviado = await ref
+          .read(chatDataSourceProvider)
+          .enviarSticker(
             salaId: widget.salaId,
             stickerId: stickerId,
             comunidadId: widget.comunidadId,
@@ -381,15 +397,35 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     });
   }
 
-  Future<void> _abrirGestionParticipantes() async {
+  Future<void> _abrirAutor(ModeloMensajeChat mensaje) async {
+    final uid = ref.read(sesionProvider).usuario?.id ?? '';
+    if (mensaje.usuarioId.isEmpty || mensaje.usuarioId == uid) return;
+    final contexto = (widget.comunidadId?.trim().isNotEmpty ?? false)
+        ? 'esta comunidad'
+        : 'esta salida';
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaPerfilParticipanteChat(
+          usuarioId: mensaje.usuarioId,
+          salaOrigenId: widget.salaId,
+          contextoCompartido: contexto,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirGestionParticipantes({required bool puedeEditar}) async {
     final cid = widget.comunidadId?.trim() ?? '';
-    if (cid.isEmpty) return;
+    final sid = widget.salidaId?.trim() ?? '';
+    if (cid.isEmpty && sid.isEmpty) return;
     await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => PantallaGestionParticipantesChat(
           salaId: widget.salaId,
-          comunidadId: cid,
-          titulo: 'Miembros del chat',
+          comunidadId: cid.isEmpty ? null : cid,
+          salidaId: sid.isEmpty ? null : sid,
+          titulo: puedeEditar ? 'Miembros del chat' : 'Quién está en el chat',
+          puedeEditar: puedeEditar,
         ),
       ),
     );
@@ -460,7 +496,10 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
                           width: 44,
                           height: 44,
                           child: Center(
-                            child: Text(e, style: const TextStyle(fontSize: 24)),
+                            child: Text(
+                              e,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                           ),
                         ),
                       ),
@@ -480,8 +519,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
                       ),
                       title: Text(
                         'Editar mensaje',
-                        style:
-                            TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.piedra,
+                        ),
                       ),
                       onTap: () {
                         Navigator.pop(ctx);
@@ -571,10 +611,16 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
                   ),
                 ),
                 tile(
-                  icon: Icons.image_outlined,
-                  title: 'Imagen',
-                  subtitle: 'Desde tu galería',
-                  onTap: _enviarImagen,
+                  icon: Icons.photo_library_outlined,
+                  title: 'Galería',
+                  subtitle: 'Elegí una imagen de tu galería',
+                  onTap: () => _enviarImagen(ImageSource.gallery),
+                ),
+                tile(
+                  icon: Icons.photo_camera_outlined,
+                  title: 'Cámara',
+                  subtitle: 'Tomá una foto ahora',
+                  onTap: () => _enviarImagen(ImageSource.camera),
                 ),
                 tile(
                   icon: Icons.location_on_outlined,
@@ -600,10 +646,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
     try {
-      await ref.read(chatDataSourceProvider).toggleReaccion(
-            mensajeId: m.id,
-            emoji: emoji,
-          );
+      await ref
+          .read(chatDataSourceProvider)
+          .toggleReaccion(mensajeId: m.id, emoji: emoji);
       // Fuente de verdad = buffer del stream (Realtime + reload forzado).
       // No usar overlay de cuerpo: pisaría reacciones ajenas.
       forzarRecargaMensajeChat(ref, widget.salaId, m.id);
@@ -623,7 +668,10 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
           backgroundColor: PaletaRutas.carbon,
           title: Text(
             'Editar mensaje',
-            style: TipografiaHaku.titulo(color: PaletaRutas.piedra, fontSize: 18),
+            style: TipografiaHaku.titulo(
+              color: PaletaRutas.piedra,
+              fontSize: 18,
+            ),
           ),
           content: TextField(
             controller: ctrl,
@@ -666,7 +714,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     if (nuevo == null || !mounted) return;
     if (nuevo.isEmpty || nuevo == m.contenido) return;
     try {
-      final editado = await ref.read(chatDataSourceProvider).editarTexto(
+      final editado = await ref
+          .read(chatDataSourceProvider)
+          .editarTexto(
             mensajeId: m.id,
             nuevoTexto: nuevo,
             comunidadId: widget.comunidadId,
@@ -717,7 +767,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     );
     if (ok != true || !mounted) return;
     try {
-      final borrado = await ref.read(chatDataSourceProvider).softDeleteMensaje(
+      final borrado = await ref
+          .read(chatDataSourceProvider)
+          .softDeleteMensaje(
             mensajeId: m.id,
             comunidadId: widget.comunidadId,
             salidaId: widget.salidaId,
@@ -736,23 +788,40 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
     final uid = ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
     final async = ref.watch(mensajesSalaProvider(widget.salaId));
     final cid = widget.comunidadId?.trim() ?? '';
+    final sid = widget.salidaId?.trim() ?? '';
     final comunidadAsync = cid.isEmpty
         ? const AsyncValue<ComunidadHaku?>.data(null)
         : ref.watch(comunidadDetalleProvider(cid));
-    final soyAdmin = comunidadAsync.maybeWhen(
+    final salidaAsync = sid.isEmpty
+        ? null
+        : ref.watch(salidaDetalleProvider(sid));
+
+    final soyAdminComunidad = comunidadAsync.maybeWhen(
       data: (c) => c != null && uid.isNotEmpty && c.esAdminDe(uid),
       orElse: () => false,
     );
+    final soyOrgSalida =
+        salidaAsync?.maybeWhen(
+          data: (s) => s != null && uid.isNotEmpty && s.organizadorId == uid,
+          orElse: () => false,
+        ) ??
+        false;
+    final puedeEditarRoster = soyAdminComunidad || soyOrgSalida;
+    final mostrarMiembros = cid.isNotEmpty || sid.isNotEmpty;
 
     ref.listen(mensajesSalaProvider(widget.salaId), (prev, next) {
       final before = prev?.valueOrNull?.length ?? 0;
       final after = next.valueOrNull?.length ?? 0;
-      if (after > before) _scrollAlFinal();
+      if (after <= before) return;
+      final cercaDelFinal =
+          !_scroll.hasClients ||
+          _scroll.position.maxScrollExtent - _scroll.position.pixels <= 160;
+      if (cercaDelFinal) _scrollAlFinal();
     });
 
     final contexto = cid.isNotEmpty
         ? 'Comunidad'
-        : ((widget.salidaId?.trim().isNotEmpty ?? false) ? 'Salida' : 'Chat');
+        : (sid.isNotEmpty ? 'Salida' : 'Chat');
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -794,12 +863,18 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
                       ],
                     ),
                   ),
-                  if (soyAdmin)
+                  if (mostrarMiembros)
                     IconButton(
-                      tooltip: 'Miembros del chat',
-                      onPressed: _abrirGestionParticipantes,
-                      icon: const Icon(
-                        Icons.people_outline_rounded,
+                      tooltip: puedeEditarRoster
+                          ? 'Gestionar miembros'
+                          : 'Ver miembros',
+                      onPressed: () => _abrirGestionParticipantes(
+                        puedeEditar: puedeEditarRoster,
+                      ),
+                      icon: Icon(
+                        puedeEditarRoster
+                            ? Icons.group_add_outlined
+                            : Icons.people_outline_rounded,
                         color: PaletaRutas.oro,
                       ),
                     ),
@@ -810,6 +885,23 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: LineaEncabezadoInca(altura: 2),
             ),
+            if (async.hasError && async.hasValue)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 7,
+                ),
+                color: Colors.orange.withValues(alpha: 0.14),
+                child: Text(
+                  'Conexión inestable. Al volver a la app se reconectará.',
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 11,
+                    color: PaletaRutas.oro,
+                  ),
+                ),
+              ),
             Expanded(child: _cuerpo(uid, async)),
             Container(
               padding: EdgeInsets.fromLTRB(
@@ -874,8 +966,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
                     style: IconButton.styleFrom(
                       backgroundColor: PaletaRutas.oro,
                       foregroundColor: PaletaRutas.ink,
-                      disabledBackgroundColor:
-                          PaletaRutas.oro.withValues(alpha: 0.35),
+                      disabledBackgroundColor: PaletaRutas.oro.withValues(
+                        alpha: 0.35,
+                      ),
                     ),
                     icon: _enviando
                         ? const SizedBox(
@@ -1000,13 +1093,60 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
           mio: mio,
           onLongPress: m.eliminado ? null : () => _menuMensaje(m, mio),
           onToggleReaccion: (emoji) => _toggleReaccion(m, emoji),
+          onTapAutor:
+              !mio &&
+                  !m.eliminado &&
+                  (widget.comunidadId != null || widget.salidaId != null)
+              ? () => _abrirAutor(m)
+              : null,
         );
       },
     );
   }
 }
 
-/// Abre chat de comunidad: asegura sala (admin crea / miembro entra).
+/// Abre un DM ya establecido desde perfiles generales.
+///
+/// No crea relaciones arbitrarias: sin [salaOrigenId], el RPC solo devuelve
+/// una conversación que ya existe. Los DMs nuevos nacen desde un chat grupal.
+Future<void> abrirChatPrivadoExistente(
+  BuildContext context,
+  WidgetRef ref, {
+  required String usuarioId,
+  required String titulo,
+}) async {
+  final ok = await asegurarSesion(context, ref);
+  if (!ok || !context.mounted) return;
+  try {
+    final salaId = await ref
+        .read(chatDataSourceProvider)
+        .asegurarSalaPrivada(otroUsuarioId: usuarioId);
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaChatSala(
+          salaId: salaId,
+          titulo: titulo.trim().isEmpty ? 'Chat privado' : titulo.trim(),
+        ),
+      ),
+    );
+  } on AuthException catch (e) {
+    if (!context.mounted) return;
+    final sinRelacion = e.message.contains('Solo puedes iniciar');
+    mostrarSnackHaku(
+      context,
+      sinRelacion
+          ? 'Para iniciar este chat, primero coincidan en una comunidad o salida.'
+          : e.message,
+    );
+  } catch (_) {
+    if (context.mounted) {
+      mostrarSnackHaku(context, 'No se pudo abrir el chat privado');
+    }
+  }
+}
+
+/// Abre chat de comunidad: si no existe, el admin elige crear (todos / elegir).
 Future<void> abrirChatComunidad(
   BuildContext context,
   WidgetRef ref, {
@@ -1015,15 +1155,95 @@ Future<void> abrirChatComunidad(
 }) async {
   final ok = await asegurarSesion(context, ref);
   if (!ok || !context.mounted) return;
+
+  final uid = ref.read(sesionProvider).usuario?.id ?? '';
+  final ds = ref.read(chatDataSourceProvider);
+  final tituloChat = (titulo?.trim().isNotEmpty ?? false)
+      ? titulo!.trim()
+      : 'Chat';
+
   try {
-    final salaId =
-        await ref.read(chatDataSourceProvider).asegurarSalaComunidad(comunidadId);
+    // DEFINER: distingue "no hay sala" vs "hay sala pero no estoy en roster".
+    final existente = await ds.idSalaComunidadSiExiste(comunidadId);
+    late final String salaId;
+
+    if (existente != null && existente.isNotEmpty) {
+      final enRoster = await ds.soyParticipanteSala(existente);
+      if (!enRoster) {
+        final comunidad = await ref.read(
+          comunidadDetalleProvider(comunidadId).future,
+        );
+        final esAdmin =
+            comunidad != null && uid.isNotEmpty && comunidad.esAdminDe(uid);
+        if (!esAdmin) {
+          if (context.mounted) {
+            mostrarSnackHaku(
+              context,
+              'No estás en el chat grupal. Pedile al admin que te agregue.',
+            );
+          }
+          return;
+        }
+      }
+      // Admin fuera del roster: asegurar lo reincorpora. Miembro en roster: entra.
+      salaId = await ds.asegurarSalaComunidad(comunidadId);
+    } else {
+      final comunidad = await ref.read(
+        comunidadDetalleProvider(comunidadId).future,
+      );
+      final esAdmin =
+          comunidad != null && uid.isNotEmpty && comunidad.esAdminDe(uid);
+      if (!esAdmin) {
+        if (context.mounted) {
+          mostrarSnackHaku(
+            context,
+            'El admin todavía no habilitó el chat grupal.',
+          );
+        }
+        return;
+      }
+      if (!context.mounted) return;
+      final opcion = await mostrarSheetCrearChatGrupal(
+        context,
+        tituloContexto: 'esta comunidad',
+      );
+      if (opcion == null || !context.mounted) return;
+
+      if (opcion == OpcionCrearChatGrupal.todos) {
+        final okCrear = await confirmarCrearChatConTodos(
+          context,
+          tituloContexto: 'esta comunidad',
+        );
+        if (!okCrear || !context.mounted) return;
+        salaId = await ds.asegurarSalaComunidad(
+          comunidadId,
+          seedAprobados: true,
+        );
+        notificarChatCambio(ref);
+      } else {
+        // Elegir: picker primero; crear solo al pulsar «Crear chat».
+        final creada = await Navigator.of(context).push<String>(
+          MaterialPageRoute<String>(
+            builder: (_) => PantallaGestionParticipantesChat(
+              comunidadId: comunidadId,
+              titulo: 'Elegí quién entra al chat',
+              puedeEditar: true,
+              modoCreacion: true,
+            ),
+          ),
+        );
+        if (creada == null || creada.isEmpty || !context.mounted) return;
+        salaId = creada;
+      }
+    }
+
     if (!context.mounted) return;
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PantallaChatSala(
           salaId: salaId,
-          titulo: (titulo?.trim().isNotEmpty ?? false) ? titulo!.trim() : 'Chat',
+          titulo: tituloChat,
           comunidadId: comunidadId,
         ),
       ),
@@ -1040,7 +1260,7 @@ Future<void> abrirChatComunidad(
   }
 }
 
-/// Abre chat de salida (organizador crea / confirmado entra).
+/// Abre chat de salida: si no existe, el organizador elige crear.
 Future<void> abrirChatSalida(
   BuildContext context,
   WidgetRef ref, {
@@ -1049,17 +1269,85 @@ Future<void> abrirChatSalida(
 }) async {
   final ok = await asegurarSesion(context, ref);
   if (!ok || !context.mounted) return;
+
+  final uid = ref.read(sesionProvider).usuario?.id ?? '';
+  final ds = ref.read(chatDataSourceProvider);
+  final tituloChat = (titulo?.trim().isNotEmpty ?? false)
+      ? titulo!.trim()
+      : 'Chat de la salida';
+
   try {
-    final salaId =
-        await ref.read(chatDataSourceProvider).asegurarSalaSalida(salidaId);
+    final existente = await ds.idSalaSalidaSiExiste(salidaId);
+    late final String salaId;
+
+    if (existente != null && existente.isNotEmpty) {
+      final enRoster = await ds.soyParticipanteSala(existente);
+      if (!enRoster) {
+        final salida = await ref.read(salidaDetalleProvider(salidaId).future);
+        final esOrg =
+            salida != null && uid.isNotEmpty && salida.organizadorId == uid;
+        if (!esOrg) {
+          if (context.mounted) {
+            mostrarSnackHaku(
+              context,
+              'No estás en el chat de la salida. Pedile al organizador que te agregue.',
+            );
+          }
+          return;
+        }
+      }
+      salaId = await ds.asegurarSalaSalida(salidaId);
+    } else {
+      final salida = await ref.read(salidaDetalleProvider(salidaId).future);
+      final esOrg =
+          salida != null && uid.isNotEmpty && salida.organizadorId == uid;
+      if (!esOrg) {
+        if (context.mounted) {
+          mostrarSnackHaku(
+            context,
+            'El organizador todavía no habilitó el chat de la salida.',
+          );
+        }
+        return;
+      }
+      if (!context.mounted) return;
+      final opcion = await mostrarSheetCrearChatGrupal(
+        context,
+        tituloContexto: 'esta salida',
+      );
+      if (opcion == null || !context.mounted) return;
+
+      if (opcion == OpcionCrearChatGrupal.todos) {
+        final okCrear = await confirmarCrearChatConTodos(
+          context,
+          tituloContexto: 'esta salida',
+        );
+        if (!okCrear || !context.mounted) return;
+        salaId = await ds.asegurarSalaSalida(salidaId, seedConfirmados: true);
+        notificarChatCambio(ref);
+      } else {
+        final creada = await Navigator.of(context).push<String>(
+          MaterialPageRoute<String>(
+            builder: (_) => PantallaGestionParticipantesChat(
+              salidaId: salidaId,
+              titulo: 'Elegí quién entra al chat',
+              puedeEditar: true,
+              modoCreacion: true,
+            ),
+          ),
+        );
+        if (creada == null || creada.isEmpty || !context.mounted) return;
+        salaId = creada;
+      }
+    }
+
     if (!context.mounted) return;
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PantallaChatSala(
           salaId: salaId,
-          titulo: (titulo?.trim().isNotEmpty ?? false)
-              ? titulo!.trim()
-              : 'Chat de la salida',
+          titulo: tituloChat,
           salidaId: salidaId,
         ),
       ),

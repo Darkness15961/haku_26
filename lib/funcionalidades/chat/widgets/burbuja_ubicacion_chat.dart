@@ -124,10 +124,7 @@ class BurbujaUbicacionChat extends StatelessWidget {
                   ),
                   Text(
                     'Tocá para ver el mapa',
-                    style: TipografiaHaku.interfaz(
-                      fontSize: 10,
-                      color: muted,
-                    ),
+                    style: TipografiaHaku.interfaz(fontSize: 10, color: muted),
                   ),
                 ],
               ),

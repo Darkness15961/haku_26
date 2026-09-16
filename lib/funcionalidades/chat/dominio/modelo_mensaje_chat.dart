@@ -22,6 +22,7 @@ class ModeloMensajeChat {
   final String usuarioId;
   final String autorNick;
   final String contenido;
+
   /// `texto` | `imagen` | `audio` | `ubicacion` | `sticker`
   final String tipoMensaje;
   final DateTime fechaEnvio;
@@ -106,7 +107,14 @@ class ModeloMensajeChat {
   /// local exigiera igualdad de reacciones, tapa updates ajenos y frena el chat.
   bool cubiertoPor(ModeloMensajeChat live) {
     if (id != live.id) return false;
-    if (contenido != live.contenido) return false;
+    // Una imagen privada alterna entre `chat://ruta` y URL firmada temporal.
+    // El objeto es inmutable; el id/tipo identifica el mismo cuerpo.
+    if (esImagen && live.esImagen && live.contenido.startsWith('chat://')) {
+      return false;
+    }
+    if (!(esImagen && live.esImagen) && contenido != live.contenido) {
+      return false;
+    }
     if (!_mismoInstante(eliminadoEn, live.eliminadoEn)) return false;
     if (!_mismoInstante(editadoEn, live.editadoEn)) return false;
     return true;
@@ -207,7 +215,8 @@ class ModeloMensajeChat {
       fecha = f;
     }
 
-    final tipo = (m['tipo_mensaje'] as String?)?.trim().toLowerCase() ?? 'texto';
+    final tipo =
+        (m['tipo_mensaje'] as String?)?.trim().toLowerCase() ?? 'texto';
     final eliminado = _parseFecha(m['eliminado_en']);
     final traeReacciones = m.containsKey('mensaje_reaccion');
 
@@ -223,9 +232,7 @@ class ModeloMensajeChat {
       fechaEnvio: fecha.toLocal(),
       editadoEn: _parseFecha(m['editado_en']),
       eliminadoEn: eliminado,
-      reacciones: traeReacciones
-          ? _reaccionesDeFila(m, uidSesion)
-          : const [],
+      reacciones: traeReacciones ? _reaccionesDeFila(m, uidSesion) : const [],
     );
     return msg;
   }
@@ -242,10 +249,15 @@ class PreviewChatSala {
   final String? fotoPortada;
   final String? comunidadId;
   final String? salidaId;
+
+  /// Contraparte cuando [tipo] es `privado`.
+  final String? usuarioId;
+
   /// `comunidad` | `salida` | `privado`
   final String tipo;
   final ModeloMensajeChat? ultimo;
   final int noLeidos;
+
   /// Admin (comunidad) u organizador (salida): puede crear la sala.
   final bool puedeCrearSala;
 
@@ -255,6 +267,7 @@ class PreviewChatSala {
     this.fotoPortada,
     this.comunidadId,
     this.salidaId,
+    this.usuarioId,
     this.tipo = 'comunidad',
     this.ultimo,
     this.noLeidos = 0,
@@ -281,14 +294,51 @@ class PreviewChatSala {
 
   String get previewVacioEtiqueta {
     if (salaId.trim().isNotEmpty) return 'Sin mensajes aún';
-    if (esSalida) {
-      return puedeCrearSala
-          ? 'Tocá para abrir el chat'
-          : 'El organizador aún no abrió el chat';
+    if (puedeCrearSala) {
+      return 'Tocá para abrir el chat';
     }
-    return puedeCrearSala
-        ? 'Tocá para activar el chat'
-        : 'El admin aún no activó el chat';
+    if (esSalida) {
+      return 'El organizador aún no abrió el chat';
+    }
+    return 'El admin aún no activó el chat';
+  }
+}
+
+/// Identidad pública mínima mostrada al tocar un autor del chat.
+class PerfilChatBasico {
+  final String id;
+  final String nombres;
+  final String apellidos;
+  final String nombreNick;
+  final String? fotoPerfil;
+
+  const PerfilChatBasico({
+    required this.id,
+    required this.nombres,
+    required this.apellidos,
+    required this.nombreNick,
+    this.fotoPerfil,
+  });
+
+  String get nombreCompleto {
+    final valor = '$nombres $apellidos'.trim();
+    return valor.isEmpty ? nombreNick : valor;
+  }
+
+  String get etiquetaNick {
+    final valor = nombreNick.trim();
+    if (valor.isEmpty) return '';
+    return valor.startsWith('@') ? valor : '@$valor';
+  }
+
+  factory PerfilChatBasico.desdeFila(Map<String, dynamic> fila) {
+    return PerfilChatBasico(
+      id: '${fila['id'] ?? fila['otro_usuario_id'] ?? ''}'.trim(),
+      nombres: '${fila['nombres'] ?? ''}'.trim(),
+      apellidos: '${fila['apellidos'] ?? ''}'.trim(),
+      nombreNick: '${fila['nombre_nick'] ?? ''}'.trim(),
+      fotoPerfil: (fila['foto_perfil'] as String?)?.trim(),
+    );
   }
 }
 

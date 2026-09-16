@@ -1,17 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nucleo/metricas/metricas_descubrimiento.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
-import '../../autenticacion/proveedores/proveedor_sesion.dart';
-import '../../favoritos/indice.dart';
-import '../../inicio/datos/feed_inicio_datasource_local.dart';
-import '../../inicio/proveedores/proveedor_almacen_feed.dart';
-import '../../inicio/widgets/publicacion_estilo_threads.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
+import '../../comunidad/pantallas/pantalla_detalle_salida_remota.dart';
+import '../../favoritos/indice.dart';
+import '../../lugares/navegacion_lugar.dart';
 import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
@@ -20,13 +19,15 @@ import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../proveedores/proveedor_aportaciones_perfil.dart';
 import '../widgets/insignia_perfil.dart';
+import '../widgets/sheet_lista_perfil.dart';
 import '../widgets/tarjeta_estadistica_perfil.dart';
 import 'pantalla_configuracion.dart';
 
 enum _SeccionPerfil { perfil, contenido }
 
-/// Perfil â€” identidad por contribuciones.
+/// Perfil — identidad por contribuciones.
 class PantallaPerfilUsuario extends ConsumerStatefulWidget {
   const PantallaPerfilUsuario({super.key});
 
@@ -45,17 +46,13 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
     final bottomPad = EspacioHaku.bottomNavClearance(context);
     final padH = EspacioHaku.horizontal(context);
     final sesion = ref.watch(sesionProvider);
-    final store = ref.watch(almacenFeedProvider);
-    final nombre = sesion.usuario?.nombreUsuario ?? 'LucÃ­a';
+    final aportacionesAsync = ref.watch(aportacionesPerfilProvider);
+    final aportaciones =
+        aportacionesAsync.valueOrNull ?? const AportacionesPerfil();
+    final nombre = sesion.usuario?.nombreUsuario ?? 'Explorador';
     final avatarUrl = sesion.usuario?.avatarUrl ?? _avatarUrl;
     final bio = sesion.usuario?.bio ?? 'Cusco';
-    final misPosts = store.publicaciones
-        .where(
-          (p) =>
-              p.autorId == AlmacenFeedNotifier.idUsuarioLocal &&
-              !p.esInvitacionSalida,
-        )
-        .toList();
+    final misPosts = aportaciones.publicaciones;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -159,12 +156,17 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 220),
                         child: _seccion == _SeccionPerfil.perfil
-                            ? const _ContenidoPerfil(
-                                key: ValueKey('perfil'),
+                            ? _ContenidoPerfil(
+                                key: const ValueKey('perfil'),
+                                aportaciones: aportaciones,
+                                cargando: aportacionesAsync.isLoading &&
+                                    !aportacionesAsync.hasValue,
                               )
                             : _ContenidoPublicaciones(
                                 key: const ValueKey('contenido'),
                                 publicaciones: misPosts,
+                                cargando: aportacionesAsync.isLoading &&
+                                    !aportacionesAsync.hasValue,
                               ),
                       ),
                       if (sesion.autenticado) ...[
@@ -448,34 +450,114 @@ class _IconoSeccion extends StatelessWidget {
 }
 
 class _ContenidoPerfil extends ConsumerWidget {
-  const _ContenidoPerfil({super.key});
+  const _ContenidoPerfil({
+    super.key,
+    required this.aportaciones,
+    this.cargando = false,
+  });
+
+  final AportacionesPerfil aportaciones;
+  final bool cargando;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(almacenFeedProvider);
-    final m = ref.watch(metricasDescubrimientoProvider);
-    final nPosts = store.publicaciones
-        .where(
-          (p) =>
-              p.autorId == AlmacenFeedNotifier.idUsuarioLocal &&
-              !p.esInvitacionSalida,
-        )
-        .length;
-    final nRutas = store.favoritosRutaIds.length;
-    final nLugares = m.documentados;
-    final nSalidas = m.salidasEnroladas;
+    final nPosts = aportaciones.nPublicaciones;
+    final nRutas = aportaciones.nRutas;
+    final nLugares = aportaciones.nLugares;
+    final nSalidas = aportaciones.nSalidas;
     final hilos = RutasDataSourceLocal.obtenerCultura();
     final insignias = _insigniasDesde(
       posts: nPosts,
       rutas: nRutas,
       lugares: nLugares,
       salidas: nSalidas,
-      siguiendo: store.siguiendoIds.length,
+      siguiendo: 0,
     );
+
+    void sheetLugares() {
+      mostrarSheetListaPerfil(
+        context,
+        titulo: 'Mis lugares ($nLugares)',
+        vacio: 'Todavía no registraste lugares. Empezá en Explora.',
+        iconoVacio: Icons.place_outlined,
+        items: [
+          for (final l in aportaciones.lugares)
+            ItemListaPerfil(
+              titulo: l.nombre,
+              subtitulo: l.subtituloClasificacion,
+              onTap: () => abrirDetalleLugar(context, l.id),
+            ),
+        ],
+      );
+    }
+
+    void sheetRutas() {
+      mostrarSheetListaPerfil(
+        context,
+        titulo: 'Mis rutas',
+        vacio:
+            'Todavía no hay rutas propias en Haku. Pronto vas a poder crearlas acá.',
+        iconoVacio: Icons.route_outlined,
+        items: const [],
+      );
+    }
+
+    void sheetPosts() {
+      mostrarSheetListaPerfil(
+        context,
+        titulo: 'Mis publicaciones ($nPosts)',
+        vacio: 'Sin publicaciones todavía. Comenzá tu aventura.',
+        iconoVacio: Icons.photo_camera_outlined,
+        items: [
+          for (final p in aportaciones.publicaciones)
+            ItemListaPerfil(
+              titulo: p.contenido.trim().isEmpty
+                  ? 'Publicación'
+                  : (p.contenido.length > 80
+                      ? '${p.contenido.substring(0, 80)}…'
+                      : p.contenido),
+              subtitulo: p.hace,
+            ),
+        ],
+      );
+    }
+
+    void sheetSalidas() {
+      mostrarSheetListaPerfil(
+        context,
+        titulo: 'Mis salidas ($nSalidas)',
+        vacio: 'Todavía no organizaste salidas. Creá una desde Comunidad.',
+        iconoVacio: Icons.hiking,
+        items: [
+          for (final s in aportaciones.salidas)
+            ItemListaPerfil(
+              titulo: s.etiquetaPrincipal,
+              subtitulo: s.fechaHoraEtiqueta,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        PantallaDetalleSalidaRemota(salidaId: s.id),
+                  ),
+                );
+              },
+            ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (cargando)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: LinearProgressIndicator(
+              minHeight: 2,
+              color: PaletaRutas.oro,
+              backgroundColor: PaletaRutas.carbon,
+            ),
+          ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -484,6 +566,7 @@ class _ContenidoPerfil extends ConsumerWidget {
               valor: '$nLugares',
               etiqueta: 'Lugares',
               indice: 0,
+              onTap: sheetLugares,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
@@ -491,6 +574,7 @@ class _ContenidoPerfil extends ConsumerWidget {
               valor: '$nRutas',
               etiqueta: 'Rutas',
               indice: 1,
+              onTap: sheetRutas,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
@@ -498,6 +582,7 @@ class _ContenidoPerfil extends ConsumerWidget {
               valor: '$nPosts',
               etiqueta: 'Publicaciones',
               indice: 2,
+              onTap: sheetPosts,
             ),
             const SizedBox(width: 8),
             TarjetaEstadisticaPerfil(
@@ -505,6 +590,7 @@ class _ContenidoPerfil extends ConsumerWidget {
               valor: '$nSalidas',
               etiqueta: 'Salidas',
               indice: 3,
+              onTap: sheetSalidas,
             ),
           ],
         ),
@@ -546,7 +632,13 @@ class _ContenidoPerfil extends ConsumerWidget {
             horizontal: 10,
             vertical: 14,
           ),
-          decoration: FondosDetalleHaku.tarjeta(indice: 1),
+          decoration: BoxDecoration(
+            color: PaletaRutas.carbon,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: PaletaRutas.plomo.withValues(alpha: 0.28),
+            ),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -557,7 +649,8 @@ class _ContenidoPerfil extends ConsumerWidget {
                   nombre: insignias[i].nombre,
                   colorFondo: insignias[i].desbloqueada
                       ? insignias[i].color
-                      : const Color(0xFFB0B0B0),
+                      : PaletaRutas.plomoOscuro,
+                  bloqueada: !insignias[i].desbloqueada,
                 ),
               ],
             ],
@@ -651,13 +744,13 @@ List<_InsigniaInfo> _insigniasDesde({
       icono: Icons.terrain_rounded,
       nombre: CopyHaku.insigniaVecinoMapa,
       descripcion: CopyHaku.insigniaVecinoMapaDesc,
-      color: const Color(0xFF1A1A1A),
+      color: const Color(0xFF3D2B1F),
       desbloqueada: true,
     ),
     _InsigniaInfo(
       icono: Icons.grid_on_outlined,
       nombre: 'Tejedora',
-      descripcion: '1 publicaciÃ³n',
+      descripcion: '1 publicación',
       color: const Color(0xFF9C3B2E),
       desbloqueada: posts >= 1,
     ),
@@ -692,7 +785,7 @@ List<_InsigniaInfo> _insigniasDesde({
     _InsigniaInfo(
       icono: Icons.photo_camera_outlined,
       nombre: 'FotÃ³grafo',
-      descripcion: '1 publicaciÃ³n',
+      descripcion: '1 publicación',
       color: const Color(0xFF1E4D6B),
       desbloqueada: posts >= 1,
     ),
@@ -720,80 +813,108 @@ void _mostrarTodasInsignias(
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: PaletaRutas.carbon,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
     ),
     builder: (ctx) {
+      final maxH = MediaQuery.sizeOf(ctx).height * 0.62;
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Insignias',
-                style: TipografiaHaku.titulo(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: PaletaRutas.piedra,
-                ),
-              ),
-              const SizedBox(height: 14),
-              for (final i in insignias)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: i.desbloqueada
-                            ? i.color
-                            : PaletaRutas.plomoOscuro,
-                        child: Icon(
-                          i.icono,
-                          color: i.desbloqueada
-                              ? PaletaRutas.piedra
-                              : PaletaRutas.plomo,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              i.nombre,
-                              style: TipografiaHaku.interfaz(
-                                fontWeight: FontWeight.w700,
-                                color: i.desbloqueada
-                                    ? PaletaRutas.piedra
-                                    : PaletaRutas.plomo,
-                              ),
-                            ),
-                            Text(
-                              i.descripcion,
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 12,
-                                color: PaletaRutas.plomoClaro,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        i.desbloqueada
-                            ? Icons.check_circle
-                            : Icons.lock_outline,
-                        size: 18,
-                        color: i.desbloqueada
-                            ? PaletaRutas.oro
-                            : PaletaRutas.plomo,
-                      ),
-                    ],
+        child: SizedBox(
+          height: maxH,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: PaletaRutas.plomoOscuro,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-            ],
+                Text(
+                  'Insignias',
+                  style: TipografiaHaku.titulo(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.piedra,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Se van desbloqueando con lo que aportás en Haku.',
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: PaletaRutas.plomoClaro,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: insignias.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final i = insignias[index];
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: i.desbloqueada
+                                ? i.color
+                                : PaletaRutas.plomoOscuro,
+                            child: Icon(
+                              i.icono,
+                              color: i.desbloqueada
+                                  ? PaletaRutas.piedra
+                                  : PaletaRutas.plomo,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  i.nombre,
+                                  style: TipografiaHaku.interfaz(
+                                    fontWeight: FontWeight.w700,
+                                    color: i.desbloqueada
+                                        ? PaletaRutas.piedra
+                                        : PaletaRutas.plomo,
+                                  ),
+                                ),
+                                Text(
+                                  i.descripcion,
+                                  style: TipografiaHaku.interfaz(
+                                    fontSize: 12,
+                                    color: PaletaRutas.plomoClaro,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            i.desbloqueada
+                                ? Icons.check_circle
+                                : Icons.lock_outline,
+                            size: 18,
+                            color: i.desbloqueada
+                                ? PaletaRutas.oro
+                                : PaletaRutas.plomo,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -802,38 +923,65 @@ void _mostrarTodasInsignias(
 }
 
 class _ContenidoPublicaciones extends StatelessWidget {
-  final List<PublicacionFeed> publicaciones;
+  final List<ModeloPublicacionRemota> publicaciones;
+  final bool cargando;
 
-  const _ContenidoPublicaciones({super.key, required this.publicaciones});
+  const _ContenidoPublicaciones({
+    super.key,
+    required this.publicaciones,
+    this.cargando = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (cargando && publicaciones.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(
+          child: CircularProgressIndicator(color: PaletaRutas.oro),
+        ),
+      );
+    }
+
     if (publicaciones.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
+        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 12),
         child: Column(
           children: [
-            Icon(
-              Icons.photo_library_outlined,
-              size: 42,
-              color: PaletaRutas.plomoClaro.withValues(alpha: 0.45),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              CopyHaku.perfilSinPublicaciones,
-              style: TipografiaHaku.interfaz(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: PaletaRutas.plomoClaro.withValues(alpha: 0.7),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: PaletaRutas.carbon,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: PaletaRutas.oro.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Icon(
+                Icons.photo_camera_outlined,
+                size: 32,
+                color: PaletaRutas.oro.withValues(alpha: 0.85),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
+            Text(
+              CopyHaku.perfilSinPublicaciones,
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.titulo(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.piedra,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               CopyHaku.perfilSinPublicacionesSub,
               textAlign: TextAlign.center,
               style: TipografiaHaku.interfaz(
-                fontSize: 12,
-                color: PaletaRutas.plomo.withValues(alpha: 0.55),
+                fontSize: 13,
+                height: 1.35,
+                color: PaletaRutas.plomoClaro,
               ),
             ),
           ],
@@ -841,39 +989,150 @@ class _ContenidoPublicaciones extends StatelessWidget {
       );
     }
 
-    final cols = EspacioHaku.columnasPublicaciones(context);
-    if (cols <= 1) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < publicaciones.length; i++) ...[
-            PublicacionEstiloThreads(
-              publicacion: publicaciones[i],
-              indice: i,
-            ),
-            if (i < publicaciones.length - 1) const SizedBox(height: 20),
-          ],
-        ],
-      );
-    }
-
+    // Mosaico estable (evita overflow del card completo en GridView).
+    final cols = EspacioHaku.esHorizontal(context) ? 3 : 2;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: publicaciones.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: cols,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 12,
-        childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.85 : 0.72,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1,
       ),
       itemBuilder: (context, i) {
-        return PublicacionEstiloThreads(
-          publicacion: publicaciones[i],
-          indice: i,
-          compacta: true,
+        return _CeldaPublicacionPerfil(publicacion: publicaciones[i]);
+      },
+    );
+  }
+}
+
+/// Celda tipo álbum: imagen o texto corto. Sin overflow.
+class _CeldaPublicacionPerfil extends StatelessWidget {
+  const _CeldaPublicacionPerfil({required this.publicacion});
+
+  final ModeloPublicacionRemota publicacion;
+
+  void _abrirDetalle(BuildContext context) {
+    final p = publicacion;
+    final imagen = p.imagenUrl?.trim() ?? '';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PaletaRutas.carbon,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        final maxH = MediaQuery.sizeOf(ctx).height * 0.72;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: PaletaRutas.plomoOscuro,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  if (imagen.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: ImagenHaku(url: imagen, fit: BoxFit.cover),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(
+                    p.hace,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    p.contenido.trim().isEmpty ? 'Publicación' : p.contenido,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 14,
+                      height: 1.4,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  if (p.lugarNombre != null &&
+                      p.lugarNombre!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      p.lugarNombre!,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imagen = publicacion.imagenUrl?.trim() ?? '';
+    return Material(
+      color: PaletaRutas.carbon,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _abrirDetalle(context),
+        child: imagen.isNotEmpty
+            ? ImagenHaku(url: imagen, fit: BoxFit.cover)
+            : Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.notes_rounded,
+                      size: 18,
+                      color: PaletaRutas.oro.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Text(
+                        publicacion.contenido.trim().isEmpty
+                            ? 'Sin texto'
+                            : publicacion.contenido,
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                        style: TipografiaHaku.interfaz(
+                          fontSize: 12,
+                          height: 1.3,
+                          color: PaletaRutas.piedra,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 }
@@ -916,13 +1175,14 @@ class _PedacitoCultura extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          width: 160,
+    return SizedBox(
+      width: 148,
+      height: 168,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Stack(
@@ -936,6 +1196,15 @@ class _PedacitoCultura extends StatelessWidget {
                 ),
                 ColoredBox(
                   color: PaletaRutas.ink.withValues(alpha: 0.48),
+                ),
+                // Contorno suave, mismo lenguaje que las stats.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: PaletaRutas.plomo.withValues(alpha: 0.35),
+                    ),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(10),

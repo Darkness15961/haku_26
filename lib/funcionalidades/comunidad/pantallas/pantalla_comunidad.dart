@@ -55,9 +55,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
     final done = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => const PantallaPublicaciones(),
-      ),
+      MaterialPageRoute<bool>(builder: (_) => const PantallaPublicaciones()),
     );
     if (done == true && mounted) {
       notificarPublicacionesCambiaron(ref);
@@ -105,6 +103,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final salidasAsync = ref.watch(salidasRemotasProvider);
     final comunidadesAsync = ref.watch(comunidadesRemotasProvider);
     // Solo cargar previews en tab Mensajes (evita RPC/SELECT al abrir Comunidad).
+    if (pestania == 3) {
+      ref.watch(chatBandejaRealtimeProvider);
+    }
     final chatsAsync = pestania == 3
         ? ref.watch(previewsChatBandejaProvider)
         : const AsyncValue<List<PreviewChatSala>>.data([]);
@@ -178,11 +179,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                             final ir = SenalesAtencion.mensajesSinLeer() > 0
                                 ? 3
                                 : SenalesAtencion.salidasAbiertas() > 0
-                                    ? 1
-                                    : 0;
-                            ref
-                                .read(pestaniaComunidadProvider.notifier)
-                                .state = ir;
+                                ? 1
+                                : 0;
+                            ref.read(pestaniaComunidadProvider.notifier).state =
+                                ir;
                           },
                           icon: BadgeContadorOverlay(
                             cantidad:
@@ -222,9 +222,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                           // Sin tabla de no-leídos: no inventar badge en Mensajes.
                           _ => 0,
                         },
-                        onTap: () => ref
-                            .read(pestaniaComunidadProvider.notifier)
-                            .state = i,
+                        onTap: () =>
+                            ref.read(pestaniaComunidadProvider.notifier).state =
+                                i,
                       ),
                     ],
                   ],
@@ -247,24 +247,20 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   }
 
   Widget _barraBandejaMensajes() {
-    Widget chip(String label, int value, {bool pronto = false}) {
+    Widget chip(String label, int value) {
       final sel = _filtroMensajes == value;
       return Padding(
         padding: const EdgeInsets.only(right: 8),
         child: FilterChip(
           label: Text(label),
           selected: sel,
-          onSelected: pronto
-              ? null
-              : (_) => setState(() => _filtroMensajes = value),
+          onSelected: (_) => setState(() => _filtroMensajes = value),
           selectedColor: PaletaRutas.oro.withValues(alpha: 0.25),
           checkmarkColor: PaletaRutas.oro,
           labelStyle: TipografiaHaku.interfaz(
             fontSize: 12,
             fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
-            color: pronto
-                ? PaletaRutas.plomo
-                : (sel ? PaletaRutas.oro : PaletaRutas.piedra),
+            color: sel ? PaletaRutas.oro : PaletaRutas.piedra,
           ),
           backgroundColor: PaletaRutas.carbon,
           side: BorderSide(
@@ -313,21 +309,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                 chip('Todos', 0),
                 chip('Comunidades', 1),
                 chip('Salidas', 2),
-                chip('Privados', 3, pronto: true),
+                chip('Privados', 3),
               ],
             ),
           ),
-          if (_filtroMensajes == 3)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'Los chats privados llegan pronto.',
-                style: TipografiaHaku.interfaz(
-                  fontSize: 12,
-                  color: PaletaRutas.plomoClaro,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -341,7 +326,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       case 2:
         list = list.where((p) => p.esSalida);
       case 3:
-        return const [];
+        list = list.where((p) => p.esPrivado);
       default:
         break;
     }
@@ -358,10 +343,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   ) {
     if (!supabaseListo) {
       return [
-        _sliverMsgCentro(
-          'Conectá Supabase para ver publicaciones.',
-          bottom,
-        ),
+        _sliverMsgCentro('Conectá Supabase para ver publicaciones.', bottom),
       ];
     }
     if (async.isLoading && !async.hasValue) {
@@ -427,10 +409,8 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             childAspectRatio: EspacioHaku.esHorizontal(context) ? 0.78 : 0.72,
           ),
           delegate: SliverChildBuilderDelegate(
-            (context, i) => TarjetaPublicacionRemota(
-              publicacion: posts[i],
-              compacta: true,
-            ),
+            (context, i) =>
+                TarjetaPublicacionRemota(publicacion: posts[i], compacta: true),
             childCount: posts.length,
           ),
         ),
@@ -482,9 +462,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                       ? 'Sin conexión con el servidor.'
                       : 'Aún no hay salidas.',
                   textAlign: TextAlign.center,
-                  style: TipografiaHaku.interfaz(
-                    color: PaletaRutas.plomoClaro,
-                  ),
+                  style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -571,9 +549,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                       ? 'Sin conexión con el servidor.'
                       : 'Aún no hay comunidades visibles.',
                   textAlign: TextAlign.center,
-                  style: TipografiaHaku.interfaz(
-                    color: PaletaRutas.plomoClaro,
-                  ),
+                  style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -606,7 +582,8 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         childAspectRatio: enRejilla ? 0.92 : 2.8,
         itemBuilder: (context, i) {
           final c = comunidades[i];
-          final unida = uidSesion.isNotEmpty &&
+          final unida =
+              uidSesion.isNotEmpty &&
               (c.esMiembro(uidSesion) || c.creadorId == uidSesion);
           return _TarjetaGrupoComunidad(
             comunidad: c,
@@ -615,8 +592,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) =>
-                      PantallaDetalleComunidad(comunidadId: c.id),
+                  builder: (_) => PantallaDetalleComunidad(comunidadId: c.id),
                 ),
               );
             },
@@ -626,35 +602,16 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     ];
   }
 
-
   List<Widget> _sliverMensajesRemotos(
     AsyncValue<List<PreviewChatSala>> async,
     String uidSesion,
     double bottom,
   ) {
     if (!supabaseListo) {
-      return [
-        _sliverMsgCentro(
-          'Conectá Supabase para ver tus chats.',
-          bottom,
-        ),
-      ];
+      return [_sliverMsgCentro('Conectá Supabase para ver tus chats.', bottom)];
     }
     if (uidSesion.isEmpty) {
-      return [
-        _sliverMsgCentro(
-          'Iniciá sesión para ver tus mensajes.',
-          bottom,
-        ),
-      ];
-    }
-    if (_filtroMensajes == 3) {
-      return [
-        _sliverMsgCentro(
-          'Pronto vas a poder chatear en privado.\nPor ahora usá comunidades y salidas.',
-          bottom,
-        ),
-      ];
+      return [_sliverMsgCentro('Iniciá sesión para ver tus mensajes.', bottom)];
     }
     if (async.isLoading && !async.hasValue) {
       return [
@@ -669,22 +626,19 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       ];
     }
     if (async.hasError && !async.hasValue) {
-      return [
-        _sliverMsgCentro(
-          'No se pudieron cargar los chats.',
-          bottom,
-        ),
-      ];
+      return [_sliverMsgCentro('No se pudieron cargar los chats.', bottom)];
     }
     final previews = _filtrarBandeja(async.valueOrNull ?? const []);
     if (previews.isEmpty) {
       final vacio = _queryMensajes.isNotEmpty
           ? 'No hay chats con ese nombre.'
-          : (_filtroMensajes == 2
-              ? 'Todavía no tenés chats de salidas.\nEntrá a una salida e abrí el chat.'
-              : (_filtroMensajes == 1
-                  ? 'Todavía no tenés chats de comunidades.\nEl admin debe abrir el chat una vez.'
-                  : 'Acá vas a ver tus chats de comunidades y salidas.'));
+          : (_filtroMensajes == 3
+                ? 'Todavía no tenés chats privados.\nTocá el nombre de alguien dentro de un chat grupal.'
+                : (_filtroMensajes == 2
+                      ? 'Todavía no tenés chats de salidas.\nEntrá a una salida e abrí el chat.'
+                      : (_filtroMensajes == 1
+                            ? 'Todavía no tenés chats de comunidades.\nEl admin debe abrir el chat una vez.'
+                            : 'Acá vas a ver todos tus chats.')));
       return [_sliverMsgCentro(vacio, bottom)];
     }
 
@@ -711,11 +665,15 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
               if (p.esSalida) {
                 final sid = p.salidaId;
                 if (sid == null || sid.isEmpty) return;
-                abrirChatSalida(
-                  context,
-                  ref,
-                  salidaId: sid,
-                  titulo: p.titulo,
+                abrirChatSalida(context, ref, salidaId: sid, titulo: p.titulo);
+                return;
+              }
+              if (p.esPrivado) {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        PantallaChatSala(salaId: p.salaId, titulo: p.titulo),
+                  ),
                 );
                 return;
               }
@@ -887,10 +845,7 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
       if (comunidad.imagenUrl.trim().isEmpty) {
         return const _PortadaComunidadVacia();
       }
-      return ImagenHaku(
-        url: comunidad.imagenUrl,
-        fit: BoxFit.cover,
-      );
+      return ImagenHaku(url: comunidad.imagenUrl, fit: BoxFit.cover);
     }
 
     return Material(
@@ -914,10 +869,7 @@ class _TarjetaGrupoComunidad extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _FranjaPolleraVertical(),
-                    SizedBox(
-                      width: 88,
-                      child: portada(),
-                    ),
+                    SizedBox(width: 88, child: portada()),
                     Expanded(child: texto),
                   ],
                 ),
@@ -975,7 +927,6 @@ class _FranjaPolleraVertical extends StatelessWidget {
   }
 }
 
-
 class _TarjetaChatComunidadRemota extends StatelessWidget {
   const _TarjetaChatComunidadRemota({
     required this.preview,
@@ -988,8 +939,9 @@ class _TarjetaChatComunidadRemota extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ultimo = preview.ultimo;
-    final previewTxt =
-        ultimo == null ? preview.previewVacioEtiqueta : ultimo.contenidoVisible;
+    final previewTxt = ultimo == null
+        ? preview.previewVacioEtiqueta
+        : ultimo.contenidoVisible;
 
     final hace = ultimo == null
         ? ''
@@ -1015,9 +967,7 @@ class _TarjetaChatComunidadRemota extends StatelessWidget {
                   color: PaletaRutas.ink,
                   alignment: Alignment.center,
                   child: Icon(
-                    preview.esSalida
-                        ? Icons.hiking
-                        : Icons.forum_outlined,
+                    preview.esSalida ? Icons.hiking : Icons.forum_outlined,
                     color: PaletaRutas.oro,
                   ),
                 )

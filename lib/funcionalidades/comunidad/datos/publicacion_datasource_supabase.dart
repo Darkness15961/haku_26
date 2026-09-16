@@ -67,6 +67,36 @@ publicacion_lugar (
     return out;
   }
 
+  /// Publicaciones propias (perfil): no eliminadas.
+  Future<List<ModeloPublicacionRemota>> listarDeUsuario(
+    String usuarioId, {
+    int limite = 80,
+  }) async {
+    if (!supabaseListo) return const [];
+    final uid = usuarioId.trim();
+    if (uid.isEmpty) return const [];
+
+    final rows = await clienteSupabase
+        .from('publicacion')
+        .select(_selectFeed)
+        .eq('usuario_id', uid)
+        .neq('estado', 'eliminado')
+        .order('fecha_creacion', ascending: false)
+        .limit(limite);
+
+    final vistos = <String>{};
+    final out = <ModeloPublicacionRemota>[];
+    for (final e in rows as List<dynamic>) {
+      final p = ModeloPublicacionRemota.desdeFilaRemota(
+        Map<String, dynamic>.from(e as Map),
+      );
+      if (p.id.isEmpty) continue;
+      if (!vistos.add(p.id)) continue;
+      out.add(p);
+    }
+    return out;
+  }
+
   Future<ModeloPublicacionRemota?> porId(String id) async {
     if (!supabaseListo) return null;
     final idNum = int.tryParse(id.trim());

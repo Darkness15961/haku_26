@@ -143,9 +143,9 @@ abstract final class CopyHaku {
   static const carruselPieExperiencia = 'Caminata larga';
 
   // —— Perfil / publicar ——
-  static const perfilSinPublicaciones = 'Todavía no cuentas nada';
+  static const perfilSinPublicaciones = 'Tu álbum está vacío';
   static const perfilSinPublicacionesSub =
-      'Toca + y deja lo que viviste — foto, ruta o fogón';
+      'Cuando publiques un recuerdo, aparece acá como un mosaico.';
 
   static const etiquetarCompanerosSub = 'Gente de acá en el demo';
 

@@ -22,7 +22,7 @@ usuario:usuario_id (
 )
 ''';
 
-  /// Crea/obtiene sala tipo=comunidad y sync de participantes.
+  /// Crea/obtiene sala tipo=comunidad (delega al RPC con seed por defecto).
   Future<String> asegurarSalaComunidad(String comunidadId) async {
     if (!supabaseListo) {
       throw const AuthException('Supabase no disponible');
@@ -33,7 +33,10 @@ usuario:usuario_id (
     }
     final raw = await clienteSupabase.rpc(
       'asegurar_sala_comunidad',
-      params: {'p_comunidad_id': idNum},
+      params: {
+        'p_comunidad_id': idNum,
+        'p_seed_aprobados': true,
+      },
     );
     if (raw == null) {
       throw const AuthException('No se pudo abrir la sala de chat');
@@ -73,16 +76,28 @@ usuario:usuario_id (
   }
 
   /// Compat: asegura sala y lista por comunidad.
+  /// No crea sala “a escondidas”: si no existe, lista vacía.
   Future<List<ModeloMensajeComunidad>> listarUltimos(
     String comunidadId, {
     int limite = 80,
   }) async {
-    final salaId = await asegurarSalaComunidad(comunidadId);
-    return listarUltimosPorSala(
-      salaId,
-      comunidadId: comunidadId,
-      limite: limite,
-    );
+    if (!supabaseListo) return const [];
+    final idNum = int.tryParse(comunidadId.trim());
+    if (idNum == null) return const [];
+    try {
+      final raw = await clienteSupabase.rpc(
+        'sala_comunidad_id_si_existe',
+        params: {'p_comunidad_id': idNum},
+      );
+      if (raw == null) return const [];
+      return listarUltimosPorSala(
+        '$raw',
+        comunidadId: comunidadId,
+        limite: limite,
+      );
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// Un último mensaje por comunidad (solo lectura: no crea sala ni roster).

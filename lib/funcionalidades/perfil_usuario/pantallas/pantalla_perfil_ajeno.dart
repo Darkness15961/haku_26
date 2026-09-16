@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../inicio/datos/feed_inicio_datasource_local.dart';
-import '../../inicio/pantallas/pantalla_chat_directo.dart';
+import '../../chat/pantallas/pantalla_chat_sala.dart';
 import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -23,10 +22,7 @@ enum _SeccionPerfilAjeno { perfil, contenido }
 class PantallaPerfilAjeno extends ConsumerStatefulWidget {
   final PerfilPublico perfil;
 
-  const PantallaPerfilAjeno({
-    super.key,
-    required this.perfil,
-  });
+  const PantallaPerfilAjeno({super.key, required this.perfil});
 
   @override
   ConsumerState<PantallaPerfilAjeno> createState() =>
@@ -46,20 +42,11 @@ class _EstadoPantallaPerfilAjeno extends ConsumerState<PantallaPerfilAjeno> {
   }
 
   Future<void> _chatear() async {
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaChatDirecto(
-          persona: SugerenciaSeguimiento(
-            id: p.id,
-            nombre: p.nombre,
-            usuario: p.usuario,
-            avatarUrl: p.avatarUrl,
-            bioCorta: p.bioCorta,
-          ),
-        ),
-      ),
+    await abrirChatPrivadoExistente(
+      context,
+      ref,
+      usuarioId: p.id,
+      titulo: p.nombre,
     );
   }
 
@@ -324,9 +311,7 @@ class _BotonAccionPerfil extends StatelessWidget {
         child: Ink(
           height: 44,
           decoration: BoxDecoration(
-            color: relleno
-                ? PaletaRutas.oro
-                : PaletaRutas.carbon,
+            color: relleno ? PaletaRutas.oro : PaletaRutas.carbon,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: relleno
@@ -364,10 +349,7 @@ class _SelectorSeccionAjeno extends StatelessWidget {
   final _SeccionPerfilAjeno seccion;
   final ValueChanged<_SeccionPerfilAjeno> onCambiar;
 
-  const _SelectorSeccionAjeno({
-    required this.seccion,
-    required this.onCambiar,
-  });
+  const _SelectorSeccionAjeno({required this.seccion, required this.onCambiar});
 
   @override
   Widget build(BuildContext context) {
@@ -409,9 +391,7 @@ class _IconoSeccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = seleccionado
-        ? PaletaRutas.oro
-        : PaletaRutas.plomo;
+    final color = seleccionado ? PaletaRutas.oro : PaletaRutas.plomo;
 
     return Tooltip(
       message: tooltip,
@@ -429,9 +409,7 @@ class _IconoSeccion extends StatelessWidget {
               height: 2.5,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: seleccionado
-                    ? PaletaRutas.oro
-                    : Colors.transparent,
+                color: seleccionado ? PaletaRutas.oro : Colors.transparent,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -516,7 +494,9 @@ class _ContenidoPerfilAjeno extends StatelessWidget {
                   context: context,
                   backgroundColor: PaletaRutas.carbon,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
                   ),
                   builder: (ctx) => Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -684,9 +664,8 @@ class _ContenidoPublicacionesAjeno extends StatelessWidget {
           child: CachedNetworkImage(
             imageUrl: urls[index],
             fit: BoxFit.cover,
-            placeholder: (_, __) => ColoredBox(
-              color: PaletaRutas.carbon.withValues(alpha: 0.35),
-            ),
+            placeholder: (_, __) =>
+                ColoredBox(color: PaletaRutas.carbon.withValues(alpha: 0.35)),
             errorWidget: (_, __, ___) => ColoredBox(
               color: PaletaRutas.carbon.withValues(alpha: 0.5),
               child: const Icon(

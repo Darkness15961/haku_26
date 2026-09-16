@@ -20,9 +20,13 @@ class CursorMensajeChat {
 
 /// Capa unificada `sala_chat` + `mensaje` + `sala_participante` + reacciones.
 class ChatDataSourceSupabase {
-  static const bucketMedia = 'haku-storage-produccion-2026';
+  static const bucketChatPrivado = 'haku-chat-privado';
   static const int maxLenMensaje = 2000;
   static const int pageSizeDefault = 40;
+  static final _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-'
+    r'[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+  );
 
   static const _selectMensaje = '''
 id,
@@ -45,7 +49,125 @@ mensaje_reaccion (
 
   String? get _uid => clienteSupabase.auth.currentUser?.id;
 
-  Future<String> asegurarSalaComunidad(String comunidadId) async {
+  Future<ModeloMensajeChat> _resolverAdjunto(ModeloMensajeChat mensaje) async {
+    if (!mensaje.esImagen || !mensaje.contenido.startsWith('chat://')) {
+      return mensaje;
+    }
+    final path = mensaje.contenido.substring('chat://'.length);
+    if (path.isEmpty) return mensaje;
+    try {
+      final url = await clienteSupabase.storage
+          .from(bucketChatPrivado)
+          .createSignedUrl(path, 3600);
+      return mensaje.copyWith(contenido: url);
+    } catch (_) {
+      return mensaje;
+    }
+  }
+
+  Map<String, dynamic> _filaRpc(dynamic raw) {
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is List && raw.isNotEmpty && raw.first is Map) {
+      return Map<String, dynamic>.from(raw.first as Map);
+    }
+    throw const AuthException('Respuesta inválida del servidor');
+  }
+
+  /// Obtiene el DM existente o lo crea desde una sala grupal compartida.
+  Future<String> asegurarSalaPrivada({
+    required String otroUsuarioId,
+    String? salaOrigenId,
+  }) async {
+    if (!supabaseListo) {
+      throw const AuthException('Supabase no disponible');
+    }
+    final otro = otroUsuarioId.trim();
+    final origen = int.tryParse(salaOrigenId?.trim() ?? '');
+    if (!_uuid.hasMatch(otro)) {
+      throw const AuthException(
+        'Este perfil todavía no está conectado a Mensajes',
+      );
+    }
+    try {
+      final raw = await clienteSupabase.rpc(
+        'asegurar_sala_privada',
+        params: {'p_otro_usuario_id': otro, 'p_sala_origen': origen},
+      );
+      if (raw == null) {
+        throw const AuthException('No se pudo abrir el chat privado');
+      }
+      return '$raw';
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
+  Future<PerfilChatBasico?> perfilChat(String usuarioId) async {
+    if (!supabaseListo || usuarioId.trim().isEmpty) return null;
+    try {
+      final fila = await clienteSupabase
+          .from('usuario')
+          .select('id, nombres, apellidos, nombre_nick, foto_perfil')
+          .eq('id', usuarioId.trim())
+          .maybeSingle();
+      if (fila == null) return null;
+      return PerfilChatBasico.desdeFila(Map<String, dynamic>.from(fila));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<PreviewChatSala>> listarChatsPrivados() async {
+    if (!supabaseListo || _uid == null) return const [];
+    try {
+      final raw = await clienteSupabase.rpc('listar_chats_privados');
+      final out = <PreviewChatSala>[];
+      for (final item in (raw as List<dynamic>)) {
+        if (item is! Map) continue;
+        final fila = Map<String, dynamic>.from(item);
+        final perfil = PerfilChatBasico.desdeFila(fila);
+        final salaId = '${fila['sala_id'] ?? ''}'.trim();
+        if (salaId.isEmpty || perfil.id.isEmpty) continue;
+
+        ModeloMensajeChat? ultimo;
+        final ultimoId = fila['ultimo_id'];
+        final fechaRaw = fila['ultimo_fecha'];
+        if (ultimoId != null && fechaRaw != null) {
+          final fecha = DateTime.tryParse('$fechaRaw')?.toLocal();
+          if (fecha != null) {
+            ultimo = ModeloMensajeChat(
+              id: '$ultimoId',
+              salaId: salaId,
+              usuarioId: '',
+              contenido: '${fila['ultimo_contenido'] ?? ''}',
+              tipoMensaje: '${fila['ultimo_tipo'] ?? 'texto'}',
+              fechaEnvio: fecha,
+            );
+          }
+        }
+
+        out.add(
+          PreviewChatSala(
+            salaId: salaId,
+            titulo: perfil.nombreCompleto,
+            fotoPortada: perfil.fotoPerfil,
+            usuarioId: perfil.id,
+            tipo: 'privado',
+            ultimo: ultimo,
+            noLeidos: (fila['no_leidos'] as num?)?.toInt() ?? 0,
+          ),
+        );
+      }
+      return out;
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
+  Future<String> asegurarSalaComunidad(
+    String comunidadId, {
+    bool seedAprobados = true,
+  }) async {
     if (!supabaseListo) {
       throw const AuthException('Supabase no disponible');
     }
@@ -56,7 +178,7 @@ mensaje_reaccion (
     try {
       final raw = await clienteSupabase.rpc(
         'asegurar_sala_comunidad',
-        params: {'p_comunidad_id': idNum},
+        params: {'p_comunidad_id': idNum, 'p_seed_aprobados': seedAprobados},
       );
       if (raw == null) {
         throw const AuthException('No se pudo abrir la sala de chat');
@@ -67,7 +189,10 @@ mensaje_reaccion (
     }
   }
 
-  Future<String> asegurarSalaSalida(String salidaId) async {
+  Future<String> asegurarSalaSalida(
+    String salidaId, {
+    bool seedConfirmados = true,
+  }) async {
     if (!supabaseListo) {
       throw const AuthException('Supabase no disponible');
     }
@@ -78,7 +203,7 @@ mensaje_reaccion (
     try {
       final raw = await clienteSupabase.rpc(
         'asegurar_sala_salida',
-        params: {'p_salida_id': idNum},
+        params: {'p_salida_id': idNum, 'p_seed_confirmados': seedConfirmados},
       );
       if (raw == null) {
         throw const AuthException('No se pudo abrir el chat de la salida');
@@ -115,6 +240,56 @@ mensaje_reaccion (
     }
   }
 
+  Future<String> crearSalaComunidadConParticipantes({
+    required String comunidadId,
+    required Iterable<String> participantes,
+  }) async {
+    final id = int.tryParse(comunidadId.trim());
+    if (!supabaseListo || id == null) {
+      throw const AuthException('Comunidad inválida');
+    }
+    try {
+      final raw = await clienteSupabase.rpc(
+        'crear_sala_comunidad_con_participantes',
+        params: {
+          'p_comunidad_id': id,
+          'p_participantes': participantes
+              .where((e) => e.trim().isNotEmpty)
+              .toList(),
+        },
+      );
+      if (raw == null) throw const AuthException('No se pudo crear el chat');
+      return '$raw';
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
+  Future<String> crearSalaSalidaConParticipantes({
+    required String salidaId,
+    required Iterable<String> participantes,
+  }) async {
+    final id = int.tryParse(salidaId.trim());
+    if (!supabaseListo || id == null) {
+      throw const AuthException('Salida inválida');
+    }
+    try {
+      final raw = await clienteSupabase.rpc(
+        'crear_sala_salida_con_participantes',
+        params: {
+          'p_salida_id': id,
+          'p_participantes': participantes
+              .where((e) => e.trim().isNotEmpty)
+              .toList(),
+        },
+      );
+      if (raw == null) throw const AuthException('No se pudo crear el chat');
+      return '$raw';
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
   /// Alta/baja masiva (admin). No auto-quita al caller (RPC).
   Future<void> setParticipantesComunidadBatch({
     required String salaId,
@@ -142,20 +317,45 @@ mensaje_reaccion (
     }
   }
 
-  /// Solo lectura: no crea sala ni modifica roster (seguro para previews).
+  /// Alta/baja masiva (organizador de salida).
+  Future<void> setParticipantesSalidaBatch({
+    required String salaId,
+    List<String> agregar = const [],
+    List<String> quitar = const [],
+  }) async {
+    if (!supabaseListo) {
+      throw const AuthException('Supabase no disponible');
+    }
+    final salaNum = int.tryParse(salaId.trim());
+    if (salaNum == null) {
+      throw const AuthException('Sala inválida');
+    }
+    try {
+      await clienteSupabase.rpc(
+        'sala_salida_set_participantes_batch',
+        params: {
+          'p_sala_id': salaNum,
+          'p_agregar': agregar.where((e) => e.trim().isNotEmpty).toList(),
+          'p_quitar': quitar.where((e) => e.trim().isNotEmpty).toList(),
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
+  /// Solo lectura: ¿existe la sala? (SECURITY DEFINER: no confunde con roster).
   Future<String?> idSalaComunidadSiExiste(String comunidadId) async {
     if (!supabaseListo) return null;
     final idNum = int.tryParse(comunidadId.trim());
     if (idNum == null) return null;
     try {
-      final row = await clienteSupabase
-          .from('sala_chat')
-          .select('id')
-          .eq('tipo', 'comunidad')
-          .eq('comunidad_id', idNum)
-          .maybeSingle();
-      if (row == null || row['id'] == null) return null;
-      return '${row['id']}';
+      final raw = await clienteSupabase.rpc(
+        'sala_comunidad_id_si_existe',
+        params: {'p_comunidad_id': idNum},
+      );
+      if (raw == null) return null;
+      return '$raw';
     } catch (_) {
       return null;
     }
@@ -166,16 +366,30 @@ mensaje_reaccion (
     final idNum = int.tryParse(salidaId.trim());
     if (idNum == null) return null;
     try {
-      final row = await clienteSupabase
-          .from('sala_chat')
-          .select('id')
-          .eq('tipo', 'salida')
-          .eq('salida_id', idNum)
-          .maybeSingle();
-      if (row == null || row['id'] == null) return null;
-      return '${row['id']}';
+      final raw = await clienteSupabase.rpc(
+        'sala_salida_id_si_existe',
+        params: {'p_salida_id': idNum},
+      );
+      if (raw == null) return null;
+      return '$raw';
     } catch (_) {
       return null;
+    }
+  }
+
+  /// ¿Estoy en el roster de la sala? (SECURITY DEFINER, sin recursión RLS).
+  Future<bool> soyParticipanteSala(String salaId) async {
+    if (!supabaseListo) return false;
+    final idNum = int.tryParse(salaId.trim());
+    if (idNum == null) return false;
+    try {
+      final raw = await clienteSupabase.rpc(
+        'es_participante_sala',
+        params: {'p_sala_id': idNum},
+      );
+      return raw == true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -199,11 +413,14 @@ mensaje_reaccion (
   }
 
   /// Roster picker: miembros aprobados × presencia en chat.
+  /// Si [salaId] vacío (modo creación), nadie está en chat aún.
   Future<List<ParticipanteSalaChat>> rosterComunidadParaPicker({
     required String salaId,
     required List<MiembroComunidadRemoto> miembrosAprobados,
   }) async {
-    final enChat = await idsParticipantesSala(salaId);
+    final enChat = salaId.trim().isEmpty
+        ? <String>{}
+        : await idsParticipantesSala(salaId);
     final out = <ParticipanteSalaChat>[
       for (final m in miembrosAprobados)
         if (m.usuarioId.trim().isNotEmpty)
@@ -214,6 +431,62 @@ mensaje_reaccion (
             enChat: enChat.contains(m.usuarioId.trim()),
             rolComunidad: m.rol,
           ),
+    ];
+    out.sort((a, b) {
+      if (a.enChat != b.enChat) return a.enChat ? -1 : 1;
+      return a.etiqueta.toLowerCase().compareTo(b.etiqueta.toLowerCase());
+    });
+    return out;
+  }
+
+  /// Roster salida: organizador + confirmados × presencia en chat.
+  /// Si [salaId] vacío (modo creación), nadie está en chat aún.
+  Future<List<ParticipanteSalaChat>> rosterSalidaParaPicker({
+    required String salaId,
+    required String organizadorId,
+    required String organizadorNick,
+    required List<String> confirmadoIds,
+  }) async {
+    final enChat = salaId.trim().isEmpty
+        ? <String>{}
+        : await idsParticipantesSala(salaId);
+    final ids = <String>{
+      if (organizadorId.trim().isNotEmpty) organizadorId.trim(),
+      ...confirmadoIds.map((e) => e.trim()).where((e) => e.isNotEmpty),
+    };
+    final nicks = <String, String>{};
+    if (ids.isNotEmpty && supabaseListo) {
+      try {
+        final rows = await clienteSupabase
+            .from('usuario')
+            .select('id, nombre_nick')
+            .inFilter('id', ids.toList());
+        for (final e in (rows as List<dynamic>)) {
+          if (e is! Map) continue;
+          final id = '${e['id'] ?? ''}'.trim();
+          if (id.isEmpty) continue;
+          final nick = (e['nombre_nick'] as String?)?.trim() ?? '';
+          if (nick.isNotEmpty) {
+            nicks[id] = nick.startsWith('@') ? nick : '@$nick';
+          }
+        }
+      } catch (_) {}
+    }
+    final org = organizadorId.trim();
+    final out = <ParticipanteSalaChat>[
+      for (final id in ids)
+        ParticipanteSalaChat(
+          usuarioId: id,
+          etiqueta:
+              nicks[id] ??
+              (id == org && organizadorNick.trim().isNotEmpty
+                  ? (organizadorNick.trim().startsWith('@')
+                        ? organizadorNick.trim()
+                        : '@${organizadorNick.trim()}')
+                  : (id.length >= 8 ? id.substring(0, 8) : id)),
+          enChat: enChat.contains(id),
+          rolComunidad: id == org ? 'admin' : 'miembro',
+        ),
     ];
     out.sort((a, b) {
       if (a.enChat != b.enChat) return a.enChat ? -1 : 1;
@@ -270,8 +543,8 @@ mensaje_reaccion (
           )
           .where((m) => m.id.isNotEmpty)
           .toList();
-
-      return list.reversed.toList();
+      final resueltos = await Future.wait(list.map(_resolverAdjunto));
+      return resueltos.reversed.toList();
     } catch (e) {
       if (e is PostgrestException || e is AuthException) rethrow;
       throw AuthException('No se pudieron cargar los mensajes');
@@ -341,15 +614,14 @@ mensaje_reaccion (
     }
     final sala = salaId.trim();
     final path =
-        '${user.id}/chat/$sala/${DateTime.now().millisecondsSinceEpoch}.$extension';
+        '${user.id}/$sala/${DateTime.now().millisecondsSinceEpoch}.$extension';
     try {
-      await clienteSupabase.storage.from(bucketMedia).uploadBinary(
+      await clienteSupabase.storage
+          .from(bucketChatPrivado)
+          .uploadBinary(
             path,
             bytes,
-            fileOptions: FileOptions(
-              contentType: contentType,
-              upsert: true,
-            ),
+            fileOptions: FileOptions(contentType: contentType),
           );
     } on StorageException catch (e) {
       throw AuthException(
@@ -358,14 +630,20 @@ mensaje_reaccion (
             : 'Storage: ${e.message}',
       );
     }
-    final url = clienteSupabase.storage.from(bucketMedia).getPublicUrl(path);
-    return _insertMensaje(
-      salaId: sala,
-      contenido: url,
-      tipo: 'imagen',
-      comunidadId: comunidadId,
-      salidaId: salidaId,
-    );
+    try {
+      return await _insertMensaje(
+        salaId: sala,
+        contenido: 'chat://$path',
+        tipo: 'imagen',
+        comunidadId: comunidadId,
+        salidaId: salidaId,
+      );
+    } catch (_) {
+      try {
+        await clienteSupabase.storage.from(bucketChatPrivado).remove([path]);
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   /// GPS actual del dispositivo → mensaje `ubicacion` (JSON en contenido).
@@ -484,20 +762,12 @@ mensaje_reaccion (
       throw const AuthException('Mensaje inválido');
     }
     try {
-      final row = await clienteSupabase
-          .from('mensaje')
-          .update({
-            'contenido': texto,
-            'editado_en': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', idNum)
-          .eq('usuario_id', user.id)
-          .isFilter('eliminado_en', null)
-          .eq('tipo_mensaje', 'texto')
-          .select(_selectMensaje)
-          .single();
+      final raw = await clienteSupabase.rpc(
+        'editar_mensaje_chat',
+        params: {'p_mensaje_id': idNum, 'p_contenido': texto},
+      );
       return ModeloMensajeChat.desdeFilaRemota(
-        Map<String, dynamic>.from(row),
+        _filaRpc(raw),
         comunidadIdFallback: comunidadId,
         salidaIdFallback: salidaId,
         uidSesion: user.id,
@@ -524,20 +794,12 @@ mensaje_reaccion (
       throw const AuthException('Mensaje inválido');
     }
     try {
-      final row = await clienteSupabase
-          .from('mensaje')
-          .update({
-            'eliminado_en': DateTime.now().toUtc().toIso8601String(),
-            // Redacción local; el trigger BD también fuerza '[eliminado]'.
-            'contenido': '[eliminado]',
-          })
-          .eq('id', idNum)
-          .eq('usuario_id', user.id)
-          .isFilter('eliminado_en', null)
-          .select(_selectMensaje)
-          .single();
+      final raw = await clienteSupabase.rpc(
+        'eliminar_mensaje_chat',
+        params: {'p_mensaje_id': idNum},
+      );
       return ModeloMensajeChat.desdeFilaRemota(
-        Map<String, dynamic>.from(row),
+        _filaRpc(raw),
         comunidadIdFallback: comunidadId,
         salidaIdFallback: salidaId,
         uidSesion: user.id,
@@ -582,15 +844,12 @@ mensaje_reaccion (
             .eq('usuario_id', user.id);
         return;
       }
-      await clienteSupabase.from('mensaje_reaccion').upsert(
-        {
-          'mensaje_id': idNum,
-          'usuario_id': user.id,
-          'emoji': em,
-          'fecha': DateTime.now().toUtc().toIso8601String(),
-        },
-        onConflict: 'mensaje_id,usuario_id',
-      );
+      await clienteSupabase.from('mensaje_reaccion').upsert({
+        'mensaje_id': idNum,
+        'usuario_id': user.id,
+        'emoji': em,
+        'fecha': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'mensaje_id,usuario_id');
     } on PostgrestException catch (e) {
       throw AuthException(_msgPg(e));
     }
@@ -611,12 +870,13 @@ mensaje_reaccion (
           .eq('id', idNum)
           .maybeSingle();
       if (row == null) return null;
-      return ModeloMensajeChat.desdeFilaRemota(
+      final mensaje = ModeloMensajeChat.desdeFilaRemota(
         Map<String, dynamic>.from(row),
         comunidadIdFallback: comunidadId,
         salidaIdFallback: salidaId,
         uidSesion: _uid,
       );
+      return _resolverAdjunto(mensaje);
     } catch (_) {
       return null;
     }
@@ -658,12 +918,13 @@ mensaje_reaccion (
           })
           .select(_selectMensaje)
           .single();
-      return ModeloMensajeChat.desdeFilaRemota(
+      final mensaje = ModeloMensajeChat.desdeFilaRemota(
         Map<String, dynamic>.from(row),
         comunidadIdFallback: comunidadId,
         salidaIdFallback: salidaId,
         uidSesion: user.id,
       );
+      return _resolverAdjunto(mensaje);
     } on PostgrestException catch (e) {
       throw AuthException(_msgPg(e));
     }
@@ -676,11 +937,10 @@ mensaje_reaccion (
     final salaNum = int.tryParse(salaId.trim());
     if (salaNum == null) return;
     try {
-      await clienteSupabase
-          .from('sala_participante')
-          .update({'ultima_lectura': DateTime.now().toUtc().toIso8601String()})
-          .eq('sala_id', salaNum)
-          .eq('usuario_id', user.id);
+      await clienteSupabase.rpc(
+        'marcar_sala_leida',
+        params: {'p_sala_id': salaNum},
+      );
     } catch (_) {}
   }
 
@@ -719,10 +979,16 @@ mensaje_reaccion (
   /// INSERT + UPDATE de mensajes + cambios de reacción de la sala.
   RealtimeChannel suscribirSala({
     required String salaId,
-    required void Function(ModeloMensajeChat mensaje, {required bool traeReacciones})
-        onInsert,
-    required void Function(ModeloMensajeChat mensaje, {required bool traeReacciones})
-        onUpdate,
+    required void Function(
+      ModeloMensajeChat mensaje, {
+      required bool traeReacciones,
+    })
+    onInsert,
+    required void Function(
+      ModeloMensajeChat mensaje, {
+      required bool traeReacciones,
+    })
+    onUpdate,
     required void Function(String mensajeId) onReaccionCambio,
     String? comunidadId,
     String? salidaId,
@@ -744,7 +1010,7 @@ mensaje_reaccion (
     void handleMensaje(
       Map<String, dynamic> raw,
       void Function(ModeloMensajeChat mensaje, {required bool traeReacciones})
-          sink,
+      sink,
     ) {
       if (raw.isEmpty) return;
       final trae = ModeloMensajeChat.filaTraeReacciones(raw);

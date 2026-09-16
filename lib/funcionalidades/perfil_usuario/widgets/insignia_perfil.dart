@@ -7,12 +7,14 @@ class InsigniaPerfil extends StatelessWidget {
   final IconData icono;
   final String nombre;
   final Color colorFondo;
+  final bool bloqueada;
 
   const InsigniaPerfil({
     super.key,
     required this.icono,
     required this.nombre,
     required this.colorFondo,
+    this.bloqueada = false,
   });
 
   @override
@@ -28,12 +30,16 @@ class InsigniaPerfil extends StatelessWidget {
               shape: BoxShape.circle,
               color: colorFondo,
               border: Border.all(
-                color: PaletaRutas.oro.withValues(alpha: 0.45),
+                color: bloqueada
+                    ? PaletaRutas.plomo.withValues(alpha: 0.4)
+                    : PaletaRutas.oro.withValues(alpha: 0.45),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colorFondo.withValues(alpha: 0.45),
+                  color: bloqueada
+                      ? PaletaRutas.ink.withValues(alpha: 0.2)
+                      : colorFondo.withValues(alpha: 0.45),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -44,7 +50,11 @@ class InsigniaPerfil extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(icono, color: PaletaRutas.piedra, size: 28),
+            child: Icon(
+              icono,
+              color: bloqueada ? PaletaRutas.plomo : PaletaRutas.piedra,
+              size: 28,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -55,7 +65,7 @@ class InsigniaPerfil extends StatelessWidget {
             style: TipografiaHaku.interfaz(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: PaletaRutas.piedra,
+              color: bloqueada ? PaletaRutas.plomo : PaletaRutas.piedra,
               height: 1.15,
             ),
           ),
