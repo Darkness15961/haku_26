@@ -12,6 +12,7 @@ import '../../lugares/proveedores/proveedor_lugares.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/publicacion_datasource_supabase.dart';
+import '../datos/servicio_video_publicacion.dart';
 import '../proveedores/proveedor_comunidad.dart';
 import '../proveedores/proveedor_publicaciones.dart';
 
@@ -40,9 +41,12 @@ class _EstadoPantallaCrearPublicacionRemota
   final _picker = ImagePicker();
   XFile? _foto;
   Uint8List? _fotoBytes;
+  XFile? _video;
+  int? _videoTamano;
   String? _comunidadId;
   String? _lugarId;
   bool _guardando = false;
+  double? _progresoVideo;
 
   @override
   void initState() {
@@ -73,7 +77,29 @@ class _EstadoPantallaCrearPublicacionRemota
     setState(() {
       _foto = file;
       _fotoBytes = bytes;
+      _video = null;
+      _videoTamano = null;
     });
+  }
+
+  Future<void> _elegirVideo() async {
+    final file = await _picker.pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(minutes: 10),
+    );
+    if (file == null) return;
+    try {
+      final tamano = await ServicioVideoPublicacion().validarArchivo(file);
+      if (!mounted) return;
+      setState(() {
+        _video = file;
+        _videoTamano = tamano;
+        _foto = null;
+        _fotoBytes = null;
+      });
+    } on ErrorVideoPublicacion catch (error) {
+      if (mounted) mostrarSnackHaku(context, error.mensaje);
+    }
   }
 
   Future<void> _publicar() async {
@@ -102,10 +128,50 @@ class _EstadoPantallaCrearPublicacionRemota
       return;
     }
 
-    setState(() => _guardando = true);
+    setState(() {
+      _guardando = true;
+      _progresoVideo = _video == null ? null : 0;
+    });
     try {
       final ds = ref.read(publicacionRemotoDataSourceProvider);
-      if (_foto != null && _fotoBytes != null) {
+      if (_video != null) {
+        final creada = await ds.crear(
+          contenido: contenido,
+          comunidadId: _comunidadId,
+          lugarId: _lugarId,
+        );
+        final publicacionId = int.tryParse(creada.id);
+        if (publicacionId == null) {
+          throw const ErrorVideoPublicacion(
+            'No se pudo identificar la publicación creada.',
+          );
+        }
+
+        final servicio = ServicioVideoPublicacion();
+        try {
+          final ticket = await servicio.preparar(publicacionId);
+          await servicio.subir(
+            archivo: _video!,
+            ticket: ticket,
+            alProgresar: (progreso) {
+              if (mounted) setState(() => _progresoVideo = progreso);
+            },
+          );
+        } catch (_) {
+          try {
+            await servicio.cancelar(publicacionId);
+          } catch (_) {}
+          try {
+            await ds.eliminarLogica(creada.id);
+          } catch (_) {}
+          rethrow;
+        }
+        // La subida ya fue confirmada. Una caída temporal al consultar el
+        // procesamiento no debe borrar un video cargado correctamente.
+        try {
+          await servicio.consultarEstado(publicacionId);
+        } catch (_) {}
+      } else if (_foto != null && _fotoBytes != null) {
         final name = _foto!.name.toLowerCase();
         final ext = name.endsWith('.png')
             ? 'png'
@@ -132,8 +198,16 @@ class _EstadoPantallaCrearPublicacionRemota
 
       notificarPublicacionesCambiaron(ref);
       if (!mounted) return;
-      mostrarSnackHaku(context, 'Publicado', destacado: true);
+      mostrarSnackHaku(
+        context,
+        _video == null
+            ? 'Publicado'
+            : 'Video subido. Bunny Stream lo está procesando.',
+        destacado: true,
+      );
       Navigator.of(context).pop(true);
+    } on ErrorVideoPublicacion catch (e) {
+      if (mounted) mostrarSnackHaku(context, e.mensaje);
     } on AuthException catch (e) {
       if (mounted) mostrarSnackHaku(context, e.message);
     } catch (_) {
@@ -144,8 +218,18 @@ class _EstadoPantallaCrearPublicacionRemota
         );
       }
     } finally {
-      if (mounted) setState(() => _guardando = false);
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+          _progresoVideo = null;
+        });
+      }
     }
+  }
+
+  String _mostrarTamano(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    return '${mb.toStringAsFixed(mb >= 10 ? 0 : 1)} MB';
   }
 
   @override
@@ -241,21 +325,53 @@ class _EstadoPantallaCrearPublicacionRemota
                     ),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _guardando ? null : _elegirFoto,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: PaletaRutas.piedra,
-                      side: BorderSide(
-                        color: PaletaRutas.plomo.withValues(alpha: 0.6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _guardando ? null : _elegirFoto,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: PaletaRutas.piedra,
+                            side: BorderSide(
+                              color: PaletaRutas.plomo.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          icon: const Icon(Icons.image_outlined, size: 18),
+                          label: Text(
+                            _foto == null ? 'Foto' : 'Cambiar foto',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TipografiaHaku.interfaz(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    icon: const Icon(Icons.image_outlined, size: 18),
-                    label: Text(
-                      _foto == null ? 'Foto opcional' : 'Cambiar foto',
-                      style: TipografiaHaku.interfaz(
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _guardando ? null : _elegirVideo,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: PaletaRutas.piedra,
+                            side: BorderSide(
+                              color: PaletaRutas.oro.withValues(alpha: 0.65),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.video_library_outlined,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _video == null ? 'Video' : 'Cambiar video',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TipografiaHaku.interfaz(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                   if (_fotoBytes != null) ...[
                     const SizedBox(height: 10),
@@ -278,6 +394,84 @@ class _EstadoPantallaCrearPublicacionRemota
                         style: TipografiaHaku.interfaz(
                           color: PaletaRutas.plomoClaro,
                         ),
+                      ),
+                    ),
+                  ],
+                  if (_video != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: PaletaRutas.carbon,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: PaletaRutas.oro.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.movie_outlined,
+                            color: PaletaRutas.oro,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _video!.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TipografiaHaku.interfaz(
+                                    fontWeight: FontWeight.w700,
+                                    color: PaletaRutas.piedra,
+                                  ),
+                                ),
+                                if (_videoTamano != null)
+                                  Text(
+                                    '${_mostrarTamano(_videoTamano!)} · máximo 10 min',
+                                    style: TipografiaHaku.interfaz(
+                                      fontSize: 11,
+                                      color: PaletaRutas.plomoClaro,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Quitar video',
+                            onPressed: _guardando
+                                ? null
+                                : () => setState(() {
+                                    _video = null;
+                                    _videoTamano = null;
+                                  }),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_guardando && _progresoVideo != null) ...[
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(
+                      value: _progresoVideo,
+                      minHeight: 5,
+                      borderRadius: BorderRadius.circular(8),
+                      color: PaletaRutas.oro,
+                      backgroundColor: PaletaRutas.carbon,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Subiendo video ${((_progresoVideo ?? 0) * 100).round()}%',
+                      textAlign: TextAlign.center,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        color: PaletaRutas.plomoClaro,
                       ),
                     ),
                   ],
@@ -397,7 +591,7 @@ class _EstadoPantallaCrearPublicacionRemota
                     ),
                   const SizedBox(height: 12),
                   Text(
-                    'Las reacciones y el video estarán disponibles próximamente.',
+                    'Puedes adjuntar una foto o un video de hasta 10 minutos y 500 MB.',
                     style: TipografiaHaku.interfaz(
                       fontSize: 11,
                       color: PaletaRutas.plomo,

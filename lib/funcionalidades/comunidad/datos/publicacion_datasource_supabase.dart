@@ -25,7 +25,11 @@ usuario:usuario_id (
 publicacion_multimedia (
   id,
   url_archivo,
-  orden
+  orden,
+  tipo,
+  proveedor_video_id,
+  miniatura_url,
+  video_estado
 ),
 publicacion_etiqueta_comunidad (
   comunidad_id,

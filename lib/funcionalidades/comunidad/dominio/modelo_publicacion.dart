@@ -11,6 +11,10 @@ class ModeloPublicacionRemota {
 
   /// Primera `url_archivo` de multimedia por `orden`, si existe.
   final String? imagenUrl;
+  final String? videoUrl;
+  final String? videoMiniaturaUrl;
+  final String? videoEstado;
+  final String? videoProveedorId;
   final List<EtiquetaComunidadPublicacion> comunidades;
   final String? lugarId;
   final String? lugarNombre;
@@ -26,6 +30,10 @@ class ModeloPublicacionRemota {
     this.estado = 'publico',
     required this.fechaCreacion,
     this.imagenUrl,
+    this.videoUrl,
+    this.videoMiniaturaUrl,
+    this.videoEstado,
+    this.videoProveedorId,
     this.comunidades = const [],
     this.lugarId,
     this.lugarNombre,
@@ -72,6 +80,10 @@ class ModeloPublicacionRemota {
     }
 
     String? imagen;
+    String? video;
+    String? videoMiniatura;
+    String? videoEstado;
+    String? videoProveedorId;
     final media = m['publicacion_multimedia'];
     if (media is List) {
       final ordenados = <Map<String, dynamic>>[];
@@ -88,9 +100,17 @@ class ModeloPublicacionRemota {
       });
       for (final row in ordenados) {
         final url = (row['url_archivo'] as String?)?.trim() ?? '';
-        if (url.isNotEmpty) {
+        final tipo = '${row['tipo'] ?? 'imagen'}'.trim().toLowerCase();
+        if (tipo == 'video' && video == null && url.isNotEmpty) {
+          video = url;
+          final miniatura = (row['miniatura_url'] as String?)?.trim() ?? '';
+          if (miniatura.isNotEmpty) videoMiniatura = miniatura;
+          final estado = '${row['video_estado'] ?? ''}'.trim();
+          if (estado.isNotEmpty) videoEstado = estado;
+          final proveedor = '${row['proveedor_video_id'] ?? ''}'.trim();
+          if (proveedor.isNotEmpty) videoProveedorId = proveedor;
+        } else if (tipo == 'imagen' && imagen == null && url.isNotEmpty) {
           imagen = url;
-          break;
         }
       }
     }
@@ -160,6 +180,10 @@ class ModeloPublicacionRemota {
       estado: (m['estado'] as String?)?.trim() ?? 'publico',
       fechaCreacion: fecha.toLocal(),
       imagenUrl: imagen,
+      videoUrl: video,
+      videoMiniaturaUrl: videoMiniatura,
+      videoEstado: videoEstado,
+      videoProveedorId: videoProveedorId,
       comunidades: comunidades,
       lugarId: lugarId,
       lugarNombre: lugarNombre,

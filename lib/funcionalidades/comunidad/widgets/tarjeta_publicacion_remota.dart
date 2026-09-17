@@ -8,6 +8,7 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelo_publicacion.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
+import 'video_publicacion_haku.dart';
 
 /// Card remota con lenguaje visual del feed Threads (sin likes inventados).
 class TarjetaPublicacionRemota extends StatelessWidget {
@@ -26,6 +27,7 @@ class TarjetaPublicacionRemota extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = publicacion;
     final imagen = p.imagenUrl?.trim() ?? '';
+    final video = p.videoUrl?.trim() ?? '';
     final foto = p.autorFotoPerfil?.trim() ?? '';
 
     return Padding(
@@ -33,7 +35,7 @@ class TarjetaPublicacionRemota extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (imagen.isNotEmpty)
+          if (video.isNotEmpty || imagen.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: AspectRatio(
@@ -41,7 +43,15 @@ class TarjetaPublicacionRemota extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    ImagenHaku(url: imagen, fit: BoxFit.cover),
+                    if (video.isNotEmpty)
+                      VideoPublicacionHaku(
+                        publicacionId: p.id,
+                        url: video,
+                        miniaturaUrl: p.videoMiniaturaUrl,
+                        estadoInicial: p.videoEstado ?? 'processing',
+                      )
+                    else
+                      ImagenHaku(url: imagen, fit: BoxFit.cover),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

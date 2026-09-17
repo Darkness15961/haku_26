@@ -1,6 +1,6 @@
 # HAKU — Guía de pruebas manuales y casos de uso
 
-**Versión:** 2026-09-16  
+**Versión:** 2026-09-17
 **Alcance:** autenticación, navegación, Explora, Lugares, Rutas, Publicaciones,
 Comunidades, Salidas y Mensajes.  
 **Objetivo:** comprobar cada hilo funcional de inicio a fin sin adivinar qué
@@ -127,7 +127,7 @@ Actualmente sí está implementado:
 - catálogo remoto de Lugares y mapa de Explora;
 - creación de Lugares;
 - lectura de Rutas publicadas, detalle, paradas y mapa;
-- creación de Publicaciones con fotografía;
+- creación de Publicaciones con texto, fotografía o video en Bunny Stream;
 - vinculación de publicaciones con Lugar, Ruta o Comunidad;
 - creación y membresía de Comunidades públicas y privadas;
 - solicitudes de ingreso y administración básica;
@@ -146,7 +146,6 @@ No está implementado todavía:
 - edición o cancelación de Salidas desde su detalle;
 - check-in remoto;
 - likes y comentarios de Publicaciones;
-- video remoto en Publicaciones;
 - eliminación de Publicaciones desde la tarjeta del feed;
 - audio en chat;
 - bloqueo o denuncia de usuarios;
@@ -548,11 +547,12 @@ Estos límites deben registrarse como `NO IMPLEMENTADO`, no como fallo.
   - Resultado: `PENDIENTE`
   - Evidencia/notas:
 
-### PUB-02 — Foto obligatoria en UI principal
+### PUB-02 — Adjunto opcional y exclusivo
 
 - [ ] Ejecutado
-  - Pasos: intentar avanzar/publicar sin foto.
-  - Esperado: solicita una imagen; video remoto no aparece como opción activa.
+  - Pasos: publicar solo texto; después elegir foto y luego video.
+  - Esperado: permite texto sin archivo y conserva solamente el último tipo
+    seleccionado; una publicación no envía foto y video simultáneamente.
   - Resultado: `PENDIENTE`
   - Evidencia/notas:
 
@@ -613,6 +613,35 @@ Estos límites deben registrarse como `NO IMPLEMENTADO`, no como fallo.
 - [ ] Ejecutado
   - Pasos: abrir Lugar o Comunidad desde una publicación que los tenga.
   - Esperado: navega al detalle correcto y volver conserva el feed.
+  - Resultado: `PENDIENTE`
+  - Evidencia/notas:
+
+### PUB-10 — Subir video a Bunny Stream
+
+- [ ] Ejecutado
+  - Pasos: elegir un video válido menor de 10 minutos y 500 MB; Publicar.
+  - Esperado: muestra progreso, obtiene un ticket autenticado, sube por
+    fragmentos y confirma que Bunny está procesando sin exponer su API key.
+  - Resultado: `PENDIENTE`
+  - Evidencia/notas:
+
+### PUB-11 — Procesamiento y reproducción
+
+- [ ] Ejecutado
+  - Pasos: abrir una publicación de video mientras procesa; esperar y tocar
+    nuevamente el control de sincronización/reproducción.
+  - Esperado: mientras procesa informa el estado; cuando Bunny termina,
+    reproduce el HLS y permite pausar sin convertir `playlist.m3u8` en imagen.
+  - Resultado: `PENDIENTE`
+  - Evidencia/notas:
+
+### PUB-12 — Fallo y compensación de video
+
+- [ ] Ejecutado
+  - Pasos: cortar la conexión durante la subida y repetir con un archivo mayor
+    de 500 MB.
+  - Esperado: rechaza el archivo grande; ante interrupción elimina la
+    asociación, intenta limpiar Bunny y no deja una publicación visible rota.
   - Resultado: `PENDIENTE`
   - Evidencia/notas:
 
@@ -1307,7 +1336,7 @@ Registrar decisiones:
 
 - Presencia y “escribiendo…”.
 - Audio en chat.
-- Video en Publicaciones.
+- Webhook firmado de Bunny para sincronizar videos sin esperar interacción.
 - Likes y comentarios.
 - Check-in GPS con modelo propio.
 - Geocodificación automática del distrito.
