@@ -8,11 +8,14 @@ class ModeloPublicacionRemota {
   final String contenido;
   final String estado;
   final DateTime fechaCreacion;
+
   /// Primera `url_archivo` de multimedia por `orden`, si existe.
   final String? imagenUrl;
   final List<EtiquetaComunidadPublicacion> comunidades;
   final String? lugarId;
   final String? lugarNombre;
+  final String? rutaId;
+  final String? rutaNombre;
 
   const ModeloPublicacionRemota({
     required this.id,
@@ -26,6 +29,8 @@ class ModeloPublicacionRemota {
     this.comunidades = const [],
     this.lugarId,
     this.lugarNombre,
+    this.rutaId,
+    this.rutaNombre,
   });
 
   String get etiquetaAutor {
@@ -103,10 +108,7 @@ class ModeloPublicacionRemota {
         if (cid == null) continue;
         final nombre = (com?['nombre'] as String?)?.trim() ?? '';
         comunidades.add(
-          EtiquetaComunidadPublicacion(
-            comunidadId: '$cid',
-            nombre: nombre,
-          ),
+          EtiquetaComunidadPublicacion(comunidadId: '$cid', nombre: nombre),
         );
       }
     }
@@ -130,6 +132,25 @@ class ModeloPublicacionRemota {
       }
     }
 
+    String? rutaId;
+    String? rutaNombre;
+    final rutas = m['publicacion_ruta'];
+    if (rutas is List && rutas.isNotEmpty) {
+      final raw = rutas.first;
+      if (raw is Map) {
+        final row = Map<String, dynamic>.from(raw);
+        final rid = row['ruta_id'];
+        final r = row['ruta'];
+        Map<String, dynamic>? ruta;
+        if (r is Map) ruta = Map<String, dynamic>.from(r);
+        if (rid != null) rutaId = '$rid';
+        rutaNombre = (ruta?['nombre'] as String?)?.trim();
+        if ((rutaId == null || rutaId.isEmpty) && ruta?['id'] != null) {
+          rutaId = '${ruta!['id']}';
+        }
+      }
+    }
+
     return ModeloPublicacionRemota(
       id: idRaw == null ? '' : '$idRaw',
       usuarioId: uidRaw == null ? '' : '$uidRaw'.trim(),
@@ -142,6 +163,8 @@ class ModeloPublicacionRemota {
       comunidades: comunidades,
       lugarId: lugarId,
       lugarNombre: lugarNombre,
+      rutaId: rutaId,
+      rutaNombre: rutaNombre,
     );
   }
 }

@@ -16,6 +16,9 @@ abstract final class MensajesAuthHaku {
       '«¿Olvidaste tu contraseña?»';
 
   static const nickEnUso = 'Ese nickname ya está en uso. Prueba otro.';
+  static const nickFormatoInvalido =
+      'El nickname no cumple las reglas. Revisa el icono de información.';
+  static const nickReservado = 'Ese nickname está reservado. Elige otro.';
 
   static const claveSesionExpirada =
       'Tu sesión expiró. Vuelve a iniciar sesión.';
@@ -33,6 +36,12 @@ abstract final class MensajesAuthHaku {
 
     if (_esCorreoYaRegistrado(raw)) {
       return correoYaRegistrado;
+    }
+    if (raw.contains('nickname_reservado')) {
+      return nickReservado;
+    }
+    if (raw.contains('nickname_formato_invalido')) {
+      return nickFormatoInvalido;
     }
     if (ctx == AuthContexto.login && _esCredencialesInvalidas(raw)) {
       return loginClaveIncorrecta;
@@ -73,6 +82,30 @@ abstract final class MensajesAuthHaku {
     final raw = '${e.message} ${e.statusCode ?? ''} ${e.code ?? ""}'
         .toLowerCase();
     return _esCorreoYaRegistrado(raw);
+  }
+
+  static String desdeErrorPerfil(PostgrestException e) {
+    final raw =
+        '${e.message} ${e.code ?? ''} ${e.details ?? ''} ${e.hint ?? ''}'
+            .toLowerCase();
+    if (e.code == '23505' ||
+        raw.contains('usuario_nombre_nick_lower_key') ||
+        _esNickDuplicado(raw)) {
+      return nickEnUso;
+    }
+    if (raw.contains('nickname_reservado') ||
+        raw.contains('usuario_nombre_nick_reservado_check')) {
+      return nickReservado;
+    }
+    if (e.code == '23514' ||
+        raw.contains('nickname_formato_invalido') ||
+        raw.contains('usuario_nombre_nick_formato_check')) {
+      return nickFormatoInvalido;
+    }
+    if (e.code == '42501') {
+      return 'Tu sesión no permite modificar este perfil. Vuelve a iniciar sesión.';
+    }
+    return 'No se pudo guardar el perfil. Intenta de nuevo.';
   }
 
   static bool _esCorreoYaRegistrado(String raw) {

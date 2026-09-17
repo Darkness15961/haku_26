@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
+import '../../chat/proveedores/proveedor_chat.dart';
+import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
-import '../../../nucleo/demo/senales_atencion.dart';
+import '../../lugares/proveedores/proveedor_lugares.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
-import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
+import '../../rutas/proveedores/proveedor_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
 import '../proveedores/proveedor_comunidad_ui.dart';
@@ -29,7 +31,8 @@ class PantallaFeedInicio extends ConsumerStatefulWidget {
   const PantallaFeedInicio({super.key});
 
   @override
-  ConsumerState<PantallaFeedInicio> createState() => _EstadoPantallaFeedInicio();
+  ConsumerState<PantallaFeedInicio> createState() =>
+      _EstadoPantallaFeedInicio();
 }
 
 class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
@@ -42,9 +45,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
 
   Future<void> _abrirBusqueda() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const PantallaBusquedaInicio(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const PantallaBusquedaInicio()),
     );
   }
 
@@ -68,11 +69,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
       }
       return;
     }
-    final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PantallaDetalleRuta(ruta: catalogo),
-      ),
+      MaterialPageRoute<void>(builder: (_) => PantallaDetalleRuta(ruta: ruta)),
     );
   }
 
@@ -127,32 +125,35 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     Map<String, int> exploradoresPorLugar,
     Map<String, double> calificacionPorLugar,
   ) {
-    final recientes = lugares
-        .where(
-          (l) =>
-              l.nivelExploracion == NivelExploracion.nuevoEnHaku ||
-              l.nivelExploracion == NivelExploracion.pocoExplorado,
-        )
-        .map((l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar))
-        .map((r) {
-          final lugarId = r.id.startsWith('lugar_')
-              ? r.id.substring('lugar_'.length)
-              : r.id;
-          return r.copyWith(
-            imagenUrl: CatalogoImagenesHaku.imagenDescubiertoComunidad(
-              lugarId: lugarId,
-              provincia: r.provincia,
-            ),
-          );
-        })
-        .toList()
-      ..sort((a, b) {
-        final sa = a.cantidadResenas * a.calificacion;
-        final sb = b.cantidadResenas * b.calificacion;
-        final c = sb.compareTo(sa);
-        if (c != 0) return c;
-        return b.calificacion.compareTo(a.calificacion);
-      });
+    final recientes =
+        lugares
+            .where(
+              (l) =>
+                  l.nivelExploracion == NivelExploracion.nuevoEnHaku ||
+                  l.nivelExploracion == NivelExploracion.pocoExplorado,
+            )
+            .map(
+              (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
+            )
+            .map((r) {
+              final lugarId = r.id.startsWith('lugar_')
+                  ? r.id.substring('lugar_'.length)
+                  : r.id;
+              return r.copyWith(
+                imagenUrl: CatalogoImagenesHaku.imagenDescubiertoComunidad(
+                  lugarId: lugarId,
+                  provincia: r.provincia,
+                ),
+              );
+            })
+            .toList()
+          ..sort((a, b) {
+            final sa = a.cantidadResenas * a.calificacion;
+            final sb = b.cantidadResenas * b.calificacion;
+            final c = sb.compareTo(sa);
+            if (c != 0) return c;
+            return b.calificacion.compareTo(a.calificacion);
+          });
     return recientes;
   }
 
@@ -209,39 +210,60 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = EspacioHaku.bottomNavClearance(context);
-    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
-    final indice = MetricasComunidad.indiceLugares(publicaciones);
-    final indiceRutas = MetricasComunidad.indiceRutas(publicaciones);
+    final mensajesNoLeidos = ref.watch(totalNoLeidosChatProvider);
+    final publicacionesLocales = ref.watch(almacenFeedProvider).publicaciones;
+    final indice = supabaseListo
+        // El feed remoto está paginado: no presentar una página como total.
+        ? IndiceMetricasLugares.vacio
+        : MetricasComunidad.indiceLugares(publicacionesLocales);
+    final indiceRutas = supabaseListo
+        // Aún no existe una valoración remota de rutas: no inventar puntajes.
+        ? IndiceMetricasRutas.vacio
+        : MetricasComunidad.indiceRutas(publicacionesLocales);
     final exploradoresPorLugar = indice.exploradores;
     final calificacionPorLugar = indice.calificaciones;
+    final catalogoRutas =
+        ref.watch(rutasPublicadasProvider).valueOrNull ?? const <ModeloRuta>[];
     final todasRutas = MetricasComunidad.enriquecerRutas(
-      RutasDataSourceLocal.obtenerTodas(),
+      catalogoRutas,
       indiceRutas,
     );
     final culturales = MetricasComunidad.enriquecerRutas(
-      RutasDataSourceLocal.obtenerCultura(),
+      catalogoRutas
+          .where((ruta) => ruta.categoria == CategoriaRuta.cultura)
+          .toList(growable: false),
       indiceRutas,
     );
     final caminos = todasRutas
-        .where((r) => r.hilo == HiloCultura.camino)
+        .where((r) => r.categoria != CategoriaRuta.cultura)
         .toList();
-    final lugares = LugaresDataSourceLocal.instancia.todos();
+    final lugares = supabaseListo
+        ? (ref.watch(lugaresRemotosProvider).valueOrNull ??
+              const <ModeloLugar>[])
+        : LugaresDataSourceLocal.instancia.todos();
 
     // Carrusel hero: solo lo mágico / misterioso / místico
-    final cuscoMagico = lugares
-        .where(
-          (l) =>
-              l.categoria == CategoriaLugar.misterioso ||
-              l.categoria == CategoriaLugar.magico,
-        )
-        .map((l) {
-          final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
-          return r.copyWith(
-            imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
-          );
-        })
-        .toList()
-      ..sort((a, b) => b.calificacion.compareTo(a.calificacion));
+    final cuscoMagico =
+        lugares
+            .where(
+              (l) =>
+                  l.categoria == CategoriaLugar.misterioso ||
+                  l.categoria == CategoriaLugar.magico,
+            )
+            .map((l) {
+              final r = _desdeLugar(
+                l,
+                exploradoresPorLugar,
+                calificacionPorLugar,
+              );
+              return r.copyWith(
+                imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(
+                  lugarId: l.id,
+                ),
+              );
+            })
+            .toList()
+          ..sort((a, b) => b.calificacion.compareTo(a.calificacion));
     // Prioriza tours curiosos (Almudena, noche, wak’as…) al frente
     cuscoMagico.sort((a, b) {
       int peso(ModeloRuta r) {
@@ -258,10 +280,11 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     });
     final heroMagico = cuscoMagico.take(7).toList();
 
-    var descubiertos =
-        _descubiertosPorComunidad(lugares, exploradoresPorLugar, calificacionPorLugar)
-        .where((r) => !heroMagico.any((h) => h.id == r.id))
-        .toList();
+    var descubiertos = _descubiertosPorComunidad(
+      lugares,
+      exploradoresPorLugar,
+      calificacionPorLugar,
+    ).where((r) => !heroMagico.any((h) => h.id == r.id)).toList();
     var aventura = <ModeloRuta>[
       ...caminos,
       ...lugares
@@ -271,7 +294,9 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.caminata ||
                 l.categoria == CategoriaLugar.naturaleza,
           )
-          .map((l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar)),
+          .map(
+            (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
+          ),
     ];
 
     var comida = <ModeloRuta>[
@@ -287,7 +312,11 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.cultura,
           )
           .map((l) {
-            final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
+            final r = _desdeLugar(
+              l,
+              exploradoresPorLugar,
+              calificacionPorLugar,
+            );
             return r.copyWith(
               imagenUrl: l.categoria == CategoriaLugar.gastronomia
                   ? CatalogoImagenesHaku.imagenFogones(lugarId: l.id)
@@ -305,7 +334,11 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.fotografia,
           )
           .map((l) {
-            final r = _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar);
+            final r = _desdeLugar(
+              l,
+              exploradoresPorLugar,
+              calificacionPorLugar,
+            );
             return r.copyWith(
               imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
             );
@@ -375,7 +408,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                       tooltip: 'Mensajes',
                       onPressed: _abrirComunidadMensajes,
                       icon: BadgeContadorOverlay(
-                        cantidad: SenalesAtencion.mensajesSinLeer(),
+                        cantidad: mensajesNoLeidos,
                         compacto: true,
                         child: const Icon(
                           Icons.chat_bubble_outline_rounded,
@@ -443,7 +476,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () =>
-                        ref.read(pestaniaShellInicioProvider.notifier).state = 1,
+                        ref.read(pestaniaShellInicioProvider.notifier).state =
+                            1,
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),

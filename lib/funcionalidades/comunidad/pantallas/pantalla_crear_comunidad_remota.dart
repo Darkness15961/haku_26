@@ -9,6 +9,7 @@ import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
+import '../dominio/modelo_comunidad.dart';
 import '../proveedores/proveedor_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
 
@@ -73,7 +74,8 @@ class _EstadoPantallaCrearComunidadRemota
     setState(() => _guardando = true);
     try {
       final ds = ref.read(comunidadRemotoDataSourceProvider);
-      String? fotoUrl;
+      final desc = _descCtrl.text.trim();
+      late final ComunidadHaku creada;
       if (_foto != null && _fotoBytes != null) {
         final name = _foto!.name.toLowerCase();
         final ext = name.endsWith('.png')
@@ -82,29 +84,30 @@ class _EstadoPantallaCrearComunidadRemota
         final contentType = ext == 'png'
             ? 'image/png'
             : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
-        fotoUrl = await ds.subirFotoPortada(
+        creada = await ds.crearConPortada(
           userId: uid,
           bytes: _fotoBytes!,
           contentType: contentType,
           extension: ext,
+          nombre: nombre,
+          descripcion: desc.isEmpty ? null : desc,
+          tipo: _tipo,
+        );
+      } else {
+        creada = await ds.crear(
+          nombre: nombre,
+          descripcion: desc.isEmpty ? null : desc,
+          tipo: _tipo,
         );
       }
 
-      final desc = _descCtrl.text.trim();
-      final creada = await ds.crear(
-        nombre: nombre,
-        descripcion: desc.isEmpty ? null : desc,
-        tipo: _tipo,
-        fotoPortadaUrl: fotoUrl,
-      );
-
       notificarComunidadesCambiaron(ref);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
-      await Navigator.of(context).push(
+      await Navigator.of(context).pushReplacement<void, bool>(
         MaterialPageRoute<void>(
           builder: (_) => PantallaDetalleComunidad(comunidadId: creada.id),
         ),
+        result: true,
       );
     } on AuthException catch (e) {
       if (mounted) mostrarSnackHaku(context, e.message);
@@ -118,27 +121,29 @@ class _EstadoPantallaCrearComunidadRemota
   }
 
   InputDecoration _deco(String hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
-        filled: true,
-        fillColor: PaletaRutas.carbon,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: PaletaRutas.plomo.withValues(alpha: 0.4)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: PaletaRutas.plomo.withValues(alpha: 0.4)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: PaletaRutas.oro),
-        ),
-      );
+    hintText: hint,
+    hintStyle: TipografiaHaku.interfaz(color: PaletaRutas.plomo),
+    filled: true,
+    fillColor: PaletaRutas.carbon,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: PaletaRutas.plomo.withValues(alpha: 0.4)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: PaletaRutas.plomo.withValues(alpha: 0.4)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: PaletaRutas.oro),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom + 24;
+    final ancho = MediaQuery.sizeOf(context).width;
+    final horizontal = ancho > 752 ? (ancho - 720) / 2 : 16.0;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -174,7 +179,12 @@ class _EstadoPantallaCrearComunidadRemota
             ),
             Expanded(
               child: ListView(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, bottom),
+                padding: EdgeInsets.fromLTRB(
+                  horizontal,
+                  12,
+                  horizontal,
+                  bottom,
+                ),
                 children: [
                   Text(
                     'Portada (opcional)',
@@ -196,27 +206,31 @@ class _EstadoPantallaCrearComunidadRemota
                         child: _fotoBytes != null
                             ? Image.memory(_fotoBytes!, fit: BoxFit.cover)
                             : (_foto != null
-                                ? ImagenHaku(url: _foto!.path, fit: BoxFit.cover)
-                                : Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.add_photo_alternate_outlined,
-                                          color: PaletaRutas.plomo
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Sin foto = sin portada en BD',
-                                          style: TipografiaHaku.interfaz(
-                                            fontSize: 12,
-                                            color: PaletaRutas.plomoClaro,
+                                  ? ImagenHaku(
+                                      url: _foto!.path,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.add_photo_alternate_outlined,
+                                            color: PaletaRutas.plomo.withValues(
+                                              alpha: 0.9,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Agrega una foto de portada',
+                                            style: TipografiaHaku.interfaz(
+                                              fontSize: 12,
+                                              color: PaletaRutas.plomoClaro,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
                       ),
                     ),
                   ),
@@ -276,6 +290,16 @@ class _EstadoPantallaCrearComunidadRemota
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _tipo == 'privado'
+                        ? 'Solo las personas aprobadas podrán verla.'
+                        : 'Cualquier explorador podrá encontrarla y unirse.',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 12,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
                   const SizedBox(height: 18),
                   Text(
                     'Descripción (opcional)',
@@ -292,7 +316,7 @@ class _EstadoPantallaCrearComunidadRemota
                     maxLines: 3,
                     style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
                     cursorColor: PaletaRutas.oro,
-                    decoration: _deco('Vacío se guarda como NULL'),
+                    decoration: _deco('Descripción (opcional)'),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -313,7 +337,7 @@ class _EstadoPantallaCrearComunidadRemota
                               ),
                             )
                           : Text(
-                              'Crear',
+                              'Crear comunidad',
                               style: TipografiaHaku.interfaz(
                                 fontWeight: FontWeight.w800,
                                 color: PaletaRutas.ink,

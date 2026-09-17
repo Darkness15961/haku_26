@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
 import 'estilos_rutas.dart';
 
-/// Botón circular solo icono (menús flotantes HAKU).
+/// Acción expandida del menú: texto visible para no depender del tooltip.
 class BotonIconoAccion extends StatelessWidget {
   const BotonIconoAccion({
     super.key,
@@ -32,16 +32,16 @@ class BotonIconoAccion extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          customBorder: const CircleBorder(),
+          borderRadius: BorderRadius.circular(tamano / 2),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Ink(
-                width: tamano,
                 height: tamano,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
                   color: PaletaRutas.carbon,
+                  borderRadius: BorderRadius.circular(tamano / 2),
                   border: Border.all(
                     color: destacado
                         ? PaletaRutas.oro.withValues(alpha: 0.55)
@@ -56,20 +56,29 @@ class BotonIconoAccion extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  icono,
-                  size: tamano * 0.48,
-                  color: destacado ? PaletaRutas.oro : PaletaRutas.oro,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      tooltip,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(icono, size: tamano * 0.46, color: PaletaRutas.oro),
+                  ],
                 ),
               ),
               if (destacado && _contador > 0)
                 Positioned(
                   right: -4,
                   top: -4,
-                  child: BadgeContador(
-                    cantidad: _contador,
-                    compacto: true,
-                  ),
+                  child: BadgeContador(cantidad: _contador, compacto: true),
                 ),
             ],
           ),

@@ -15,10 +15,12 @@ class TarjetaPublicacionRemota extends StatelessWidget {
     super.key,
     required this.publicacion,
     this.compacta = false,
+    this.habilitarComunidad = true,
   });
 
   final ModeloPublicacionRemota publicacion;
   final bool compacta;
+  final bool habilitarComunidad;
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +47,7 @@ class TarjetaPublicacionRemota extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.center,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0x00000000),
-                            Color(0x99000000),
-                          ],
+                          colors: [Color(0x00000000), Color(0x99000000)],
                         ),
                       ),
                     ),
@@ -166,17 +165,19 @@ class TarjetaPublicacionRemota extends StatelessWidget {
                 },
                 child: Text(
                   p.lugarNombre!,
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: PaletaRutas.oro,
-                  ).copyWith(
-                    decoration: (p.lugarId != null &&
-                            int.tryParse(p.lugarId!.trim()) != null)
-                        ? TextDecoration.underline
-                        : TextDecoration.none,
-                    decorationColor: PaletaRutas.oro,
-                  ),
+                  style:
+                      TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
+                      ).copyWith(
+                        decoration:
+                            (p.lugarId != null &&
+                                int.tryParse(p.lugarId!.trim()) != null)
+                            ? TextDecoration.underline
+                            : TextDecoration.none,
+                        decorationColor: PaletaRutas.oro,
+                      ),
                 ),
               ),
             ),
@@ -190,15 +191,17 @@ class TarjetaPublicacionRemota extends StatelessWidget {
                   for (final c in p.comunidades)
                     if (c.nombre.trim().isNotEmpty)
                       GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => PantallaDetalleComunidad(
-                                comunidadId: c.comunidadId,
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: habilitarComunidad
+                            ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => PantallaDetalleComunidad(
+                                      comunidadId: c.comunidadId,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,

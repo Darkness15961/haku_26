@@ -92,10 +92,7 @@ abstract final class MetricasComunidad {
     String? lugarId,
     String? rutaId,
   }) {
-    assert(
-      lugarId != null || rutaId != null,
-      'Indica lugarId o rutaId',
-    );
+    assert(lugarId != null || rutaId != null, 'Indica lugarId o rutaId');
     final lista = todas.where((p) {
       if (p.esInvitacionSalida) return false;
       if (lugarId != null && p.lugarId == lugarId) return true;
@@ -143,8 +140,9 @@ abstract final class MetricasComunidad {
       fotosUrls: fotosUrls,
       exploradores: autores.length,
       valoraciones: notas.length,
-      calificacionPromedio:
-          notas.isEmpty ? null : notas.reduce((a, b) => a + b) / notas.length,
+      calificacionPromedio: notas.isEmpty
+          ? null
+          : notas.reduce((a, b) => a + b) / notas.length,
     );
   }
 
@@ -234,8 +232,7 @@ abstract final class MetricasComunidad {
   static List<ModeloRuta> enriquecerRutas(
     Iterable<ModeloRuta> rutas,
     IndiceMetricasRutas indice,
-  ) =>
-      [for (final r in rutas) enriquecerRuta(r, indice)];
+  ) => [for (final r in rutas) enriquecerRuta(r, indice)];
 
   static String etiquetaFotos(int cantidad) {
     if (cantidad <= 0) return '';
@@ -257,20 +254,27 @@ abstract final class MetricasComunidad {
     return partes.join(' · ');
   }
 
-  /// Métricas desde publicaciones remotas ligadas a `lugar_id` numérico.
+  /// Métricas desde publicaciones remotas ligadas a Lugar o Ruta.
   static MetricasExperienciaComunidad calcularRemotas(
     List<ModeloPublicacionRemota> pubs, {
-    required String lugarId,
+    String? lugarId,
+    String? rutaId,
   }) {
-    final lid = lugarId.trim();
-    if (lid.isEmpty) return MetricasExperienciaComunidad.vacias;
-    final delLugar = pubs.where((p) => (p.lugarId ?? '').trim() == lid).toList();
-    if (delLugar.isEmpty) return MetricasExperienciaComunidad.vacias;
+    assert(lugarId != null || rutaId != null, 'Indica lugarId o rutaId');
+    final lid = lugarId?.trim() ?? '';
+    final rid = rutaId?.trim() ?? '';
+    if (lid.isEmpty && rid.isEmpty) return MetricasExperienciaComunidad.vacias;
+    final vinculadas = pubs.where((p) {
+      if (lid.isNotEmpty && (p.lugarId ?? '').trim() == lid) return true;
+      if (rid.isNotEmpty && (p.rutaId ?? '').trim() == rid) return true;
+      return false;
+    }).toList();
+    if (vinculadas.isEmpty) return MetricasExperienciaComunidad.vacias;
 
     final fotosVistas = <String>{};
     final fotosUrls = <String>[];
     final autores = <String>{};
-    for (final p in delLugar) {
+    for (final p in vinculadas) {
       final url = p.imagenUrl?.trim();
       if (url != null && url.isNotEmpty && fotosVistas.add(url)) {
         fotosUrls.add(url);

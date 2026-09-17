@@ -27,7 +27,9 @@ class ImagenHaku extends StatelessWidget {
   String get _respaldo => respaldo ?? CatalogoImagenesHaku.respaldo;
 
   bool get _esArchivo =>
-      url.isNotEmpty && !url.startsWith('http') && !CatalogoImagenesHaku.esLocal(url);
+      url.isNotEmpty &&
+      !url.startsWith('http') &&
+      !CatalogoImagenesHaku.esLocal(url);
 
   Widget _asset(String path) {
     return Image.asset(
@@ -35,16 +37,12 @@ class ImagenHaku extends StatelessWidget {
       fit: fit,
       width: width,
       height: height,
-      errorBuilder: (_, __, ___) => Image.asset(
-        _respaldo,
-        fit: fit,
-        width: width,
-        height: height,
-      ),
+      errorBuilder: (_, __, ___) =>
+          Image.asset(_respaldo, fit: fit, width: width, height: height),
     );
   }
 
-  Widget _contenido() {
+  Widget _contenido(BuildContext context) {
     if (url.isEmpty) return _asset(_respaldo);
     if (CatalogoImagenesHaku.esLocal(url)) return _asset(url);
     if (_esArchivo) {
@@ -56,11 +54,22 @@ class ImagenHaku extends StatelessWidget {
         errorBuilder: (_, __, ___) => _asset(_respaldo),
       );
     }
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = width != null && width!.isFinite && width! > 0
+        ? (width! * pixelRatio).round()
+        : null;
+    final cacheHeight = height != null && height!.isFinite && height! > 0
+        ? (height! * pixelRatio).round()
+        : null;
     return CachedNetworkImage(
       imageUrl: url,
       fit: fit,
       width: width,
       height: height,
+      memCacheWidth: cacheWidth,
+      memCacheHeight: cacheHeight,
+      maxWidthDiskCache: cacheWidth,
+      maxHeightDiskCache: cacheHeight,
       placeholder: (_, __) => ColoredBox(
         color: const Color(0xFFE8E0D4),
         child: width != null && height != null
@@ -73,7 +82,7 @@ class ImagenHaku extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget child = _contenido();
+    Widget child = _contenido(context);
     if (borderRadius != null) {
       child = ClipRRect(borderRadius: borderRadius!, child: child);
     }
@@ -86,11 +95,7 @@ class ImagenHaku extends StatelessWidget {
             c.maxHeight.isFinite &&
             c.maxWidth > 0 &&
             c.maxHeight > 0) {
-          return SizedBox(
-            width: c.maxWidth,
-            height: c.maxHeight,
-            child: child,
-          );
+          return SizedBox(width: c.maxWidth, height: c.maxHeight, child: child);
         }
         return child;
       },

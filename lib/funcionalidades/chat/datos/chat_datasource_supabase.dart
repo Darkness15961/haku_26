@@ -164,6 +164,69 @@ mensaje_reaccion (
     }
   }
 
+  Future<List<PreviewChatSala>> listarBandeja() async {
+    if (!supabaseListo || _uid == null) return const [];
+    try {
+      final raw = await clienteSupabase.rpc('listar_bandeja_chat');
+      if (raw is! List) {
+        throw const AuthException('Respuesta inválida de Mensajes');
+      }
+      final out = <PreviewChatSala>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final fila = Map<String, dynamic>.from(item);
+        final salaId = '${fila['sala_id'] ?? ''}'.trim();
+        final tipo = '${fila['tipo'] ?? ''}'.trim();
+        final titulo = '${fila['titulo'] ?? ''}'.trim();
+        if (tipo.isEmpty || titulo.isEmpty) continue;
+
+        ModeloMensajeChat? ultimo;
+        final ultimoId = fila['ultimo_id'];
+        final fechaRaw = fila['ultimo_fecha'];
+        if (ultimoId != null && fechaRaw != null && salaId.isNotEmpty) {
+          final fecha = DateTime.tryParse('$fechaRaw')?.toLocal();
+          if (fecha != null) {
+            final eliminadoRaw = fila['ultimo_eliminado_en'];
+            ultimo = ModeloMensajeChat(
+              id: '$ultimoId',
+              salaId: salaId,
+              usuarioId: '',
+              contenido: '${fila['ultimo_contenido'] ?? ''}',
+              tipoMensaje: '${fila['ultimo_tipo'] ?? 'texto'}',
+              fechaEnvio: fecha,
+              eliminadoEn: eliminadoRaw == null
+                  ? null
+                  : DateTime.tryParse('$eliminadoRaw')?.toLocal(),
+            );
+          }
+        }
+
+        String? idOpcional(String llave) {
+          final valor = '${fila[llave] ?? ''}'.trim();
+          return valor.isEmpty ? null : valor;
+        }
+
+        out.add(
+          PreviewChatSala(
+            salaId: salaId,
+            titulo: titulo,
+            fotoPortada: idOpcional('foto_portada'),
+            comunidadId: idOpcional('comunidad_id'),
+            salidaId: idOpcional('salida_id'),
+            usuarioId: idOpcional('usuario_id'),
+            tipo: tipo,
+            ultimo: ultimo,
+            noLeidos: (fila['no_leidos'] as num?)?.toInt() ?? 0,
+            puedeCrearSala: fila['puede_crear_sala'] == true,
+          ),
+        );
+      }
+      return out;
+    } on PostgrestException catch (e) {
+      throw AuthException(_msgPg(e));
+    }
+  }
+
   Future<String> asegurarSalaComunidad(
     String comunidadId, {
     bool seedAprobados = true,
@@ -953,12 +1016,12 @@ mensaje_reaccion (
     try {
       final part = await clienteSupabase
           .from('sala_participante')
-          .select('ultima_lectura')
+          .select('ultima_lectura, fecha_ingreso')
           .eq('sala_id', salaNum)
           .eq('usuario_id', user.id)
           .maybeSingle();
       if (part == null) return 0;
-      final ul = part['ultima_lectura'];
+      final desde = part['ultima_lectura'] ?? part['fecha_ingreso'];
       // Count head: no traer filas (escala con el historial).
       var query = clienteSupabase
           .from('mensaje')
@@ -966,8 +1029,8 @@ mensaje_reaccion (
           .eq('sala_id', salaNum)
           .neq('usuario_id', user.id)
           .isFilter('eliminado_en', null);
-      if (ul is String && ul.isNotEmpty) {
-        query = query.gt('fecha_envio', ul);
+      if (desde is String && desde.isNotEmpty) {
+        query = query.gt('fecha_envio', desde);
       }
       final res = await query.count(CountOption.exact);
       return res.count;

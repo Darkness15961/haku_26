@@ -67,7 +67,7 @@ class CardInvitacionGrupo extends ConsumerWidget {
       if (!context.mounted) return;
       mostrarSnackHaku(
         context,
-        'Esa invitación es demo local. Las salidas reales están en Comunidad → Salidas.',
+        'Consulta las salidas disponibles en Comunidad → Salidas.',
       );
       return;
     }
@@ -78,7 +78,11 @@ class CardInvitacionGrupo extends ConsumerWidget {
     );
   }
 
-  Future<void> _unirse(BuildContext context, WidgetRef ref, ModeloSalida s) async {
+  Future<void> _unirse(
+    BuildContext context,
+    WidgetRef ref,
+    ModeloSalida s,
+  ) async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !context.mounted) return;
     final uid = AlmacenFeedNotifier.idUsuarioLocal;
@@ -109,8 +113,7 @@ class CardInvitacionGrupo extends ConsumerWidget {
     final s = SalidasDataSourceLocal.instancia.porId(salidaId);
     final uid = AlmacenFeedNotifier.idUsuarioLocal;
     final yaUnido = s?.unido(uid) ?? false;
-    final imagen =
-        publicacion.imagenUrl ?? CatalogoImagenesHaku.respaldo;
+    final imagen = publicacion.imagenUrl ?? CatalogoImagenesHaku.respaldo;
 
     final imagenBloque = Stack(
       fit: StackFit.expand,
@@ -164,8 +167,8 @@ class CardInvitacionGrupo extends ConsumerWidget {
                 s.llena
                     ? 'Sin cupos'
                     : s.esDeGrupo
-                        ? '${s.inscritos}/${s.cuposTotales}'
-                        : '${s.inscritos}/${s.cupos} cupos',
+                    ? '${s.inscritos}/${s.cuposTotales}'
+                    : '${s.inscritos}/${s.cupos} cupos',
                 style: TipografiaHaku.interfaz(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -195,7 +198,12 @@ class CardInvitacionGrupo extends ConsumerWidget {
     );
 
     final meta = Padding(
-      padding: EdgeInsets.fromLTRB(14, enRejilla ? 8 : 12, 14, enRejilla ? 10 : 14),
+      padding: EdgeInsets.fromLTRB(
+        14,
+        enRejilla ? 8 : 12,
+        14,
+        enRejilla ? 10 : 14,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -258,10 +266,7 @@ class CardInvitacionGrupo extends ConsumerWidget {
                       icono: Icons.groups_outlined,
                       texto: '${s.cuposGrupo} del grupo',
                     ),
-                    _DatoChip(
-                      icono: Icons.hiking,
-                      texto: s.grupo,
-                    ),
+                    _DatoChip(icono: Icons.hiking, texto: s.grupo),
                   ],
                 ],
               ),
@@ -297,8 +302,9 @@ class CardInvitacionGrupo extends ConsumerWidget {
                           ? null
                           : () => _unirse(context, ref, s),
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            yaUnido ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+                        backgroundColor: yaUnido
+                            ? PaletaRutas.plomoOscuro
+                            : PaletaRutas.oro,
                         foregroundColor: PaletaRutas.ink,
                         disabledBackgroundColor: PaletaRutas.plomoOscuro,
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -310,8 +316,8 @@ class CardInvitacionGrupo extends ConsumerWidget {
                         yaUnido
                             ? 'Ya unido'
                             : s.llena
-                                ? 'Sin cupos'
-                                : 'Unirse',
+                            ? 'Sin cupos'
+                            : 'Unirse',
                         style: TipografiaHaku.interfaz(
                           fontWeight: FontWeight.w800,
                           color: yaUnido || s.llena
@@ -347,8 +353,9 @@ class CardInvitacionGrupo extends ConsumerWidget {
                     ? null
                     : () => _unirse(context, ref, s),
                 style: FilledButton.styleFrom(
-                  backgroundColor:
-                      yaUnido ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+                  backgroundColor: yaUnido
+                      ? PaletaRutas.plomoOscuro
+                      : PaletaRutas.oro,
                   foregroundColor: PaletaRutas.ink,
                   disabledBackgroundColor: PaletaRutas.plomoOscuro,
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -361,8 +368,8 @@ class CardInvitacionGrupo extends ConsumerWidget {
                   yaUnido
                       ? 'Ya unido'
                       : s.llena
-                          ? 'Sin cupos'
-                          : 'Unirse',
+                      ? 'Sin cupos'
+                      : 'Unirse',
                   style: TipografiaHaku.interfaz(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,

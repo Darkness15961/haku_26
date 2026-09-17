@@ -93,7 +93,7 @@ class _EstadoPantallaCrearPublicacionRemota
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
     if (!supabaseListo) {
-      mostrarSnackHaku(context, 'Supabase no disponible');
+      mostrarSnackHaku(context, 'La publicación no está disponible ahora');
       return;
     }
     final uid = clienteSupabase.auth.currentUser?.id;
@@ -105,7 +105,6 @@ class _EstadoPantallaCrearPublicacionRemota
     setState(() => _guardando = true);
     try {
       final ds = ref.read(publicacionRemotoDataSourceProvider);
-      String? url;
       if (_foto != null && _fotoBytes != null) {
         final name = _foto!.name.toLowerCase();
         final ext = name.endsWith('.png')
@@ -114,20 +113,22 @@ class _EstadoPantallaCrearPublicacionRemota
         final contentType = ext == 'png'
             ? 'image/png'
             : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
-        url = await ds.subirImagen(
+        await ds.crearConImagen(
           userId: uid,
           bytes: _fotoBytes!,
           contentType: contentType,
           extension: ext,
+          contenido: contenido,
+          comunidadId: _comunidadId,
+          lugarId: _lugarId,
+        );
+      } else {
+        await ds.crear(
+          contenido: contenido,
+          comunidadId: _comunidadId,
+          lugarId: _lugarId,
         );
       }
-
-      await ds.crear(
-        contenido: contenido,
-        comunidadId: _comunidadId,
-        lugarId: _lugarId,
-        imagenUrl: url,
-      );
 
       notificarPublicacionesCambiaron(ref);
       if (!mounted) return;
@@ -153,7 +154,9 @@ class _EstadoPantallaCrearPublicacionRemota
     final comunidadesAsync = ref.watch(comunidadesRemotasProvider);
     final lugaresAsync = ref.watch(lugaresRemotosProvider);
     final mias = (comunidadesAsync.valueOrNull ?? const [])
-        .where((c) => uid.isNotEmpty && (c.esMiembro(uid) || c.creadorId == uid))
+        .where(
+          (c) => uid.isNotEmpty && (c.esMiembro(uid) || c.creadorId == uid),
+        )
         .toList();
     final lugares = lugaresAsync.valueOrNull ?? const [];
     final bottom = MediaQuery.paddingOf(context).bottom + 16;
@@ -267,9 +270,9 @@ class _EstadoPantallaCrearPublicacionRemota
                       onPressed: _guardando
                           ? null
                           : () => setState(() {
-                                _foto = null;
-                                _fotoBytes = null;
-                              }),
+                              _foto = null;
+                              _fotoBytes = null;
+                            }),
                       child: Text(
                         'Quitar foto',
                         style: TipografiaHaku.interfaz(
@@ -343,7 +346,9 @@ class _EstadoPantallaCrearPublicacionRemota
                     const Padding(
                       padding: EdgeInsets.all(12),
                       child: Center(
-                        child: CircularProgressIndicator(color: PaletaRutas.oro),
+                        child: CircularProgressIndicator(
+                          color: PaletaRutas.oro,
+                        ),
                       ),
                     )
                   else
@@ -361,8 +366,9 @@ class _EstadoPantallaCrearPublicacionRemota
                       ),
                       hint: Text(
                         lugares.isEmpty ? 'Sin lugares activos' : 'Sin lugar',
-                        style:
-                            TipografiaHaku.interfaz(color: PaletaRutas.plomo),
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.plomo,
+                        ),
                       ),
                       items: [
                         DropdownMenuItem<String?>(
@@ -391,7 +397,7 @@ class _EstadoPantallaCrearPublicacionRemota
                     ),
                   const SizedBox(height: 12),
                   Text(
-                    'Sin likes ni video por ahora — solo lo que existe en BD.',
+                    'Las reacciones y el video estarán disponibles próximamente.',
                     style: TipografiaHaku.interfaz(
                       fontSize: 11,
                       color: PaletaRutas.plomo,

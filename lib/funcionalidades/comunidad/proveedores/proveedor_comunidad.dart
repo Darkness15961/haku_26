@@ -5,18 +5,21 @@ import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../datos/comunidad_datasource_supabase.dart';
 import '../dominio/modelo_comunidad.dart';
 
-final comunidadRemotoDataSourceProvider =
-    Provider<ComunidadDataSourceSupabase>((ref) {
-  return ComunidadDataSourceSupabase();
-});
+final comunidadRemotoDataSourceProvider = Provider<ComunidadDataSourceSupabase>(
+  (ref) {
+    return ComunidadDataSourceSupabase();
+  },
+);
 
 /// Tick para refresh tras mutaciones (Bloque B+).
 final comunidadesVersionProvider = StateProvider<int>((ref) => 0);
 
 /// Fuente de verdad tab Comunidades: solo Supabase (vacío honesto).
-final comunidadesRemotasProvider =
-    FutureProvider<List<ComunidadHaku>>((ref) async {
+final comunidadesRemotasProvider = FutureProvider<List<ComunidadHaku>>((
+  ref,
+) async {
   ref.watch(comunidadesVersionProvider);
+  ref.watch(perfilVersionProvider);
   // Solo uid: evita re-fetch en cada tokenRefreshed (EstadoSesion sin ==).
   ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
   if (!supabaseListo) return const [];
@@ -40,9 +43,12 @@ final comunidadesErrorProvider = Provider<Object?>((ref) {
   return async.whenOrNull(error: (e, _) => e);
 });
 
-final comunidadDetalleProvider =
-    FutureProvider.family<ComunidadHaku?, String>((ref, id) async {
+final comunidadDetalleProvider = FutureProvider.family<ComunidadHaku?, String>((
+  ref,
+  id,
+) async {
   ref.watch(comunidadesVersionProvider);
+  ref.watch(perfilVersionProvider);
   final lista = ref.watch(comunidadesListaProvider);
   for (final c in lista) {
     if (c.id == id) return c;
@@ -60,22 +66,32 @@ final comunidadDetalleProvider =
 });
 
 final miembrosComunidadProvider =
-    FutureProvider.family<List<MiembroComunidadRemoto>, String>((ref, id) async {
-  ref.watch(comunidadesVersionProvider);
-  if (!supabaseListo || id.trim().isEmpty) return const [];
-  return ref.read(comunidadRemotoDataSourceProvider).listarMiembros(id);
-});
+    FutureProvider.family<List<MiembroComunidadRemoto>, String>((
+      ref,
+      id,
+    ) async {
+      ref.watch(comunidadesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      if (!supabaseListo || id.trim().isEmpty) return const [];
+      return ref.read(comunidadRemotoDataSourceProvider).listarMiembros(id);
+    });
 
 final pendientesComunidadProvider =
-    FutureProvider.family<List<MiembroComunidadRemoto>, String>((ref, id) async {
-  ref.watch(comunidadesVersionProvider);
-  if (!supabaseListo || id.trim().isEmpty) return const [];
-  return ref.read(comunidadRemotoDataSourceProvider).listarPendientes(id);
-});
+    FutureProvider.family<List<MiembroComunidadRemoto>, String>((
+      ref,
+      id,
+    ) async {
+      ref.watch(comunidadesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      if (!supabaseListo || id.trim().isEmpty) return const [];
+      return ref.read(comunidadRemotoDataSourceProvider).listarPendientes(id);
+    });
 
 /// ¿El usuario de sesión es miembro aprobado de [comunidadId]?
-final soyMiembroComunidadProvider =
-    Provider.family<bool, String>((ref, comunidadId) {
+final soyMiembroComunidadProvider = Provider.family<bool, String>((
+  ref,
+  comunidadId,
+) {
   final uid = ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
   if (uid.isEmpty) return false;
   final lista = ref.watch(comunidadesListaProvider);

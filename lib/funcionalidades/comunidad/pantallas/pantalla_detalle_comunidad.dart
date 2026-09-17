@@ -13,7 +13,9 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelo_comunidad.dart';
 import '../proveedores/proveedor_comunidad.dart';
+import '../proveedores/proveedor_publicaciones.dart';
 import '../widgets/chip_categoria_comunidad.dart';
+import '../widgets/tarjeta_publicacion_remota.dart';
 import '../../chat/indice.dart';
 import 'pantalla_salidas.dart';
 
@@ -32,12 +34,50 @@ class _EstadoPantallaDetalleComunidad
   bool _accionando = false;
   String? _resolviendoUid;
 
+  Future<bool> _confirmarAccion({
+    required String titulo,
+    required String mensaje,
+    required String confirmar,
+  }) async {
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: PaletaRutas.carbon,
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Volver'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(confirmar),
+          ),
+        ],
+      ),
+    );
+    return resultado == true;
+  }
+
   Future<void> _unirseOSalir(ComunidadHaku c) async {
     if (_accionando) return;
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
     final uid = ref.read(sesionProvider).usuario?.id ?? '';
     if (uid.isEmpty) return;
+
+    if (c.esMiembro(uid) || c.solicitudPendiente(uid)) {
+      final pendiente = c.solicitudPendiente(uid);
+      final confirmado = await _confirmarAccion(
+        titulo: pendiente ? 'Cancelar solicitud' : 'Salir de la comunidad',
+        mensaje: pendiente
+            ? 'Tu solicitud dejará de estar pendiente.'
+            : 'Dejarás de ver el contenido reservado para miembros.',
+        confirmar: pendiente ? 'Cancelar solicitud' : 'Salir',
+      );
+      if (!confirmado || !mounted) return;
+    }
 
     setState(() => _accionando = true);
     try {
@@ -83,9 +123,19 @@ class _EstadoPantallaDetalleComunidad
     if (_resolviendoUid != null) return;
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
+    if (!aprobar) {
+      final confirmado = await _confirmarAccion(
+        titulo: 'Rechazar solicitud',
+        mensaje: 'Esta persona tendrá que solicitar acceso nuevamente.',
+        confirmar: 'Rechazar',
+      );
+      if (!confirmado || !mounted) return;
+    }
     setState(() => _resolviendoUid = usuarioId);
     try {
-      await ref.read(comunidadRemotoDataSourceProvider).resolverSolicitud(
+      await ref
+          .read(comunidadRemotoDataSourceProvider)
+          .resolverSolicitud(
             comunidadId: c.id,
             usuarioId: usuarioId,
             aprobar: aprobar,
@@ -112,10 +162,15 @@ class _EstadoPantallaDetalleComunidad
   @override
   Widget build(BuildContext context) {
     final remotaAsync = ref.watch(comunidadDetalleProvider(widget.comunidadId));
-    final miembrosAsync =
-        ref.watch(miembrosComunidadProvider(widget.comunidadId));
-    final pendientesAsync =
-        ref.watch(pendientesComunidadProvider(widget.comunidadId));
+    final miembrosAsync = ref.watch(
+      miembrosComunidadProvider(widget.comunidadId),
+    );
+    final pendientesAsync = ref.watch(
+      pendientesComunidadProvider(widget.comunidadId),
+    );
+    final publicacionesAsync = ref.watch(
+      publicacionesPorComunidadProvider(widget.comunidadId),
+    );
     final store = ref.watch(almacenFeedProvider);
     final uid = ref.watch(sesionProvider).usuario?.id ?? '';
 
@@ -151,7 +206,7 @@ class _EstadoPantallaDetalleComunidad
     final comunidad = comunidadRemota ?? comunidadLocal;
     if (comunidad == null) {
       final msg = remotaAsync.hasError
-          ? 'No se pudo cargar la comunidad.\nRevisá conexión o membresía.'
+          ? 'No se pudo cargar la comunidad.\nRevisa tu conexión o acceso.'
           : 'Comunidad no encontrada';
       return Scaffold(
         backgroundColor: PaletaRutas.ink,
@@ -163,10 +218,24 @@ class _EstadoPantallaDetalleComunidad
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
-              msg,
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  msg,
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+                ),
+                if (remotaAsync.hasError) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => ref.invalidate(
+                      comunidadDetalleProvider(widget.comunidadId),
+                    ),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -179,11 +248,14 @@ class _EstadoPantallaDetalleComunidad
         : store.comunidadIds.contains(c.id);
     final pendiente = c.remoto && c.solicitudPendiente(uid);
     final soyAdmin = c.remoto && c.esAdminDe(uid);
+    final soyCreador = c.creadorId == uid;
     final miembrosLocal = [
       for (final id in c.miembroIds)
         if (store.perfilPorId(id) != null) store.perfilPorId(id)!,
     ];
     final bottom = MediaQuery.paddingOf(context).bottom + 24;
+    final ancho = MediaQuery.sizeOf(context).width;
+    final horizontal = ancho > 752 ? (ancho - 720) / 2 : 16.0;
     final meta = [
       '${c.miembros} miembros',
       if (c.esPrivada) 'privada' else 'pública',
@@ -191,7 +263,7 @@ class _EstadoPantallaDetalleComunidad
     ].join(' · ');
 
     String textoBotonRemoto() {
-      if (unida) return 'Salir';
+      if (unida) return 'Salir de la comunidad';
       if (pendiente) return 'Cancelar solicitud';
       return 'Unirme';
     }
@@ -219,10 +291,7 @@ class _EstadoPantallaDetalleComunidad
                       ),
                     )
                   else
-                    ImagenHaku(
-                      url: c.imagenUrl,
-                      fit: BoxFit.cover,
-                    ),
+                    ImagenHaku(url: c.imagenUrl, fit: BoxFit.cover),
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -242,7 +311,13 @@ class _EstadoPantallaDetalleComunidad
                       child: Row(
                         children: [
                           IconButton(
+                            tooltip: 'Volver',
                             onPressed: () => Navigator.of(context).pop(),
+                            style: IconButton.styleFrom(
+                              backgroundColor: PaletaRutas.ink.withValues(
+                                alpha: 0.68,
+                              ),
+                            ),
                             icon: const Icon(
                               Icons.arrow_back_rounded,
                               color: PaletaRutas.piedra,
@@ -256,6 +331,7 @@ class _EstadoPantallaDetalleComunidad
                                 MaterialPageRoute<void>(
                                   builder: (_) => PantallaSalidas(
                                     comunidadId: c.id,
+                                    comunidadTitulo: c.nombre,
                                   ),
                                 ),
                               );
@@ -305,7 +381,9 @@ class _EstadoPantallaDetalleComunidad
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              unida ? 'Unida' : 'Pendiente',
+                              soyCreador
+                                  ? 'Administrador'
+                                  : (unida ? 'Miembro' : 'Pendiente'),
                               style: TipografiaHaku.interfaz(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
@@ -339,7 +417,7 @@ class _EstadoPantallaDetalleComunidad
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
+              padding: EdgeInsets.fromLTRB(horizontal, 16, horizontal, bottom),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -382,32 +460,89 @@ class _EstadoPantallaDetalleComunidad
                     ),
                   ),
                   const SizedBox(height: 16),
-                  BotonFondoTextil(
-                    texto: c.remoto
-                        ? (_accionando ? '…' : textoBotonRemoto())
-                        : (unida ? 'Salir' : 'Unirme'),
-                    icono: unida || pendiente
-                        ? Icons.check_rounded
-                        : Icons.group_add_outlined,
-                    altura: 44,
-                    radius: 12,
-                    onPressed: _accionando
-                        ? null
-                        : () async {
-                            if (c.remoto) {
-                              await _unirseOSalir(c);
-                              return;
-                            }
-                            final ok = await asegurarSesion(context, ref);
-                            if (!ok) return;
-                            await ref
-                                .read(almacenFeedProvider.notifier)
-                                .toggleUnirseComunidad(c.id);
-                          },
-                  ),
+                  if (c.remoto && soyCreador)
+                    const _EtiquetaAdminComunidad()
+                  else
+                    BotonFondoTextil(
+                      texto: c.remoto
+                          ? (_accionando ? '…' : textoBotonRemoto())
+                          : (unida ? 'Salir de la comunidad' : 'Unirme'),
+                      icono: pendiente
+                          ? Icons.pending_actions_outlined
+                          : (unida
+                                ? Icons.logout_rounded
+                                : Icons.group_add_outlined),
+                      altura: 44,
+                      radius: 12,
+                      onPressed: _accionando
+                          ? null
+                          : () async {
+                              if (c.remoto) {
+                                await _unirseOSalir(c);
+                                return;
+                              }
+                              final ok = await asegurarSesion(context, ref);
+                              if (!ok) return;
+                              await ref
+                                  .read(almacenFeedProvider.notifier)
+                                  .toggleUnirseComunidad(c.id);
+                            },
+                    ),
                   const SizedBox(height: 22),
-                  const LineaEncabezadoInca(altura: 2),
-                  const SizedBox(height: 14),
+                  if (c.remoto && (!c.esPrivada || unida)) ...[
+                    Text(
+                      'Publicaciones',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (publicacionesAsync.isLoading &&
+                        !publicacionesAsync.hasValue)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: PaletaRutas.oro,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                    else if (publicacionesAsync.hasError &&
+                        !publicacionesAsync.hasValue)
+                      _ErrorSeccion(
+                        texto: 'No pudimos cargar las publicaciones.',
+                        onReintentar: () => ref.invalidate(
+                          publicacionesPorComunidadProvider(widget.comunidadId),
+                        ),
+                      )
+                    else if ((publicacionesAsync.valueOrNull ?? const [])
+                        .isEmpty)
+                      Text(
+                        'Todavía no hay publicaciones en esta comunidad.',
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.plomoClaro,
+                        ),
+                      )
+                    else
+                      for (final publicacion
+                          in publicacionesAsync.valueOrNull!) ...[
+                        TarjetaPublicacionRemota(
+                          publicacion: publicacion,
+                          compacta: true,
+                          habilitarComunidad: false,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                    const SizedBox(height: 8),
+                    const LineaEncabezadoInca(altura: 2),
+                    const SizedBox(height: 14),
+                  ] else ...[
+                    const LineaEncabezadoInca(altura: 2),
+                    const SizedBox(height: 14),
+                  ],
                   if (c.remoto && soyAdmin) ...[
                     Text(
                       'Solicitudes',
@@ -418,8 +553,7 @@ class _EstadoPantallaDetalleComunidad
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (pendientesAsync.isLoading &&
-                        !pendientesAsync.hasValue)
+                    if (pendientesAsync.isLoading && !pendientesAsync.hasValue)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Center(
@@ -427,6 +561,14 @@ class _EstadoPantallaDetalleComunidad
                             color: PaletaRutas.oro,
                             strokeWidth: 2,
                           ),
+                        ),
+                      )
+                    else if (pendientesAsync.hasError &&
+                        !pendientesAsync.hasValue)
+                      _ErrorSeccion(
+                        texto: 'No pudimos cargar las solicitudes.',
+                        onReintentar: () => ref.invalidate(
+                          pendientesComunidadProvider(widget.comunidadId),
                         ),
                       )
                     else if ((pendientesAsync.valueOrNull ?? const []).isEmpty)
@@ -474,13 +616,20 @@ class _EstadoPantallaDetalleComunidad
                           ),
                         ),
                       )
+                    else if (miembrosAsync.hasError && !miembrosAsync.hasValue)
+                      _ErrorSeccion(
+                        texto: 'No pudimos cargar los miembros.',
+                        onReintentar: () => ref.invalidate(
+                          miembrosComunidadProvider(widget.comunidadId),
+                        ),
+                      )
                     else if ((miembrosAsync.valueOrNull ?? const []).isEmpty)
                       Text(
                         pendiente
                             ? 'Los miembros se verán cuando te aprueben.'
                             : unida
-                                ? 'Sin miembros aprobados aún.'
-                                : 'Unite para ver a los miembros.',
+                            ? 'Sin miembros aprobados aún.'
+                            : 'Únete para ver a los miembros.',
                         style: TipografiaHaku.interfaz(
                           color: PaletaRutas.plomoClaro,
                         ),
@@ -511,8 +660,7 @@ class _EstadoPantallaDetalleComunidad
                           color: PaletaRutas.carbon,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color:
-                                PaletaRutas.plomo.withValues(alpha: 0.35),
+                            color: PaletaRutas.plomo.withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(
@@ -521,8 +669,7 @@ class _EstadoPantallaDetalleComunidad
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     p.nombre,
@@ -557,6 +704,58 @@ class _EstadoPantallaDetalleComunidad
   }
 }
 
+class _EtiquetaAdminComunidad extends StatelessWidget {
+  const _EtiquetaAdminComunidad();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: PaletaRutas.carbon,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.verified_outlined, size: 19, color: PaletaRutas.oro),
+          const SizedBox(width: 8),
+          Text(
+            'Administras esta comunidad',
+            style: TipografiaHaku.interfaz(
+              fontWeight: FontWeight.w700,
+              color: PaletaRutas.piedra,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorSeccion extends StatelessWidget {
+  const _ErrorSeccion({required this.texto, required this.onReintentar});
+
+  final String texto;
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            texto,
+            style: TipografiaHaku.interfaz(color: PaletaRutas.oroSuave),
+          ),
+        ),
+        TextButton(onPressed: onReintentar, child: const Text('Reintentar')),
+      ],
+    );
+  }
+}
+
 class _FilaSolicitudPendiente extends StatelessWidget {
   const _FilaSolicitudPendiente({
     required this.miembro,
@@ -579,16 +778,11 @@ class _FilaSolicitudPendiente extends StatelessWidget {
       decoration: BoxDecoration(
         color: PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: PaletaRutas.oro.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          AvatarHaku(
-            url: foto.isEmpty ? null : foto,
-            size: 44,
-          ),
+          AvatarHaku(url: foto.isEmpty ? null : foto, size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -627,10 +821,7 @@ class _FilaSolicitudPendiente extends StatelessWidget {
 }
 
 class _FilaMiembroRemoto extends StatelessWidget {
-  const _FilaMiembroRemoto({
-    required this.miembro,
-    required this.esCreador,
-  });
+  const _FilaMiembroRemoto({required this.miembro, required this.esCreador});
 
   final MiembroComunidadRemoto miembro;
   final bool esCreador;
@@ -638,9 +829,7 @@ class _FilaMiembroRemoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foto = miembro.fotoPerfil?.trim() ?? '';
-    final rolTxt = esCreador
-        ? '${miembro.rol} · creador'
-        : miembro.rol;
+    final rolTxt = esCreador ? '${miembro.rol} · creador' : miembro.rol;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -648,16 +837,11 @@ class _FilaMiembroRemoto extends StatelessWidget {
       decoration: BoxDecoration(
         color: PaletaRutas.carbon,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: PaletaRutas.plomo.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: PaletaRutas.plomo.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          AvatarHaku(
-            url: foto.isEmpty ? null : foto,
-            size: 44,
-          ),
+          AvatarHaku(url: foto.isEmpty ? null : foto, size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

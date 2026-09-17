@@ -12,12 +12,9 @@ void abrirDetalleLugar(BuildContext context, String lugarId) {
   if (supabaseListo && int.tryParse(id) == null) {
     mostrarSnackHaku(
       context,
-      'Ese lugar es de la demo local; abrilo desde Explora cuando esté en el servidor.',
+      'Abre este lugar desde Explora para ver la información actualizada.',
     );
     return;
   }
-  abrirPantallaHaku<void>(
-    context,
-    PantallaDetalleLugar(lugarId: id),
-  );
+  abrirPantallaHaku<void>(context, PantallaDetalleLugar(lugarId: id));
 }

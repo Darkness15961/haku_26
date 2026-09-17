@@ -3,13 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../autenticacion/navegacion_auth.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
+import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../lugares/widgets/fila_metricas_comunidad.dart';
 import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
 import '../../lugares/widgets/recuerdos_comunidad.dart';
 import '../dominio/modelos/modelo_ruta.dart';
+import '../proveedores/proveedor_rutas.dart';
 import '../widgets/decoracion_detalle_fondo.dart';
 import '../widgets/estilos_rutas.dart';
 import '../widgets/imagen_parallax_ruta.dart';
@@ -57,18 +61,77 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     mostrarSnackHaku(context, mensaje, destacado: true);
   }
 
+  Widget _rutaNoDisponible() {
+    return Scaffold(
+      backgroundColor: PaletaRutas.ink,
+      appBar: AppBar(
+        backgroundColor: PaletaRutas.ink,
+        foregroundColor: PaletaRutas.piedra,
+        title: const Text('Ruta no disponible'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.route_outlined,
+                size: 48,
+                color: PaletaRutas.plomoClaro,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Esta ruta ya no está publicada.',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.titulo(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.piedra,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Puedes volver a Explora para elegir otra ruta.',
+                textAlign: TextAlign.center,
+                style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ruta = widget.ruta;
+    final detalleAsync = ref.watch(rutaDetalleProvider(widget.ruta.id));
+    if (supabaseListo &&
+        detalleAsync.hasValue &&
+        detalleAsync.valueOrNull == null) {
+      return _rutaNoDisponible();
+    }
+    final ruta = detalleAsync.valueOrNull ?? widget.ruta;
+    final size = MediaQuery.sizeOf(context);
+    final alturaHero = size.height < 600 ? 220.0 : _alturaHero;
+    final horizontal = size.width > 804 ? (size.width - 760) / 2 : 22.0;
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final favorito =
-        ref.watch(almacenFeedProvider).favoritosRutaIds.contains(ruta.id);
+    final favorito = ref
+        .watch(almacenFeedProvider)
+        .favoritosRutaIds
+        .contains(ruta.id);
     final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
-    final metricas = MetricasComunidad.calcular(
-      publicaciones,
-      rutaId: ruta.id,
-    );
+    final publicacionesRemotas = supabaseListo
+        ? ref.watch(publicacionesPorRutaProvider(ruta.id)).valueOrNull ??
+              const <ModeloPublicacionRemota>[]
+        : const <ModeloPublicacionRemota>[];
+    final metricas = supabaseListo
+        ? MetricasComunidad.calcularRemotas(
+            publicacionesRemotas,
+            rutaId: ruta.id,
+          )
+        : MetricasComunidad.calcular(publicaciones, rutaId: ruta.id);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -82,14 +145,14 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
               slivers: [
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: _alturaHero,
+                    height: alturaHero,
                     child: RepaintBoundary(
                       child: ListenableBuilder(
                         listenable: _scroll,
                         builder: (context, _) {
                           return ImagenParallaxRuta(
                             imagenUrl: ruta.imagenUrl,
-                            altura: _alturaHero,
+                            altura: alturaHero,
                             scrollOffset: _offset,
                             factorParallax: 1.0,
                           );
@@ -120,9 +183,9 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                           ),
                           Padding(
                             padding: EdgeInsets.fromLTRB(
-                              22,
+                              horizontal,
                               36,
-                              22,
+                              horizontal,
                               100 + bottomInset,
                             ),
                             child: Column(
@@ -139,6 +202,50 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                 ),
                                 const SizedBox(height: 10),
                                 const LineaEncabezadoInca(altura: 2),
+                                if (detalleAsync.isLoading &&
+                                    !detalleAsync.hasValue) ...[
+                                  const SizedBox(height: 12),
+                                  const LinearProgressIndicator(
+                                    minHeight: 2,
+                                    color: PaletaRutas.oro,
+                                    backgroundColor: PaletaRutas.plomoOscuro,
+                                  ),
+                                ],
+                                if (detalleAsync.hasError &&
+                                    !detalleAsync.hasValue) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      8,
+                                      4,
+                                      8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: PaletaRutas.carbon,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Mostramos el resumen guardado. El detalle no pudo actualizarse.',
+                                            style: TipografiaHaku.interfaz(
+                                              fontSize: 12,
+                                              color: PaletaRutas.oroSuave,
+                                            ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => ref.invalidate(
+                                            rutaDetalleProvider(widget.ruta.id),
+                                          ),
+                                          child: const Text('Reintentar'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                                 if (ruta.subtitulo.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
@@ -151,10 +258,14 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                     ),
                                   ),
                                 ],
-                                if (metricas.calificacionMostrar(ruta.calificacion) >
+                                if (metricas.calificacionMostrar(
+                                          ruta.calificacion,
+                                        ) >
                                         0 ||
                                     metricas.etiquetaFotos.isNotEmpty ||
-                                    metricas.etiquetaExploradores.isNotEmpty) ...[
+                                    metricas
+                                        .etiquetaExploradores
+                                        .isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   FilaMetricasComunidad(
                                     metricas: metricas,
@@ -230,7 +341,9 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                       color: PaletaRutas.carbon,
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: PaletaRutas.plomo.withValues(alpha: 0.35),
+                                        color: PaletaRutas.plomo.withValues(
+                                          alpha: 0.35,
+                                        ),
                                       ),
                                     ),
                                     child: Column(
@@ -278,8 +391,9 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                     color: PaletaRutas.carbon,
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: PaletaRutas.plomoOscuro
-                                          .withValues(alpha: 0.7),
+                                      color: PaletaRutas.plomoOscuro.withValues(
+                                        alpha: 0.7,
+                                      ),
                                     ),
                                   ),
                                   child: Column(
@@ -436,18 +550,10 @@ class _GrillaInfo extends StatelessWidget {
       if (ruta.altitud.isNotEmpty)
         _InfoItem(Icons.landscape_outlined, 'Altitud', ruta.altitud),
       if (ruta.tiempoCaminata.isNotEmpty)
-        _InfoItem(
-          Icons.timer_outlined,
-          'Tiempo',
-          ruta.tiempoCaminata,
-        ),
+        _InfoItem(Icons.timer_outlined, 'Tiempo', ruta.tiempoCaminata),
       _InfoItem(Icons.trending_up_rounded, 'Dificultad', ruta.dificultadTexto),
       if (ruta.mejorEpoca.isNotEmpty)
-        _InfoItem(
-          Icons.calendar_month_outlined,
-          'Época',
-          ruta.mejorEpoca,
-        ),
+        _InfoItem(Icons.calendar_month_outlined, 'Época', ruta.mejorEpoca),
     ];
 
     return Column(
@@ -503,9 +609,7 @@ class _InfoItemCard extends StatelessWidget {
             ),
           ),
           Positioned.fill(
-            child: ColoredBox(
-              color: PaletaRutas.ink.withValues(alpha: 0.68),
-            ),
+            child: ColoredBox(color: PaletaRutas.ink.withValues(alpha: 0.68)),
           ),
           Container(
             padding: const EdgeInsets.all(12),

@@ -1,10 +1,10 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../nucleo/supabase/cliente_supabase.dart';
 import '../modelos/modelo_nacionalidad.dart';
 import '../../datos/nacionalidad_datasource.dart';
+import 'politica_nickname.dart';
 
 /// Perfil completo leído de `public.usuario` (+ nacionalidad).
 class PerfilUsuarioDb {
@@ -36,7 +36,7 @@ class PerfilUsuarioDb {
 /// Ver `docs/fase-autenticacion.md` (Bloque B Etapa 4).
 class ServicioPerfilSupabase {
   ServicioPerfilSupabase({SupabaseClient? cliente})
-      : _cliente = cliente ?? clienteSupabase;
+    : _cliente = cliente ?? clienteSupabase;
 
   final SupabaseClient _cliente;
 
@@ -85,7 +85,16 @@ class ServicioPerfilSupabase {
     required String nombreNick,
     required int nacionalidadId,
   }) async {
-    final nick = _normalizarNick(nombreNick);
+    final nick = PoliticaNickname.normalizar(nombreNick);
+    final errorNick = PoliticaNickname.validar(nick);
+    if (errorNick != null) throw AuthException(errorNick);
+    final disponible = await _cliente.rpc(
+      'nickname_disponible',
+      params: {'p_nickname': nick, 'p_excluir_usuario': userId},
+    );
+    if (disponible != true) {
+      throw const AuthException('Ese nickname ya está en uso. Prueba otro.');
+    }
     final row = await _cliente
         .from('usuario')
         .update({
@@ -103,17 +112,15 @@ class ServicioPerfilSupabase {
       );
     }
 
-    // Mantener metadata Auth alineada (útil para OAuth / claims).
-    await _cliente.auth.updateUser(
-      UserAttributes(
-        data: {
-          'nombres': nombres.trim(),
-          'apellidos': apellidos.trim(),
-          'nombre_nick': nick,
-          'nacionalidad_id': '$nacionalidadId',
-        },
-      ),
-    );
+    // `public.usuario` es la fuente de verdad. La metadata es una réplica útil
+    // para OAuth, pero su fallo no debe convertir un guardado confirmado en
+    // un falso error ni inducir al usuario a repetir la operación.
+    await _sincronizarMetadataBestEffort({
+      'nombres': nombres.trim(),
+      'apellidos': apellidos.trim(),
+      'nombre_nick': nick,
+      'nacionalidad_id': '$nacionalidadId',
+    });
   }
 
   /// Cambia correo en Auth y sincroniza `public.usuario.correo`.
@@ -131,7 +138,9 @@ class ServicioPerfilSupabase {
         .select('id')
         .maybeSingle();
     if (row == null) {
-      throw const AuthException('No se pudo sincronizar el correo en el perfil.');
+      throw const AuthException(
+        'No se pudo sincronizar el correo en el perfil.',
+      );
     }
   }
 
@@ -155,9 +164,7 @@ class ServicioPerfilSupabase {
     if (session == null) {
       throw const AuthException('Tu sesión expiró. Vuelve a iniciar sesión.');
     }
-    await _cliente.auth.updateUser(
-      UserAttributes(password: claveNueva),
-    );
+    await _cliente.auth.updateUser(UserAttributes(password: claveNueva));
     // Refresca identidades locales (puede aparecer `email` tras set password).
     try {
       await _cliente.auth.getUser();
@@ -173,35 +180,63 @@ class ServicioPerfilSupabase {
   }) async {
     final path =
         '$userId/perfil/avatar_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    await _cliente.storage.from(bucketMedia).uploadBinary(
+    await _cliente.storage
+        .from(bucketMedia)
+        .uploadBinary(
           path,
           bytes,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: true,
-          ),
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
     final url = _cliente.storage.from(bucketMedia).getPublicUrl(path);
-    final row = await _cliente
-        .from('usuario')
-        .update({'foto_perfil': url})
-        .eq('id', userId)
-        .select('id')
-        .maybeSingle();
-    if (row == null) {
-      throw const AuthException(
-        'La foto subió al storage pero no se guardó en el perfil.',
-      );
+    try {
+      final row = await _cliente
+          .from('usuario')
+          .update({'foto_perfil': url})
+          .eq('id', userId)
+          .select('id')
+          .maybeSingle();
+      if (row == null) {
+        throw const AuthException('No se pudo guardar la foto en el perfil.');
+      }
+    } catch (_) {
+      // Una respuesta perdida no significa que PostgreSQL haya revertido.
+      // Confirmar antes de compensar evita borrar una foto ya referenciada.
+      bool? confirmada;
+      try {
+        final actual = await _cliente
+            .from('usuario')
+            .select('foto_perfil')
+            .eq('id', userId)
+            .maybeSingle();
+        confirmada = actual?['foto_perfil'] == url;
+      } catch (e) {
+        debugPrint('No se pudo confirmar foto tras respuesta ambigua: $e');
+      }
+      if (confirmada == true) {
+        await _sincronizarMetadataBestEffort({'avatar_url': url});
+        return url;
+      }
+
+      // Solo borrar cuando BD confirmó que no referencia la URL. Si ni
+      // siquiera pudo responder, conservar es más seguro que romper el avatar.
+      if (confirmada == false) {
+        try {
+          await _cliente.storage.from(bucketMedia).remove([path]);
+        } catch (e) {
+          debugPrint('No se pudo compensar foto de perfil $path: $e');
+        }
+      }
+      rethrow;
     }
-    await _cliente.auth.updateUser(
-      UserAttributes(data: {'avatar_url': url}),
-    );
+    await _sincronizarMetadataBestEffort({'avatar_url': url});
     return url;
   }
 
-  static String _normalizarNick(String raw) {
-    var n = raw.trim();
-    if (n.startsWith('@')) n = n.substring(1);
-    return n;
+  Future<void> _sincronizarMetadataBestEffort(Map<String, dynamic> data) async {
+    try {
+      await _cliente.auth.updateUser(UserAttributes(data: data));
+    } catch (e) {
+      debugPrint('Metadata Auth pendiente de reconciliar: $e');
+    }
   }
 }

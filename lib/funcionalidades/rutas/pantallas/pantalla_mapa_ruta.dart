@@ -1,15 +1,15 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../dominio/modelos/modelo_ruta.dart';
 import '../widgets/boton_primario_ruta.dart';
 import '../widgets/estilos_rutas.dart';
 import '../widgets/linea_encabezado_inca.dart';
 
-/// Mapa simulado + cómo llegar (sin SDK externo).
+/// Mapa de paradas reales. El sendero solo se dibuja cuando existe un
+/// LineString validado; nunca se inventa un trazo uniendo nodos.
 class PantallaMapaRuta extends StatefulWidget {
   final ModeloRuta ruta;
 
@@ -24,25 +24,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
 
   ModeloRuta get ruta => widget.ruta;
 
-  List<PuntoRuta> get _puntos =>
-      ruta.puntos.isNotEmpty ? ruta.puntos : _fallback;
-
-  List<PuntoRuta> get _fallback => [
-        PuntoRuta(
-          id: 'f1',
-          nombre: ruta.puntoPartida.isEmpty ? 'Inicio' : ruta.puntoPartida,
-          tipo: 'inicio',
-          lat: -13.5167,
-          lng: -71.9788,
-        ),
-        PuntoRuta(
-          id: 'f2',
-          nombre: ruta.titulo,
-          tipo: 'destino',
-          lat: -13.40,
-          lng: -72.10,
-        ),
-      ];
+  List<PuntoRuta> get _puntos => ruta.puntos;
 
   Future<void> _copiarCoords(PuntoRuta p) async {
     await Clipboard.setData(ClipboardData(text: '${p.lat}, ${p.lng}'));
@@ -53,8 +35,26 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
   @override
   Widget build(BuildContext context) {
     final puntos = _puntos;
-    final sel = puntos[_paradaSeleccionada.clamp(0, puntos.length - 1)];
+    final indiceSeguro = puntos.isEmpty
+        ? 0
+        : _paradaSeleccionada.clamp(0, puntos.length - 1);
+    final sel = puntos.isEmpty ? null : puntos[indiceSeguro];
+    final coordenadas = puntos.map((p) => LatLng(p.lat, p.lng)).toList();
+    final trazado = ruta.trazado
+        .map((coordenada) => LatLng(coordenada.lat, coordenada.lng))
+        .toList();
+    final puntosVista = trazado.isEmpty
+        ? coordenadas
+        : [...coordenadas, ...trazado];
+    final hayMapa = puntos.isNotEmpty || trazado.length >= 2;
+    final consejosGenerales =
+        ruta.requisitos.isEmpty && ruta.advertencias.isEmpty
+        ? ruta.tips
+        : const <String>[];
     final bottom = MediaQuery.paddingOf(context).bottom + 20;
+    final ancho = MediaQuery.sizeOf(context).width;
+    final horizontal = ancho > 792 ? (ancho - 760) / 2 : 16.0;
+    final proporcionMapa = ancho > 600 ? 1.6 : 1.15;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -75,7 +75,7 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                   ),
                   Expanded(
                     child: Text(
-                      'Cómo llegar',
+                      'Mapa de la ruta',
                       style: TipografiaHaku.titulo(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -86,97 +86,179 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                 ],
               ),
             ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: LineaEncabezadoInca(altura: 2),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, bottom),
-                  children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: LineaEncabezadoInca(altura: 2),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontal,
+                  14,
+                  horizontal,
+                  bottom,
+                ),
+                children: [
+                  Text(
+                    ruta.titulo,
+                    style: TipografiaHaku.titulo(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  if (ruta.puntoPartida.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      ruta.titulo,
-                      style: TipografiaHaku.titulo(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: PaletaRutas.piedra,
+                      'Partida: ${ruta.puntoPartida}',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 13,
+                        color: PaletaRutas.plomoClaro,
                       ),
                     ),
-                    if (ruta.puntoPartida.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Partida: ${ruta.puntoPartida}',
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 13,
-                          color: PaletaRutas.plomoClaro,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: AspectRatio(
-                        aspectRatio: 1.15,
-                        child: Stack(
-                          children: [
-                            CustomPaint(
-                              painter: _MapaRutaPainter(
-                                puntos: puntos,
-                                seleccionado: _paradaSeleccionada,
-                              ),
-                              size: Size.infinite,
-                            ),
-                            Positioned(
-                              left: 10,
-                              top: 10,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: PaletaRutas.carbon.withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'Mapa',
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: PaletaRutas.piedra,
+                  ],
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: AspectRatio(
+                      aspectRatio: proporcionMapa,
+                      child: !hayMapa
+                          ? ColoredBox(
+                              color: PaletaRutas.carbon,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    'Esta ruta aún no tiene un recorrido disponible.',
+                                    textAlign: TextAlign.center,
+                                    style: TipografiaHaku.interfaz(
+                                      color: PaletaRutas.plomoClaro,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              right: 10,
-                              bottom: 10,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
+                            )
+                          : Stack(
+                              children: [
+                                FlutterMap(
+                                  options: MapOptions(
+                                    initialCenter: puntosVista.first,
+                                    initialZoom: puntosVista.length == 1
+                                        ? 14
+                                        : 11,
+                                    initialCameraFit: puntosVista.length > 1
+                                        ? CameraFit.bounds(
+                                            bounds: LatLngBounds.fromPoints(
+                                              puntosVista,
+                                            ),
+                                            padding: const EdgeInsets.all(38),
+                                          )
+                                        : null,
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate:
+                                          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                                      subdomains: const ['a', 'b', 'c', 'd'],
+                                      userAgentPackageName: 'com.example.haku',
+                                      retinaMode: RetinaMode.isHighDensity(
+                                        context,
+                                      ),
+                                    ),
+                                    if (trazado.length >= 2)
+                                      PolylineLayer(
+                                        polylines: [
+                                          Polyline(
+                                            points: trazado,
+                                            color: PaletaRutas.oro,
+                                            strokeWidth: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    MarkerLayer(
+                                      markers: [
+                                        for (var i = 0; i < puntos.length; i++)
+                                          Marker(
+                                            point: coordenadas[i],
+                                            width: 38,
+                                            height: 38,
+                                            child: GestureDetector(
+                                              onTap: () => setState(
+                                                () => _paradaSeleccionada = i,
+                                              ),
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: i == indiceSeguro
+                                                      ? PaletaRutas.oro
+                                                      : PaletaRutas.piedra,
+                                                  border: Border.all(
+                                                    color: PaletaRutas.ink,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    '${i + 1}',
+                                                    style:
+                                                        TipografiaHaku.interfaz(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color:
+                                                              PaletaRutas.ink,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    RichAttributionWidget(
+                                      attributions: [
+                                        TextSourceAttribution(
+                                          'OpenStreetMap contributors',
+                                        ),
+                                        TextSourceAttribution('CARTO'),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                decoration: BoxDecoration(
-                                  color: PaletaRutas.carbon.withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  ruta.distancia.isEmpty
-                                      ? '${puntos.length} puntos'
-                                      : ruta.distancia,
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: PaletaRutas.piedra,
+                                Positioned(
+                                  right: 10,
+                                  bottom: 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: PaletaRutas.carbon.withValues(
+                                        alpha: 0.92,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      ruta.distancia.isEmpty
+                                          ? (puntos.isEmpty
+                                                ? 'Recorrido disponible'
+                                                : '${puntos.length} puntos')
+                                          : ruta.distancia,
+                                      style: TipografiaHaku.interfaz(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: PaletaRutas.piedra,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  if (puntos.isNotEmpty) ...[
                     Text(
                       'Paradas',
                       style: TipografiaHaku.titulo(
@@ -194,50 +276,54 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                         onTap: () => setState(() => _paradaSeleccionada = i),
                         onCopiar: () => _copiarCoords(puntos[i]),
                       ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: PaletaRutas.carbon,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: PaletaRutas.plomo.withValues(alpha: 0.35),
-                        ),
+                  ],
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: PaletaRutas.carbon,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: PaletaRutas.plomo.withValues(alpha: 0.35),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Cómo llegar',
-                            style: TipografiaHaku.titulo(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: PaletaRutas.piedra,
-                            ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cómo llegar',
+                          style: TipografiaHaku.titulo(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            ruta.comoLlegar.isEmpty
-                                ? 'Sigue las paradas.'
-                                : ruta.comoLlegar,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 13,
-                              height: 1.4,
-                              color: PaletaRutas.plomoClaro,
-                            ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          ruta.comoLlegar.isEmpty
+                              ? (puntos.isEmpty
+                                    ? 'Consulta el recorrido del mapa para orientarte.'
+                                    : 'Sigue las paradas en el orden indicado.')
+                              : ruta.comoLlegar,
+                          style: TipografiaHaku.interfaz(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: PaletaRutas.plomoClaro,
                           ),
-                          if (ruta.transporte.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              ruta.transporte,
-                              style: TipografiaHaku.interfaz(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: PaletaRutas.oro,
-                              ),
-                            ),
-                          ],
+                        ),
+                        if (ruta.transporte.isNotEmpty) ...[
                           const SizedBox(height: 10),
+                          Text(
+                            ruta.transporte,
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.oro,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        if (sel != null)
                           Text(
                             '${sel.nombre}\n'
                             '${sel.lat.toStringAsFixed(4)}, ${sel.lng.toStringAsFixed(4)}',
@@ -246,57 +332,97 @@ class _EstadoPantallaMapaRuta extends State<PantallaMapaRuta> {
                               color: PaletaRutas.plomo,
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                    if (ruta.tips.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Tips',
-                        style: TipografiaHaku.titulo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.piedra,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (final t in ruta.tips)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                Icons.check_circle_outline,
-                                size: 18,
-                                color: PaletaRutas.oro,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  t,
-                                  style: TipografiaHaku.interfaz(
-                                    fontSize: 13,
-                                    color: PaletaRutas.plomoClaro,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                    const SizedBox(height: 18),
+                  ),
+                  if (ruta.requisitos.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _ListaIndicaciones(
+                      titulo: 'Antes de ir',
+                      items: ruta.requisitos,
+                      icono: Icons.check_circle_outline,
+                    ),
+                  ],
+                  if (ruta.advertencias.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _ListaIndicaciones(
+                      titulo: 'Ten en cuenta',
+                      items: ruta.advertencias,
+                      icono: Icons.warning_amber_rounded,
+                    ),
+                  ],
+                  if (consejosGenerales.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _ListaIndicaciones(
+                      titulo: 'Recomendaciones',
+                      items: consejosGenerales,
+                      icono: Icons.lightbulb_outline_rounded,
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  if (sel != null)
                     BotonPrimarioRuta(
-                      texto: 'Copiar',
+                      texto: 'Copiar ubicación',
                       icono: Icons.copy_rounded,
                       onPressed: () => _copiarCoords(sel),
                     ),
-                  ],
-                ),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ListaIndicaciones extends StatelessWidget {
+  const _ListaIndicaciones({
+    required this.titulo,
+    required this.items,
+    required this.icono,
+  });
+
+  final String titulo;
+  final List<String> items;
+  final IconData icono;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titulo,
+          style: TipografiaHaku.titulo(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: PaletaRutas.piedra,
           ),
         ),
+        const SizedBox(height: 8),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icono, size: 18, color: PaletaRutas.oro),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: PaletaRutas.plomoClaro,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -373,7 +499,7 @@ class _TileParada extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Copiar coordenadas',
+                  tooltip: 'Copiar ubicación',
                   onPressed: onCopiar,
                   icon: const Icon(
                     Icons.my_location_rounded,
@@ -387,110 +513,5 @@ class _TileParada extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _MapaRutaPainter extends CustomPainter {
-  final List<PuntoRuta> puntos;
-  final int seleccionado;
-
-  const _MapaRutaPainter({
-    required this.puntos,
-    required this.seleccionado,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()
-      ..shader = ui.Gradient.linear(
-        Offset.zero,
-        Offset(size.width, size.height),
-        const [
-          PaletaRutas.ink,
-          PaletaRutas.carbon,
-          PaletaRutas.plomoOscuro,
-        ],
-      );
-    canvas.drawRect(Offset.zero & size, bg);
-
-    // Relieve simulado
-    final relieve = Paint()
-      ..color = PaletaRutas.ink.withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    for (var i = 1; i <= 6; i++) {
-      final r = size.shortestSide * (0.12 * i);
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width * 0.45, size.height * 0.55),
-          width: r * 1.6,
-          height: r,
-        ),
-        relieve,
-      );
-    }
-
-    if (puntos.isEmpty) return;
-
-    double minLat = puntos.first.lat;
-    double maxLat = puntos.first.lat;
-    double minLng = puntos.first.lng;
-    double maxLng = puntos.first.lng;
-    for (final p in puntos) {
-      minLat = math.min(minLat, p.lat);
-      maxLat = math.max(maxLat, p.lat);
-      minLng = math.min(minLng, p.lng);
-      maxLng = math.max(maxLng, p.lng);
-    }
-    final dLat = (maxLat - minLat).abs() < 0.001 ? 0.02 : (maxLat - minLat);
-    final dLng = (maxLng - minLng).abs() < 0.001 ? 0.02 : (maxLng - minLng);
-    const pad = 36.0;
-
-    Offset toXy(PuntoRuta p) {
-      final x = pad + ((p.lng - minLng) / dLng) * (size.width - pad * 2);
-      final y = pad +
-          (1 - ((p.lat - minLat) / dLat)) * (size.height - pad * 2);
-      return Offset(x, y);
-    }
-
-    final path = Path();
-    for (var i = 0; i < puntos.length; i++) {
-      final o = toXy(puntos[i]);
-      if (i == 0) {
-        path.moveTo(o.dx, o.dy);
-      } else {
-        path.lineTo(o.dx, o.dy);
-      }
-    }
-
-    final trazo = Paint()
-      ..color = PaletaRutas.oroSuave
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(path, trazo);
-
-    for (var i = 0; i < puntos.length; i++) {
-      final o = toXy(puntos[i]);
-      final sel = i == seleccionado;
-      final fill = Paint()
-        ..color = sel ? PaletaRutas.oro : PaletaRutas.piedra;
-      canvas.drawCircle(o, sel ? 11 : 8, fill);
-      canvas.drawCircle(
-        o,
-        sel ? 11 : 8,
-        Paint()
-          ..color = PaletaRutas.ink.withValues(alpha: 0.55)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MapaRutaPainter oldDelegate) {
-    return oldDelegate.seleccionado != seleccionado ||
-        oldDelegate.puntos != puntos;
   }
 }

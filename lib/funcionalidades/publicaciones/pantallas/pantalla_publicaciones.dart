@@ -35,11 +35,14 @@ class PantallaPublicaciones extends ConsumerStatefulWidget {
     super.key,
     this.rutaId,
     this.rutaTitulo,
+    this.destinoEsRuta = false,
     this.irAComunidadAlPublicar = true,
   });
 
   final String? rutaId;
   final String? rutaTitulo;
+  final bool destinoEsRuta;
+
   /// Si es false (p. ej. desde detalle), vuelve al contexto anterior.
   final bool irAComunidadAlPublicar;
 
@@ -75,7 +78,8 @@ class _EstadoPantallaPublicaciones
     final id = widget.rutaId?.trim();
     final titulo = widget.rutaTitulo?.trim();
     if (id != null && id.isNotEmpty) {
-      if (RutasDataSourceLocal.obtenerPorId(id) != null) {
+      if (widget.destinoEsRuta ||
+          RutasDataSourceLocal.obtenerPorId(id) != null) {
         _rutaId = id;
       } else {
         _lugarId = id;
@@ -83,7 +87,9 @@ class _EstadoPantallaPublicaciones
     }
     if (titulo != null && titulo.isNotEmpty) {
       _lugarNombre = titulo;
-      _descripcion.text = titulo;
+      if (!widget.destinoEsRuta) {
+        _descripcion.text = titulo;
+      }
     }
   }
 
@@ -127,7 +133,7 @@ class _EstadoPantallaPublicaciones
 
   Future<void> _elegirVideo() async {
     if (supabaseListo) {
-      _aviso('Video en el servidor: próximamente. Usa una foto.');
+      _aviso('El video estará disponible próximamente. Usa una foto.');
       return;
     }
     try {
@@ -154,7 +160,9 @@ class _EstadoPantallaPublicaciones
           decoration: BoxDecoration(
             color: PaletaRutas.carbon.withValues(alpha: 0.94),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: PaletaRutas.plomo.withValues(alpha: 0.35)),
+            border: Border.all(
+              color: PaletaRutas.plomo.withValues(alpha: 0.35),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -194,15 +202,6 @@ class _EstadoPantallaPublicaciones
                     Navigator.pop(context);
                     _elegirVideo();
                   },
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Video en servidor: próximamente',
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 12,
-                    color: PaletaRutas.plomoClaro,
-                  ),
                 ),
               ],
             ],
@@ -264,7 +263,7 @@ class _EstadoPantallaPublicaciones
           },
           onNuevo: (nombre) {
             if (supabaseListo) {
-              _aviso('Elige un lugar de Explora (ya en el servidor).');
+              _aviso('Elige uno de los lugares disponibles en Explora.');
               return;
             }
             setState(() {
@@ -296,7 +295,9 @@ class _EstadoPantallaPublicaciones
     }
     final mias = ref
         .read(comunidadesListaProvider)
-        .where((c) => uid.isNotEmpty && (c.esMiembro(uid) || c.creadorId == uid))
+        .where(
+          (c) => uid.isNotEmpty && (c.esMiembro(uid) || c.creadorId == uid),
+        )
         .toList();
     if (!mounted) return;
     showModalBottomSheet<void>(
@@ -344,7 +345,9 @@ class _EstadoPantallaPublicaciones
                   padding: const EdgeInsets.all(12),
                   child: Text(
                     'Únete a una comunidad para etiquetarla.',
-                    style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+                    style: TipografiaHaku.interfaz(
+                      color: PaletaRutas.plomoClaro,
+                    ),
                   ),
                 )
               else
@@ -464,7 +467,7 @@ class _EstadoPantallaPublicaciones
               ),
               const SizedBox(height: 6),
               Text(
-                'Biblioteca demo — elige una pista para tu recuerdo',
+                'Biblioteca musical — elige una pista para tu recuerdo',
                 textAlign: TextAlign.center,
                 style: TipografiaHaku.interfaz(
                   fontSize: 12,
@@ -533,7 +536,8 @@ class _EstadoPantallaPublicaciones
     final contactos = [
       for (final p in perfiles)
         if (p.id != yo) p,
-      if (perfiles.isEmpty) ...FeedInicioDataSourceLocal.sugerencias.where((p) => p.id != yo),
+      if (perfiles.isEmpty)
+        ...FeedInicioDataSourceLocal.sugerencias.where((p) => p.id != yo),
     ];
 
     showModalBottomSheet<void>(
@@ -545,9 +549,11 @@ class _EstadoPantallaPublicaciones
           contactos: contactos,
           seleccionados: {..._etiquetas},
           onConfirmar: (seleccion) {
-            setState(() => _etiquetas
-              ..clear()
-              ..addAll(seleccion));
+            setState(
+              () => _etiquetas
+                ..clear()
+                ..addAll(seleccion),
+            );
             Navigator.pop(ctx);
           },
         );
@@ -577,8 +583,13 @@ class _EstadoPantallaPublicaciones
     final texto = _descripcion.text.trim();
     final nombreLugar = _lugarNombre?.trim();
     final lugarRaw = _lugarId?.trim();
-    final lugarIdValido =
-        (lugarRaw != null && int.tryParse(lugarRaw) != null) ? lugarRaw : null;
+    final rutaRaw = _rutaId?.trim();
+    final lugarIdValido = (lugarRaw != null && int.tryParse(lugarRaw) != null)
+        ? lugarRaw
+        : null;
+    final rutaIdValida = (rutaRaw != null && int.tryParse(rutaRaw) != null)
+        ? rutaRaw
+        : null;
 
     // Contenido obligatorio en BD: descripción o nombre de lugar elegido.
     if (texto.isEmpty && (nombreLugar == null || nombreLugar.isEmpty)) {
@@ -602,21 +613,17 @@ class _EstadoPantallaPublicaciones
       final contentType = ext == 'png'
           ? 'image/png'
           : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
-      final url = await ds.subirImagen(
+      final contenido = texto.isNotEmpty ? texto : nombreLugar!;
+
+      await ds.crearConImagen(
         userId: uid,
         bytes: bytes,
         contentType: contentType,
         extension: ext,
-      );
-
-      final contenido =
-          texto.isNotEmpty ? texto : nombreLugar!;
-
-      await ds.crear(
         contenido: contenido,
         comunidadId: _comunidadId,
         lugarId: lugarIdValido,
-        imagenUrl: url,
+        rutaId: rutaIdValida,
       );
       notificarPublicacionesCambiaron(ref);
 
@@ -648,7 +655,8 @@ class _EstadoPantallaPublicaciones
     var lugarId = _lugarId;
     final nombreLugar = _lugarNombre?.trim();
     final rutaId = _rutaId?.trim();
-    final tieneDestino = (lugarId != null && lugarId.isNotEmpty) ||
+    final tieneDestino =
+        (lugarId != null && lugarId.isNotEmpty) ||
         (rutaId != null && rutaId.isNotEmpty) ||
         (nombreLugar != null && nombreLugar.isNotEmpty);
     if (!tieneDestino) {
@@ -659,14 +667,17 @@ class _EstadoPantallaPublicaciones
         nombreLugar != null &&
         nombreLugar.isNotEmpty) {
       lugarId = 'lugar_${DateTime.now().millisecondsSinceEpoch}';
-      await ref.read(almacenFeedProvider.notifier).guardarLugarCreado(
+      await ref
+          .read(almacenFeedProvider.notifier)
+          .guardarLugarCreado(
             ModeloLugar(
               id: lugarId,
               nombre: nombreLugar,
               descripcion: _descripcion.text.trim().isEmpty
                   ? 'HAKU.'
                   : _descripcion.text.trim(),
-              imagenUrl: _media?.path ??
+              imagenUrl:
+                  _media?.path ??
                   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
               categoria: _categoria ?? CategoriaLugar.naturaleza,
               provincia: 'Cusco',
@@ -686,7 +697,9 @@ class _EstadoPantallaPublicaciones
 
     final sesion = ref.read(sesionProvider).usuario;
     final ahora = DateTime.now();
-    await ref.read(almacenFeedProvider.notifier).crearPublicacion(
+    await ref
+        .read(almacenFeedProvider.notifier)
+        .crearPublicacion(
           PublicacionFeed(
             id: 'p_${ahora.millisecondsSinceEpoch}',
             autorId: AlmacenFeedNotifier.idUsuarioLocal,
@@ -719,17 +732,18 @@ class _EstadoPantallaPublicaciones
     bumpMetricas(ref);
     if (!mounted) return;
 
-    final etiquetaDestino = nombreLugar ??
+    final etiquetaDestino =
+        nombreLugar ??
         (rutaId != null
             ? (RutasDataSourceLocal.obtenerPorId(rutaId)?.titulo ?? 'la ruta')
             : null);
     final mensaje = widget.irAComunidadAlPublicar
         ? (etiquetaDestino == null
-            ? 'Publicado en Comunidad'
-            : 'Publicado en $etiquetaDestino')
+              ? 'Publicado en Comunidad'
+              : 'Publicado en $etiquetaDestino')
         : (etiquetaDestino == null
-            ? 'Publicado — revisa Recuerdos y Experiencias'
-            : 'Publicado en $etiquetaDestino');
+              ? 'Publicado — revisa Recuerdos y Experiencias'
+              : 'Publicado en $etiquetaDestino');
 
     if (widget.irAComunidadAlPublicar) {
       ref.read(pestaniaShellInicioProvider.notifier).state = 2;
@@ -754,7 +768,8 @@ class _EstadoPantallaPublicaciones
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             filterQuality: FilterQuality.high,
-            errorBuilder: (_, __, ___) => const ColoredBox(color: PaletaRutas.ink),
+            errorBuilder: (_, __, ___) =>
+                const ColoredBox(color: PaletaRutas.ink),
           ),
           ColoredBox(color: PaletaRutas.ink.withValues(alpha: 0.45)),
           SafeArea(
@@ -766,16 +781,14 @@ class _EstadoPantallaPublicaciones
                       ? 'NUEVA PUBLICACIÓN'
                       : 'PUBLICAR',
                   onAtras: _publicando ? () {} : _atras,
-                  onListo: (_paso == _PasoPublicacion.editar && !_publicando)
-                      ? _publicar
-                      : null,
+                  mostrarFlechaAtras: _paso == _PasoPublicacion.editar,
                 ),
                 Expanded(
                   child: _paso == _PasoPublicacion.elegirMedia
                       ? _PasoElegirMedia(
                           onAgregar: _mostrarSelectorMedia,
                           onFoto: _elegirFoto,
-                          onVideo: _elegirVideo,
+                          onVideo: supabaseListo ? null : _elegirVideo,
                         )
                       : ListView(
                           padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + bottom),
@@ -787,10 +800,14 @@ class _EstadoPantallaPublicaciones
                             ),
                             const SizedBox(height: 14),
                             _CardOpcion(
-                              icono: Icons.place_outlined,
-                              titulo: 'Lugar',
+                              icono: _rutaId != null
+                                  ? Icons.route_outlined
+                                  : Icons.place_outlined,
+                              titulo: 'Destino',
                               subtitulo: _lugarNombre ?? 'Elige dónde fue',
-                              onTap: _mostrarLugares,
+                              onTap: widget.destinoEsRuta
+                                  ? null
+                                  : _mostrarLugares,
                             ),
                             const SizedBox(height: 10),
                             _CampoDescripcion(
@@ -808,17 +825,18 @@ class _EstadoPantallaPublicaciones
                               onPressed: _publicando
                                   ? null
                                   : () => setState(
-                                        () => _opcionesAvanzadas =
-                                            !_opcionesAvanzadas,
-                                      ),
+                                      () => _opcionesAvanzadas =
+                                          !_opcionesAvanzadas,
+                                    ),
                               child: Text(
                                 _opcionesAvanzadas
                                     ? 'Ocultar opciones'
                                     : 'Más opciones',
                                 style: TipografiaHaku.interfaz(
                                   fontWeight: FontWeight.w700,
-                                  color: PaletaRutas.piedra
-                                      .withValues(alpha: 0.85),
+                                  color: PaletaRutas.piedra.withValues(
+                                    alpha: 0.85,
+                                  ),
                                 ),
                               ),
                             ),
@@ -827,7 +845,8 @@ class _EstadoPantallaPublicaciones
                                 _CardOpcion(
                                   icono: Icons.diversity_3_outlined,
                                   titulo: 'Comunidad',
-                                  subtitulo: _comunidadNombre ??
+                                  subtitulo:
+                                      _comunidadNombre ??
                                       'Opcional — etiquetar grupo',
                                   onTap: _mostrarComunidades,
                                 ),
@@ -844,7 +863,8 @@ class _EstadoPantallaPublicaciones
                                 _CardOpcion(
                                   icono: Icons.category_outlined,
                                   titulo: 'Categoría',
-                                  subtitulo: _categoria?.etiqueta ??
+                                  subtitulo:
+                                      _categoria?.etiqueta ??
                                       'Caminata, cultura, naturaleza…',
                                   onTap: _mostrarCategorias,
                                 ),
@@ -874,12 +894,12 @@ class _EstadoPantallaPublicaciones
 class _EncabezadoPublicar extends StatelessWidget {
   final String titulo;
   final VoidCallback onAtras;
-  final VoidCallback? onListo;
+  final bool mostrarFlechaAtras;
 
   const _EncabezadoPublicar({
     required this.titulo,
     required this.onAtras,
-    this.onListo,
+    this.mostrarFlechaAtras = false,
   });
 
   @override
@@ -891,7 +911,9 @@ class _EncabezadoPublicar extends StatelessWidget {
           IconButton(
             onPressed: onAtras,
             icon: Icon(
-              onListo == null ? Icons.close_rounded : Icons.arrow_back_rounded,
+              mostrarFlechaAtras
+                  ? Icons.arrow_back_rounded
+                  : Icons.close_rounded,
               color: PaletaRutas.piedra,
             ),
           ),
@@ -906,20 +928,7 @@ class _EncabezadoPublicar extends StatelessWidget {
               ).copyWith(letterSpacing: 0.6),
             ),
           ),
-          if (onListo != null)
-            TextButton(
-              onPressed: onListo,
-              child: Text(
-                'Listo',
-                style: TipografiaHaku.interfaz(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: PaletaRutas.piedra,
-                ),
-              ),
-            )
-          else
-            const SizedBox(width: 48),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -930,12 +939,12 @@ class _EncabezadoPublicar extends StatelessWidget {
 class _PasoElegirMedia extends StatelessWidget {
   final VoidCallback onAgregar;
   final VoidCallback onFoto;
-  final VoidCallback onVideo;
+  final VoidCallback? onVideo;
 
   const _PasoElegirMedia({
     required this.onAgregar,
     required this.onFoto,
-    required this.onVideo,
+    this.onVideo,
   });
 
   @override
@@ -980,9 +989,13 @@ class _PasoElegirMedia extends StatelessWidget {
                               height: 72,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: PaletaRutas.carbon.withValues(alpha: 0.72),
+                                color: PaletaRutas.carbon.withValues(
+                                  alpha: 0.72,
+                                ),
                                 border: Border.all(
-                                  color: PaletaRutas.piedra.withValues(alpha: 0.9),
+                                  color: PaletaRutas.piedra.withValues(
+                                    alpha: 0.9,
+                                  ),
                                   width: 2,
                                 ),
                               ),
@@ -994,7 +1007,9 @@ class _PasoElegirMedia extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Foto o video',
+                              onVideo == null
+                                  ? 'Agrega una foto'
+                                  : 'Foto o video',
                               style: TipografiaHaku.interfaz(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -1003,11 +1018,15 @@ class _PasoElegirMedia extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Elige foto o video',
+                              onVideo == null
+                                  ? 'Elige una imagen para compartir tu experiencia'
+                                  : 'Elige una foto o un video',
                               textAlign: TextAlign.center,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,
-                                color: PaletaRutas.piedra.withValues(alpha: 0.75),
+                                color: PaletaRutas.piedra.withValues(
+                                  alpha: 0.75,
+                                ),
                                 height: 1.35,
                               ),
                             ),
@@ -1030,14 +1049,16 @@ class _PasoElegirMedia extends StatelessWidget {
                   onTap: onFoto,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _BotonMediaRapido(
-                  icono: Icons.videocam_outlined,
-                  texto: 'Video',
-                  onTap: onVideo,
+              if (onVideo != null) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _BotonMediaRapido(
+                    icono: Icons.videocam_outlined,
+                    texto: 'Video',
+                    onTap: onVideo!,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -1069,7 +1090,9 @@ class _BotonMediaRapido extends StatelessWidget {
           decoration: BoxDecoration(
             color: PaletaRutas.carbon.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.22)),
+            border: Border.all(
+              color: PaletaRutas.piedra.withValues(alpha: 0.22),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1154,7 +1177,10 @@ class _PreviewMedia extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const ColoredBox(
                   color: PaletaRutas.carbon,
-                  child: Icon(Icons.broken_image_outlined, color: PaletaRutas.plomo),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: PaletaRutas.plomo,
+                  ),
                 ),
               ),
             Positioned(
@@ -1276,10 +1302,7 @@ class _CampoDescripcion extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
-  const _CampoDescripcion({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _CampoDescripcion({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -1319,13 +1342,13 @@ class _CardOpcion extends StatelessWidget {
   final IconData icono;
   final String titulo;
   final String subtitulo;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _CardOpcion({
     required this.icono,
     required this.titulo,
     required this.subtitulo,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
@@ -1340,7 +1363,9 @@ class _CardOpcion extends StatelessWidget {
           decoration: BoxDecoration(
             color: PaletaRutas.carbon.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: PaletaRutas.piedra.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: PaletaRutas.piedra.withValues(alpha: 0.2),
+            ),
           ),
           child: Row(
             children: [
@@ -1379,10 +1404,17 @@ class _CardOpcion extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: PaletaRutas.piedra.withValues(alpha: 0.7),
-              ),
+              if (onTap != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: PaletaRutas.piedra.withValues(alpha: 0.7),
+                )
+              else
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: PaletaRutas.oro,
+                ),
             ],
           ),
         ),
@@ -1461,7 +1493,10 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
                 hintStyle: TipografiaHaku.interfaz(
                   color: PaletaRutas.piedra.withValues(alpha: 0.45),
                 ),
-                prefixIcon: const Icon(Icons.search, color: PaletaRutas.plomoClaro),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: PaletaRutas.plomoClaro,
+                ),
                 filled: true,
                 fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
                 border: OutlineInputBorder(
@@ -1539,7 +1574,7 @@ class _EstadoSheetLugar extends State<_SheetLugar> {
               )
             else
               Text(
-                'Solo lugares de Explora (servidor).',
+                'Elige uno de los lugares disponibles en Explora.',
                 textAlign: TextAlign.center,
                 style: TipografiaHaku.interfaz(
                   fontSize: 12,
@@ -1633,7 +1668,10 @@ class _EstadoSheetEtiquetas extends State<_SheetEtiquetas> {
                 hintStyle: TipografiaHaku.interfaz(
                   color: PaletaRutas.piedra.withValues(alpha: 0.45),
                 ),
-                prefixIcon: const Icon(Icons.search, color: PaletaRutas.plomoClaro),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: PaletaRutas.plomoClaro,
+                ),
                 filled: true,
                 fillColor: PaletaRutas.piedra.withValues(alpha: 0.08),
                 border: OutlineInputBorder(

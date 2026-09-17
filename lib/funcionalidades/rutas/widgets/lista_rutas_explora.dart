@@ -6,9 +6,9 @@ import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/responsive/rejilla_lego_haku.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
-import '../datos/rutas_datasource_local.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../pantallas/pantalla_detalle_ruta.dart';
+import '../proveedores/proveedor_rutas.dart';
 import 'estilos_rutas.dart';
 import 'tarjeta_ruta.dart';
 import 'tarjeta_ruta_lego.dart';
@@ -48,11 +48,7 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
   }
 
   void _abrirDetalle(ModeloRuta ruta) {
-    final catalogo = RutasDataSourceLocal.obtenerPorId(ruta.id) ?? ruta;
-    abrirPantallaHaku<void>(
-      context,
-      PantallaDetalleRuta(ruta: catalogo),
-    );
+    abrirPantallaHaku<void>(context, PantallaDetalleRuta(ruta: ruta));
   }
 
   @override
@@ -60,7 +56,16 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
     final indiceRutas = MetricasComunidad.indiceRutas(
       ref.watch(almacenFeedProvider).publicaciones,
     );
+    final rutasAsync = ref.watch(rutasPublicadasProvider);
+    final catalogo = rutasAsync.valueOrNull ?? const <ModeloRuta>[];
     final cols = RejillaLegoHaku.columnas(context);
+
+    List<ModeloRuta> rutasDe(CategoriaRuta categoria) {
+      if (categoria == CategoriaRuta.recomendadas) return catalogo;
+      return catalogo
+          .where((ruta) => ruta.categoria == categoria)
+          .toList(growable: false);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,9 +90,7 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
           indicatorWeight: 2.5,
           dividerColor: PaletaRutas.plomoOscuro.withValues(alpha: 0.65),
           tabs: List.generate(_etiquetas.length, (i) {
-            final n = RutasDataSourceLocal.obtenerPorCategoria(
-              _categorias[i],
-            ).length;
+            final n = rutasDe(_categorias[i]).length;
             return Tab(text: '${_etiquetas[i]} ($n)');
           }),
         ),
@@ -95,12 +98,29 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
           child: TabBarView(
             controller: _tabs,
             children: _categorias.map((categoria) {
+              if (rutasAsync.isLoading && !rutasAsync.hasValue) {
+                return const Center(
+                  child: CircularProgressIndicator(color: PaletaRutas.oro),
+                );
+              }
+              if (rutasAsync.hasError && !rutasAsync.hasValue) {
+                return _ErrorRutas(
+                  onReintentar: () => ref.invalidate(rutasPublicadasProvider),
+                );
+              }
               final rutas = MetricasComunidad.enriquecerRutas(
-                RutasDataSourceLocal.obtenerPorCategoria(categoria),
+                rutasDe(categoria),
                 indiceRutas,
               );
               if (rutas.isEmpty) {
-                return _EmptyRutas(onExplorar: () => _tabs.animateTo(0));
+                final principal = categoria == CategoriaRuta.recomendadas;
+                return _EmptyRutas(
+                  titulo: principal
+                      ? 'Aún no hay rutas publicadas'
+                      : 'Todavía no hay rutas aquí',
+                  textoBoton: principal ? null : 'Ver todas',
+                  onExplorar: principal ? null : () => _tabs.animateTo(0),
+                );
               }
               return RejillaLegoHaku.grid(
                 context: context,
@@ -131,10 +151,62 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora>
   }
 }
 
-class _EmptyRutas extends StatelessWidget {
-  const _EmptyRutas({required this.onExplorar});
+class _ErrorRutas extends StatelessWidget {
+  const _ErrorRutas({required this.onReintentar});
 
-  final VoidCallback onExplorar;
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 40,
+              color: PaletaRutas.plomo,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'No pudimos cargar las rutas',
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.titulo(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.piedra,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: onReintentar,
+              child: Text(
+                'Reintentar',
+                style: TipografiaHaku.interfaz(
+                  fontWeight: FontWeight.w700,
+                  color: PaletaRutas.oro,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyRutas extends StatelessWidget {
+  const _EmptyRutas({
+    required this.titulo,
+    required this.onExplorar,
+    required this.textoBoton,
+  });
+
+  final String titulo;
+  final VoidCallback? onExplorar;
+  final String? textoBoton;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +223,7 @@ class _EmptyRutas extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Todavía no hay rutas aquí',
+              titulo,
               textAlign: TextAlign.center,
               style: TipografiaHaku.titulo(
                 fontSize: 20,
@@ -159,18 +231,20 @@ class _EmptyRutas extends StatelessWidget {
                 color: PaletaRutas.piedra,
               ),
             ),
-            const SizedBox(height: 18),
-            TextButton(
-              onPressed: onExplorar,
-              style: TextButton.styleFrom(foregroundColor: PaletaRutas.oro),
-              child: Text(
-                'Ver recomendadas',
-                style: TipografiaHaku.interfaz(
-                  fontWeight: FontWeight.w700,
-                  color: PaletaRutas.oro,
+            if (onExplorar != null && textoBoton != null) ...[
+              const SizedBox(height: 18),
+              TextButton(
+                onPressed: onExplorar,
+                style: TextButton.styleFrom(foregroundColor: PaletaRutas.oro),
+                child: Text(
+                  textoBoton!,
+                  style: TipografiaHaku.interfaz(
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.oro,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

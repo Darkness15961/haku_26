@@ -249,11 +249,16 @@ No presenta estadísticas o publicaciones ficticias.
 
 ## 6. Bandeja de Mensajes
 
-`previewsChatBandejaProvider` compone:
+`previewsChatBandejaProvider` consume `listar_bandeja_chat()`, que devuelve en
+una sola ida:
 
 - comunidades del usuario;
 - salidas organizadas o confirmadas;
-- chats privados devueltos por `listar_chats_privados()`.
+- chats privados del usuario.
+
+El RPC también resuelve roster, permiso para crear sala, último mensaje y
+cantidad de no leídos. Reemplaza la cascada anterior de hasta cinco consultas
+por cada comunidad o salida.
 
 Cada preview contiene tipo, título, portada/avatar, último mensaje y no leídos.
 El orden principal es la fecha del último mensaje.
@@ -268,9 +273,18 @@ Filtros disponibles:
 La búsqueda filtra por título. Un privado vacío sigue apareciendo después de
 crearse, permitiendo que cualquiera de los dos envíe el primer mensaje.
 
-`chatBandejaRealtimeProvider` observa cambios visibles de `mensaje` mientras la
-pestaña está abierta e invalida los previews. Así, un mensaje entrante,
-edición o borrado actualiza orden, texto y contador sin reabrir la pantalla.
+`chatBandejaRealtimeProvider` observa cambios visibles de `mensaje` y del
+roster `sala_participante` mientras la pestaña está abierta. Así, un mensaje,
+edición, borrado, alta o baja del usuario actual actualiza la bandeja sin
+reabrir la pantalla.
+
+Como RLS puede ocultar el evento justo después de una expulsión del roster, la
+bandeja se reconcilia además cada 30 segundos mientras está visible.
+
+Los chats de Salida usan el título propio de la Salida; el Lugar solo aporta la
+portada. La migración correctiva
+`20260916050000_integridad_listados_rutas.sql` también exige membresía aprobada
+para que un rol admin aparezca en una comunidad privada.
 
 ---
 
@@ -380,8 +394,8 @@ El conteo considera mensajes:
 - escritos por otra persona;
 - no eliminados.
 
-Se usa `count(CountOption.exact)` sin descargar todas las filas. Para privados,
-`listar_chats_privados()` calcula el mismo contrato dentro del RPC.
+La bandeja calcula los conteos dentro de `listar_bandeja_chat()` sin descargar
+las filas. El historial conserva conteos puntuales para una sala abierta.
 
 ---
 
@@ -417,6 +431,8 @@ Backend:
 - `supabase/migrations/20260915200000_sala_existe_sin_rls.sql`
 - `supabase/migrations/20260915210000_chat_privado_uno_a_uno.sql`
 - `supabase/migrations/20260915220000_chat_seguridad_cierres.sql`
+- `supabase/migrations/20260916020000_chat_bandeja_unificada.sql`
+- `supabase/migrations/20260916050000_integridad_listados_rutas.sql`
 
 Flutter:
 

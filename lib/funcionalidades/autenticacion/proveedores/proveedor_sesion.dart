@@ -139,11 +139,12 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
 
   /// Hidrata UI desde Auth (+ fila `public.usuario` si RLS lo permite).
   Future<void> sincronizarDesdeAuth(User user) async {
-    final nickMeta = (user.userMetadata?['nombre_nick'] as String?)?.trim();
-    var nick = (nickMeta != null && nickMeta.isNotEmpty)
-        ? nickMeta
-        : (user.email?.split('@').first ?? 'usuario');
-    var avatar = user.userMetadata?['avatar_url'] as String? ??
+    // `user_metadata` la puede editar el usuario y puede quedar antigua tras
+    // una migración. Nunca se usa como identidad pública de respaldo.
+    final idCorto = user.id.replaceAll('-', '').substring(0, 8);
+    var nick = 'usuario_$idCorto';
+    var avatar =
+        user.userMetadata?['avatar_url'] as String? ??
         user.userMetadata?['picture'] as String?;
     var correo = user.email ?? '';
     String? nombres;
@@ -275,7 +276,12 @@ class SesionNotifier extends StateNotifier<EstadoSesion> {
   }
 }
 
-final sesionProvider =
-    StateNotifierProvider<SesionNotifier, EstadoSesion>((ref) {
+/// Cambia cuando la identidad pública (nickname/avatar/nombres) fue guardada.
+/// Los listados que embeben `usuario` lo observan para no conservar snapshots.
+final perfilVersionProvider = StateProvider<int>((ref) => 0);
+
+final sesionProvider = StateNotifierProvider<SesionNotifier, EstadoSesion>((
+  ref,
+) {
   return SesionNotifier();
 });

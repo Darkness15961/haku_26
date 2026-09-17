@@ -11,18 +11,26 @@ class ComunidadHaku {
   final String descripcion;
   final String imagenUrl;
   final String creadorId;
+
   /// Solo demo local; remoto no tiene provincia.
   final String provincia;
+
   /// UI: `activa` / `inactiva` (remoto: `estado` bool).
   final String estado;
+
   /// `publico` | `privado` (enum remoto). Demo: vacío.
   final String tipo;
+
   /// Solo demo local; remoto no tiene N:N categoría.
   final List<CategoriaLugar> categorias;
+
   /// Miembros con `estado = aprobado` (conteo / badge Unida).
   final List<String> miembroIds;
+  final int? miembrosCantidad;
+
   /// usuario_id → `estado_membresia` (aprobado/pendiente/…). Remoto.
   final Map<String, String> estadoMembresiaPorUsuario;
+
   /// usuario_id → rol (`admin`/`miembro`). Remoto.
   final Map<String, String> rolPorUsuario;
   final DateTime? fechaCreacion;
@@ -39,13 +47,14 @@ class ComunidadHaku {
     this.tipo = 'publico',
     this.categorias = const [],
     this.miembroIds = const [],
+    this.miembrosCantidad,
     this.estadoMembresiaPorUsuario = const {},
     this.rolPorUsuario = const {},
     this.fechaCreacion,
     this.remoto = false,
   });
 
-  int get miembros => miembroIds.length;
+  int get miembros => miembrosCantidad ?? miembroIds.length;
 
   bool get esPrivada => tipo == 'privado';
 
@@ -78,6 +87,7 @@ class ComunidadHaku {
 
   ComunidadHaku copyWith({
     List<String>? miembroIds,
+    int? miembrosCantidad,
     List<CategoriaLugar>? categorias,
     String? tipo,
     Map<String, String>? estadoMembresiaPorUsuario,
@@ -94,6 +104,7 @@ class ComunidadHaku {
       tipo: tipo ?? this.tipo,
       categorias: categorias ?? this.categorias,
       miembroIds: miembroIds ?? this.miembroIds,
+      miembrosCantidad: miembrosCantidad ?? this.miembrosCantidad,
       estadoMembresiaPorUsuario:
           estadoMembresiaPorUsuario ?? this.estadoMembresiaPorUsuario,
       rolPorUsuario: rolPorUsuario ?? this.rolPorUsuario,
@@ -153,6 +164,7 @@ class ComunidadHaku {
       tipo: tipo,
       categorias: const [],
       miembroIds: miembroIds,
+      miembrosCantidad: (m['miembros_count'] as num?)?.toInt(),
       estadoMembresiaPorUsuario: estados,
       rolPorUsuario: roles,
       fechaCreacion: DateTime.tryParse(m['fecha_creacion'] as String? ?? ''),
@@ -188,18 +200,17 @@ class ComunidadHaku {
   }
 
   Map<String, dynamic> aMapa() => {
-        'id': id,
-        'nombre': nombre,
-        'descripcion': descripcion,
-        'imagen_url': imagenUrl,
-        'creador_id': creadorId,
-        'provincia': provincia,
-        'estado': estado,
-        'tipo': tipo,
-        'categoria_ids': categorias.map((c) => c.name).toList(),
-        'fecha_creacion':
-            (fechaCreacion ?? DateTime.now()).toIso8601String(),
-      };
+    'id': id,
+    'nombre': nombre,
+    'descripcion': descripcion,
+    'imagen_url': imagenUrl,
+    'creador_id': creadorId,
+    'provincia': provincia,
+    'estado': estado,
+    'tipo': tipo,
+    'categoria_ids': categorias.map((c) => c.name).toList(),
+    'fecha_creacion': (fechaCreacion ?? DateTime.now()).toIso8601String(),
+  };
 
   static CategoriaLugar? _categoriaDe(String id) {
     for (final c in CategoriaLugar.values) {
@@ -268,10 +279,10 @@ class MiembroComunidad {
   });
 
   Map<String, dynamic> aMapa() => {
-        'id': id,
-        'comunidad_id': comunidadId,
-        'usuario_id': usuarioId,
-        'rol': rol,
-        'fecha_union': (fechaUnion ?? DateTime.now()).toIso8601String(),
-      };
+    'id': id,
+    'comunidad_id': comunidadId,
+    'usuario_id': usuarioId,
+    'rol': rol,
+    'fecha_union': (fechaUnion ?? DateTime.now()).toIso8601String(),
+  };
 }

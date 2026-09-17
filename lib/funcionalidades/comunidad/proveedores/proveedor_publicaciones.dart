@@ -7,19 +7,58 @@ import '../dominio/modelo_publicacion.dart';
 
 final publicacionRemotoDataSourceProvider =
     Provider<PublicacionDataSourceSupabase>((ref) {
-  return PublicacionDataSourceSupabase();
-});
+      return PublicacionDataSourceSupabase();
+    });
 
 final publicacionesVersionProvider = StateProvider<int>((ref) => 0);
 
 /// Tab «Para ti»: solo publicaciones remotas `estado = publico`.
 final publicacionesRemotasProvider =
     FutureProvider<List<ModeloPublicacionRemota>>((ref) async {
-  ref.watch(publicacionesVersionProvider);
-  ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
-  if (!supabaseListo) return const [];
-  return ref.read(publicacionRemotoDataSourceProvider).listarPublicas();
-});
+      ref.watch(publicacionesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
+      if (!supabaseListo) return const [];
+      return ref.read(publicacionRemotoDataSourceProvider).listarPublicas();
+    });
+
+final publicacionesPorLugarProvider =
+    FutureProvider.family<List<ModeloPublicacionRemota>, String>((
+      ref,
+      id,
+    ) async {
+      ref.watch(publicacionesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
+      if (!supabaseListo || id.trim().isEmpty) return const [];
+      return ref.read(publicacionRemotoDataSourceProvider).listarPorLugar(id);
+    });
+
+final publicacionesPorRutaProvider =
+    FutureProvider.family<List<ModeloPublicacionRemota>, String>((
+      ref,
+      id,
+    ) async {
+      ref.watch(publicacionesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
+      if (!supabaseListo || id.trim().isEmpty) return const [];
+      return ref.read(publicacionRemotoDataSourceProvider).listarPorRuta(id);
+    });
+
+final publicacionesPorComunidadProvider =
+    FutureProvider.family<List<ModeloPublicacionRemota>, String>((
+      ref,
+      id,
+    ) async {
+      ref.watch(publicacionesVersionProvider);
+      ref.watch(perfilVersionProvider);
+      ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
+      if (!supabaseListo || id.trim().isEmpty) return const [];
+      return ref
+          .read(publicacionRemotoDataSourceProvider)
+          .listarPorComunidad(id);
+    });
 
 void notificarPublicacionesCambiaron(WidgetRef ref) {
   ref.read(publicacionesVersionProvider.notifier).state++;

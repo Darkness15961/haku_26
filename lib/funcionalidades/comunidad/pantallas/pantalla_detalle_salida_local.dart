@@ -22,7 +22,8 @@ class PantallaDetalleSalida extends ConsumerStatefulWidget {
       _EstadoPantallaDetalleSalida();
 }
 
-class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> {
+class _EstadoPantallaDetalleSalida
+    extends ConsumerState<PantallaDetalleSalida> {
   @override
   Widget build(BuildContext context) {
     ref.watch(almacenFeedProvider);
@@ -98,7 +99,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                         ),
                         const Spacer(),
                         Text(
-                          '${s.fecha.day}/${s.fecha.month}/${s.fecha.year} ┬À ${s.hora}',
+                          '${s.fecha.day}/${s.fecha.month}/${s.fecha.year} · ${s.hora}',
                           style: TipografiaHaku.interfaz(
                             fontWeight: FontWeight.w700,
                             color: PaletaRutas.piedra,
@@ -114,7 +115,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
           ),
           const SizedBox(height: 18),
           Text(
-            'Invitaci├│n a conocer esta ruta',
+            'Invitación a conocer esta ruta',
             style: TipografiaHaku.titulo(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -133,7 +134,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
           _BloqueDetalle(
             titulo: s.esDeGrupo ? 'Organiza (grupo)' : 'Organiza (persona)',
             valor: s.esDeGrupo
-                ? '${s.organizador} ┬À ${s.grupo}'
+                ? '${s.organizador} · ${s.grupo}'
                 : s.organizador,
             icono: s.esDeGrupo ? Icons.groups_outlined : Icons.person_outline,
           ),
@@ -144,7 +145,8 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
           ),
           _BloqueDetalle(
             titulo: 'Fecha de salida',
-            valor: '${s.fecha.day}/${s.fecha.month}/${s.fecha.year} ┬À ${s.hora}',
+            valor:
+                '${s.fecha.day}/${s.fecha.month}/${s.fecha.year} · ${s.hora}',
             icono: Icons.event_outlined,
           ),
           _BloqueDetalle(
@@ -178,12 +180,11 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
           _BloqueDetalle(
             titulo: 'Inscritos ahora',
             valor:
-                '${s.inscritos} / ${s.cuposTotales} (m├¡n. ${s.minimo} para salir)',
+                '${s.inscritos} / ${s.cuposTotales} (mín. ${s.minimo} para salir)',
             icono: Icons.how_to_reg_outlined,
           ),
           const SizedBox(height: 10),
-          if (!supabaseListo ||
-              int.tryParse(s.lugarId.trim()) != null)
+          if (!supabaseListo || int.tryParse(s.lugarId.trim()) != null)
             TextButton(
               onPressed: () => abrirDetalleLugar(context, s.lugarId),
               child: Text(
@@ -196,7 +197,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
             )
           else
             Text(
-              'Este punto es demo local; abrí el lugar desde Explora (servidor).',
+              'Abre el lugar desde Explora para ver la información actualizada.',
               style: TipografiaHaku.interfaz(
                 fontSize: 12,
                 color: PaletaRutas.plomoClaro,
@@ -228,11 +229,11 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                 ? null
                 : () async {
                     if (yaUnido) {
-                      mostrarSnackHaku(context, 'Ya est├ís en este grupo');
+                      mostrarSnackHaku(context, 'Ya estás en este grupo');
                       return;
                     }
                     final ok = await asegurarSesion(context, ref);
-                    if (!ok || !mounted) return;
+                    if (!ok || !context.mounted) return;
                     final done = SalidasDataSourceLocal.instancia.enrolar(
                       s.id,
                       usuarioId: uid,
@@ -246,7 +247,7 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                           .read(almacenFeedProvider.notifier)
                           .persistirSatelites();
                     }
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     setState(() {});
                     mostrarSnackHaku(
                       context,
@@ -255,8 +256,9 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
                     );
                   },
             style: FilledButton.styleFrom(
-              backgroundColor:
-                  yaUnido ? PaletaRutas.plomoOscuro : PaletaRutas.oro,
+              backgroundColor: yaUnido
+                  ? PaletaRutas.plomoOscuro
+                  : PaletaRutas.oro,
               foregroundColor: PaletaRutas.ink,
               disabledBackgroundColor: PaletaRutas.plomoOscuro,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -266,14 +268,16 @@ class _EstadoPantallaDetalleSalida extends ConsumerState<PantallaDetalleSalida> 
             ),
             child: Text(
               yaUnido
-                  ? 'Ya est├ís unido'
+                  ? 'Ya estás unido'
                   : s.llena
-                      ? 'Cupos llenos'
-                      : 'Unirse al grupo',
+                  ? 'Cupos llenos'
+                  : 'Unirse al grupo',
               style: TipografiaHaku.interfaz(
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
-                color: yaUnido || s.llena ? PaletaRutas.piedra : PaletaRutas.ink,
+                color: yaUnido || s.llena
+                    ? PaletaRutas.piedra
+                    : PaletaRutas.ink,
               ),
             ),
           ),

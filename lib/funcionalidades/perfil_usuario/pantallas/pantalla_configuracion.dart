@@ -9,9 +9,11 @@ import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/datos/nacionalidad_datasource.dart';
 import '../../autenticacion/dominio/modelos/modelo_nacionalidad.dart';
+import '../../autenticacion/dominio/servicios/politica_nickname.dart';
 import '../../autenticacion/dominio/servicios/servicio_perfil_supabase.dart';
 import '../../autenticacion/mensajes_auth_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../autenticacion/widgets/ayuda_nickname.dart';
 import '../../autenticacion/widgets/selector_nacionalidad.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -97,7 +99,8 @@ class _EstadoPantallaConfiguracion
           _nick.text = perfil.nombreNick;
           _correo.text = perfil.correo;
           _fotoUrl = perfil.fotoPerfil;
-          _nacionalidad = perfil.nacionalidad ??
+          _nacionalidad =
+              perfil.nacionalidad ??
               NacionalidadDataSource.sugerida(
                 _nacionalidades,
                 preferirId: perfil.nacionalidadId,
@@ -194,8 +197,10 @@ class _EstadoPantallaConfiguracion
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined,
-                  color: PaletaRutas.piedra),
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: PaletaRutas.piedra,
+              ),
               title: Text(
                 'Galería',
                 style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
@@ -203,8 +208,10 @@ class _EstadoPantallaConfiguracion
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.photo_camera_outlined, color: PaletaRutas.piedra),
+              leading: const Icon(
+                Icons.photo_camera_outlined,
+                color: PaletaRutas.piedra,
+              ),
               title: Text(
                 'Cámara',
                 style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
@@ -242,9 +249,11 @@ class _EstadoPantallaConfiguracion
         contentType: contentType,
         extension: ext,
       );
-      await ref
-          .read(sesionProvider.notifier)
-          .sincronizarDesdeAuth(clienteSupabase.auth.currentUser!);
+      ref.read(perfilVersionProvider.notifier).state++;
+      final user = clienteSupabase.auth.currentUser;
+      if (user != null) {
+        await ref.read(sesionProvider.notifier).sincronizarDesdeAuth(user);
+      }
       if (!mounted) return;
       setState(() => _fotoUrl = url);
       mostrarSnackHaku(context, 'Foto actualizada', destacado: true);
@@ -279,14 +288,10 @@ class _EstadoPantallaConfiguracion
       mostrarSnackHaku(context, 'Elige tu nacionalidad');
       return;
     }
-    var nick = nickRaw;
-    if (nick.startsWith('@')) nick = nick.substring(1);
-    if (nick.length < 3 || nick.length > 50) {
-      mostrarSnackHaku(context, 'Nickname: 3 a 50 caracteres');
-      return;
-    }
-    if (!RegExp(r'^[A-Za-z0-9_]+$').hasMatch(nick)) {
-      mostrarSnackHaku(context, 'Nickname: solo letras, números y _');
+    final nick = PoliticaNickname.normalizar(nickRaw);
+    final errorNick = PoliticaNickname.validar(nick);
+    if (errorNick != null) {
+      mostrarSnackHaku(context, errorNick);
       return;
     }
 
@@ -303,16 +308,15 @@ class _EstadoPantallaConfiguracion
       if (user != null) {
         await ref.read(sesionProvider.notifier).sincronizarDesdeAuth(user);
       }
+      ref.read(perfilVersionProvider.notifier).state++;
       if (!mounted) return;
       mostrarSnackHaku(context, 'Perfil guardado', destacado: true);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      mostrarSnackHaku(context, e.message);
     } on PostgrestException catch (e) {
       if (!mounted) return;
-      final msg = e.message.toLowerCase();
-      if (msg.contains('nombre_nick') || msg.contains('duplicate')) {
-        mostrarSnackHaku(context, 'Ese nickname ya está en uso');
-      } else {
-        mostrarSnackHaku(context, e.message);
-      }
+      mostrarSnackHaku(context, MensajesAuthHaku.desdeErrorPerfil(e));
     } catch (e) {
       if (!mounted) return;
       mostrarSnackHaku(context, 'No se pudo guardar el perfil');
@@ -594,9 +598,7 @@ class _EstadoPantallaConfiguracion
         suffix: IconButton(
           onPressed: onToggle,
           icon: Icon(
-            ocultar
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+            ocultar ? Icons.visibility_outlined : Icons.visibility_off_outlined,
             color: PaletaRutas.plomoClaro,
           ),
         ),
@@ -681,8 +683,9 @@ class _EstadoPantallaConfiguracion
                                         shape: const CircleBorder(),
                                         child: InkWell(
                                           customBorder: const CircleBorder(),
-                                          onTap:
-                                              _guardando ? null : _cambiarFoto,
+                                          onTap: _guardando
+                                              ? null
+                                              : _cambiarFoto,
                                           child: const Padding(
                                             padding: EdgeInsets.all(8),
                                             child: Icon(
@@ -731,14 +734,25 @@ class _EstadoPantallaConfiguracion
                               const SizedBox(height: 10),
                               TextField(
                                 controller: _nick,
+                                textCapitalization: TextCapitalization.none,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                inputFormatters: formateadoresNickname(),
                                 style: TipografiaHaku.interfaz(
                                   color: PaletaRutas.piedra,
                                 ),
                                 cursorColor: PaletaRutas.oro,
-                                decoration: _deco(
-                                  'Nickname',
-                                  icono: Icons.alternate_email_rounded,
-                                ),
+                                decoration:
+                                    _deco(
+                                      'Nickname',
+                                      icono: Icons.alternate_email_rounded,
+                                      suffix: const BotonAyudaNickname(),
+                                    ).copyWith(
+                                      prefixText: '@',
+                                      prefixStyle: TipografiaHaku.interfaz(
+                                        color: PaletaRutas.plomoClaro,
+                                      ),
+                                    ),
                               ),
                               const SizedBox(height: 6),
                               Padding(

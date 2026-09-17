@@ -10,14 +10,8 @@ import 'metricas_comunidad.dart';
 
 /// Carrusel de fotos extraídas de publicaciones (lugar o ruta).
 class RecuerdosComunidad extends ConsumerWidget {
-  const RecuerdosComunidad({
-    super.key,
-    this.lugarId,
-    this.rutaId,
-  }) : assert(
-          lugarId != null || rutaId != null,
-          'Indica lugarId o rutaId',
-        );
+  const RecuerdosComunidad({super.key, this.lugarId, this.rutaId})
+    : assert(lugarId != null || rutaId != null, 'Indica lugarId o rutaId');
 
   final String? lugarId;
   final String? rutaId;
@@ -25,11 +19,20 @@ class RecuerdosComunidad extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final List<String> fotos;
-    if (supabaseListo && lugarId != null) {
+    if (supabaseListo) {
+      final rid = rutaId?.trim() ?? '';
+      final lid = lugarId?.trim() ?? '';
       final remotas =
-          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
-      fotos = MetricasComunidad.calcularRemotas(remotas, lugarId: lugarId!)
-          .fotosUrls;
+          (rid.isNotEmpty
+                  ? ref.watch(publicacionesPorRutaProvider(rid))
+                  : ref.watch(publicacionesPorLugarProvider(lid)))
+              .valueOrNull ??
+          const [];
+      fotos = MetricasComunidad.calcularRemotas(
+        remotas,
+        lugarId: lugarId,
+        rutaId: rutaId,
+      ).fotosUrls;
     } else {
       fotos = MetricasComunidad.calcular(
         ref.watch(almacenFeedProvider).publicaciones,

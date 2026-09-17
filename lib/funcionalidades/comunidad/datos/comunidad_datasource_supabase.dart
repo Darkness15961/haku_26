@@ -42,18 +42,25 @@ usuario:usuario_id (
   Future<List<ComunidadHaku>> listarVisibles() async {
     if (!supabaseListo) return const [];
 
-    final rows = await clienteSupabase
-        .from('comunidad')
-        .select(_selectListado)
-        .eq('estado', true)
-        .order('nombre', ascending: true);
+    final rows = await clienteSupabase.rpc('listar_comunidades_resumen');
+    final uid = clienteSupabase.auth.currentUser?.id;
 
     return (rows as List<dynamic>)
-        .map(
-          (e) => ComunidadHaku.desdeFilaRemota(
-            Map<String, dynamic>.from(e as Map),
-          ),
-        )
+        .whereType<Map>()
+        .map((e) {
+          final fila = Map<String, dynamic>.from(e);
+          final miEstado = (fila['mi_estado'] as String?)?.trim();
+          if (uid != null && miEstado != null && miEstado.isNotEmpty) {
+            fila['comunidad_miembro'] = [
+              {
+                'usuario_id': uid,
+                'rol': fila['mi_rol'] ?? 'miembro',
+                'estado': miEstado,
+              },
+            ];
+          }
+          return ComunidadHaku.desdeFilaRemota(fila);
+        })
         .where((c) => c.id.isNotEmpty && c.nombre.isNotEmpty)
         .toList();
   }
@@ -82,15 +89,55 @@ usuario:usuario_id (
   }) async {
     final path =
         '$userId/comunidades/portada_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    await clienteSupabase.storage.from(bucketMedia).uploadBinary(
+    await clienteSupabase.storage
+        .from(bucketMedia)
+        .uploadBinary(
           path,
           bytes,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: true,
-          ),
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
     return clienteSupabase.storage.from(bucketMedia).getPublicUrl(path);
+  }
+
+  Future<ComunidadHaku> crearConPortada({
+    required String userId,
+    required Uint8List bytes,
+    required String contentType,
+    required String extension,
+    required String nombre,
+    String? descripcion,
+    String tipo = 'publico',
+  }) async {
+    final url = await subirFotoPortada(
+      userId: userId,
+      bytes: bytes,
+      contentType: contentType,
+      extension: extension,
+    );
+    try {
+      return await crear(
+        nombre: nombre,
+        descripcion: descripcion,
+        tipo: tipo,
+        fotoPortadaUrl: url,
+      );
+    } catch (_) {
+      await _eliminarPortadaSubida(url);
+      rethrow;
+    }
+  }
+
+  Future<void> _eliminarPortadaSubida(String publicUrl) async {
+    try {
+      final segmentos = Uri.parse(publicUrl).pathSegments;
+      final bucketIndex = segmentos.lastIndexOf(bucketMedia);
+      if (bucketIndex < 0 || bucketIndex + 1 >= segmentos.length) return;
+      final path = segmentos.sublist(bucketIndex + 1).join('/');
+      if (path.isEmpty) return;
+      await clienteSupabase.storage.from(bucketMedia).remove([path]);
+    } catch (_) {
+      // Mantener el error de creación original.
+    }
   }
 
   /// Insert `comunidad` + fila admin en `comunidad_miembro`.
@@ -112,56 +159,41 @@ usuario:usuario_id (
     if (nombreTrim.isEmpty) {
       throw const AuthException('El nombre es obligatorio.');
     }
-    final tipoNorm = tipo.trim().toLowerCase() == 'privado' ? 'privado' : 'publico';
+    final tipoNorm = tipo.trim().toLowerCase() == 'privado'
+        ? 'privado'
+        : 'publico';
     final desc = descripcion?.trim();
     final foto = fotoPortadaUrl?.trim();
 
-    final insertado = await clienteSupabase
-        .from('comunidad')
-        .insert({
-          'nombre': nombreTrim,
-          'descripcion': (desc == null || desc.isEmpty) ? null : desc,
-          'foto_portada': (foto == null || foto.isEmpty) ? null : foto,
-          'usuario_creador_id': user.id,
-          'tipo': tipoNorm,
-          'estado': true,
-        })
-        .select('id')
-        .single();
-
-    final idRaw = insertado['id'];
-    final idNum = idRaw is int ? idRaw : int.parse('$idRaw');
-
-    try {
-      await clienteSupabase.from('comunidad_miembro').insert({
-        'comunidad_id': idNum,
-        'usuario_id': user.id,
-        'rol': 'admin',
-        'estado': 'aprobado',
-      });
-    } catch (_) {
-      // Evita comunidad huérfana sin admin.
-      final revertida = await clienteSupabase
-          .from('comunidad')
-          .update({'estado': false})
-          .eq('id', idNum)
-          .eq('usuario_creador_id', user.id)
-          .select('id')
-          .maybeSingle();
-      if (revertida == null) {
-        throw const AuthException(
-          'La comunidad quedó a medias y no se pudo desactivar. Reintentá.',
-        );
-      }
-      throw const AuthException(
-        'La comunidad se creó pero falló el alta de admin. Quedó inactiva.',
-      );
+    final raw = await clienteSupabase.rpc(
+      'crear_comunidad_con_admin',
+      params: {
+        'p_nombre': nombreTrim,
+        'p_descripcion': (desc == null || desc.isEmpty) ? null : desc,
+        'p_tipo': tipoNorm,
+        'p_foto_portada': (foto == null || foto.isEmpty) ? null : foto,
+      },
+    );
+    final idNum = raw is int ? raw : int.tryParse('$raw');
+    if (idNum == null) {
+      throw const AuthException('Respuesta inválida al crear la comunidad.');
     }
 
     final creada = await porId('$idNum');
     if (creada == null) {
-      throw const AuthException(
-        'La comunidad se creó pero no se pudo recargar.',
+      return ComunidadHaku(
+        id: '$idNum',
+        nombre: nombreTrim,
+        descripcion: desc ?? '',
+        imagenUrl: foto ?? '',
+        creadorId: user.id,
+        tipo: tipoNorm,
+        miembroIds: [user.id],
+        miembrosCantidad: 1,
+        estadoMembresiaPorUsuario: {user.id: 'aprobado'},
+        rolPorUsuario: {user.id: 'admin'},
+        fechaCreacion: DateTime.now(),
+        remoto: true,
       );
     }
     return creada;
@@ -258,7 +290,9 @@ usuario:usuario_id (
     }
   }
 
-  Future<List<MiembroComunidadRemoto>> listarMiembros(String comunidadId) async {
+  Future<List<MiembroComunidadRemoto>> listarMiembros(
+    String comunidadId,
+  ) async {
     if (!supabaseListo) return const [];
     final idNum = int.tryParse(comunidadId.trim());
     if (idNum == null) return const [];

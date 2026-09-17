@@ -37,6 +37,12 @@ comunidad:comunidad_id (
   id,
   nombre
 ),
+ruta:ruta_id (
+  id,
+  slug,
+  nombre,
+  resumen
+),
 organizador:usuario!organizador_id (
   id,
   nombre_nick
@@ -45,46 +51,68 @@ organizador:usuario!organizador_id (
 
   Future<List<ModeloSalidaRemota>> listarVisibles({
     String? lugarId,
+    String? rutaId,
     String? comunidadId,
   }) async {
     if (!supabaseListo) return const [];
 
-    var query = clienteSupabase
-        .from('salida')
-        .select(_selectListado)
-        .neq('estado', 'cancelada');
-
     final lugarNum = int.tryParse(lugarId?.trim() ?? '');
-    if (lugarId != null &&
-        lugarId.trim().isNotEmpty &&
-        lugarNum == null) {
+    final rutaNum = int.tryParse(rutaId?.trim() ?? '');
+    final comNum = int.tryParse(comunidadId?.trim() ?? '');
+    if (lugarId != null && lugarId.trim().isNotEmpty && lugarNum == null) {
       // Evita devolver el listado global cuando el filtro es un slug demo.
       return const [];
     }
-    if (lugarNum != null) {
-      query = query.eq('punto_encuentro_lugar_id', lugarNum);
+    if (rutaId != null && rutaId.trim().isNotEmpty && rutaNum == null) {
+      return const [];
     }
-    final comNum = int.tryParse(comunidadId?.trim() ?? '');
     if (comunidadId != null &&
         comunidadId.trim().isNotEmpty &&
         comNum == null) {
       // Evita listado global si llega slug demo / id no numérico.
       return const [];
     }
-    if (comNum != null) {
-      query = query.eq('comunidad_id', comNum);
-    }
 
-    final rows = await query.order('fecha_hora_inicio', ascending: true);
-
+    final rows = await clienteSupabase.rpc(
+      'listar_salidas_resumen',
+      params: {
+        'p_lugar_id': lugarNum,
+        'p_ruta_id': rutaNum,
+        'p_comunidad_id': comNum,
+      },
+    );
+    final uid = clienteSupabase.auth.currentUser?.id;
     return (rows as List<dynamic>)
-        .map(
-          (e) => ModeloSalidaRemota.desdeFilaRemota(
-            Map<String, dynamic>.from(e as Map),
-          ),
-        )
+        .whereType<Map>()
+        .map((raw) {
+          final fila = Map<String, dynamic>.from(raw);
+          fila['organizador'] = {
+            'id': fila['organizador_id'],
+            'nombre_nick': fila['organizador_nick'],
+          };
+          fila['lugar'] = {
+            'id': fila['punto_encuentro_lugar_id'],
+            'nombre': fila['lugar_nombre'],
+            'foto_portada': fila['lugar_foto_portada'],
+          };
+          fila['comunidad'] = {
+            'id': fila['comunidad_id'],
+            'nombre': fila['comunidad_nombre'],
+          };
+          fila['ruta'] = {
+            'id': fila['ruta_id'],
+            'nombre': fila['ruta_nombre'],
+            'resumen': fila['ruta_resumen'],
+          };
+          final miEstado = (fila['mi_estado_participante'] as String?)?.trim();
+          fila['salida_participante'] = [
+            if (uid != null && miEstado == 'confirmado')
+              {'usuario_id': uid, 'estado': miEstado},
+          ];
+          return ModeloSalidaRemota.desdeFilaRemota(fila);
+        })
         .where((s) => s.id.isNotEmpty && s.titulo.isNotEmpty)
-        .toList();
+        .toList(growable: false);
   }
 
   Future<ModeloSalidaRemota?> porId(String id) async {
@@ -113,6 +141,7 @@ organizador:usuario!organizador_id (
     required int cuposTotales,
     int minimoParaSalir = 1,
     String? lugarId,
+    String? rutaId,
     String? comunidadId,
     String? notasGrupales,
   }) async {
@@ -136,61 +165,67 @@ organizador:usuario!organizador_id (
 
     final comNum = int.tryParse(comunidadId?.trim() ?? '');
     final lugarNum = int.tryParse(lugarId?.trim() ?? '');
-    final tipo = comNum != null ? 'comunidad' : 'publica';
+    final rutaNum = int.tryParse(rutaId?.trim() ?? '');
+    if (comunidadId != null &&
+        comunidadId.trim().isNotEmpty &&
+        comNum == null) {
+      throw const AuthException('Comunidad inválida.');
+    }
+    if (lugarId != null && lugarId.trim().isNotEmpty && lugarNum == null) {
+      throw const AuthException('Lugar inválido.');
+    }
+    if (rutaId != null && rutaId.trim().isNotEmpty && rutaNum == null) {
+      throw const AuthException('Ruta inválida.');
+    }
     final notas = notasGrupales?.trim();
 
-    final insertado = await clienteSupabase
-        .from('salida')
-        .insert({
-          'titulo': tituloTrim,
-          'organizador_id': user.id,
-          'comunidad_id': comNum,
-          'fecha_hora_inicio': fechaHoraInicio.toUtc().toIso8601String(),
-          'punto_encuentro_lat': latitud,
-          'punto_encuentro_lon': longitud,
-          'punto_encuentro_lugar_id': lugarNum,
-          'notas_grupales': (notas == null || notas.isEmpty) ? null : notas,
-          'tipo': tipo,
-          'cupos_totales': cuposTotales,
-          'minimo_para_salir': minimoParaSalir,
-          'estado': 'programada',
-        })
-        .select('id')
-        .single();
-
-    final idRaw = insertado['id'];
-    final idNum = idRaw is int ? idRaw : int.parse('$idRaw');
-
     try {
-      await clienteSupabase.from('salida_participante').insert({
-        'salida_id': idNum,
-        'usuario_id': user.id,
-        'estado': 'confirmado',
-      });
-    } catch (_) {
-      // Evita salida huérfana sin organizador inscrito.
-      final revertida = await clienteSupabase
-          .from('salida')
-          .update({'estado': 'cancelada'})
-          .eq('id', idNum)
-          .eq('organizador_id', user.id)
-          .select('id')
-          .maybeSingle();
-      if (revertida == null) {
-        throw const AuthException(
-          'La salida quedó a medias y no se pudo cancelar. Contactá soporte o reintentá.',
+      final raw = await clienteSupabase.rpc(
+        'crear_salida_con_organizador',
+        params: {
+          'p_titulo': tituloTrim,
+          'p_fecha_hora_inicio': fechaHoraInicio.toUtc().toIso8601String(),
+          'p_latitud': latitud,
+          'p_longitud': longitud,
+          'p_cupos_totales': cuposTotales,
+          'p_minimo_para_salir': minimoParaSalir,
+          'p_lugar_id': lugarNum,
+          'p_ruta_id': rutaNum,
+          'p_comunidad_id': comNum,
+          'p_notas_grupales': (notas == null || notas.isEmpty) ? null : notas,
+        },
+      );
+      final idNum = raw is int ? raw : int.tryParse('$raw');
+      if (idNum == null) {
+        throw const AuthException('Respuesta inválida al crear la salida.');
+      }
+
+      final creada = await porId('$idNum');
+      if (creada == null) {
+        return ModeloSalidaRemota(
+          id: '$idNum',
+          titulo: tituloTrim,
+          organizadorId: user.id,
+          comunidadId: comNum?.toString(),
+          rutaId: rutaNum?.toString(),
+          fechaHoraInicio: fechaHoraInicio,
+          latitud: latitud,
+          longitud: longitud,
+          lugarId: lugarNum?.toString(),
+          notasGrupales: notas,
+          tipo: comNum == null ? 'publica' : 'comunidad',
+          cuposTotales: cuposTotales,
+          minimoParaSalir: minimoParaSalir,
+          participanteIds: [user.id],
+          inscritosCantidad: 1,
         );
       }
-      throw const AuthException(
-        'La salida se creó pero no se pudo inscribir al organizador. Quedó cancelada.',
+      return creada;
+    } on PostgrestException catch (e) {
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo crear la salida.' : e.message,
       );
     }
-
-    final creada = await porId('$idNum');
-    if (creada == null) {
-      throw const AuthException('La salida se creó pero no se pudo recargar.');
-    }
-    return creada;
   }
 
   Future<void> inscribirse(String salidaId) async {

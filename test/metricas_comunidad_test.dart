@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:haku/funcionalidades/comunidad/dominio/modelo_publicacion.dart';
 import 'package:haku/funcionalidades/inicio/datos/feed_inicio_datasource_local.dart';
 import 'package:haku/funcionalidades/lugares/widgets/metricas_comunidad.dart';
 import 'package:haku/funcionalidades/rutas/datos/rutas_datasource_local.dart';
@@ -108,10 +109,42 @@ void main() {
         ),
       ];
 
-      final exp = MetricasComunidad.experienciasDe(lista, rutaId: 'ruta_inca_clasica');
+      final exp = MetricasComunidad.experienciasDe(
+        lista,
+        rutaId: 'ruta_inca_clasica',
+      );
 
       expect(exp.length, 1);
       expect(exp.first.id, 'exp');
+    });
+
+    test('calcularRemotas enlaza publicaciones por ruta', () {
+      final publicaciones = [
+        ModeloPublicacionRemota(
+          id: '1',
+          usuarioId: 'u1',
+          contenido: 'Experiencia',
+          fechaCreacion: DateTime(2026),
+          rutaId: '42',
+          imagenUrl: 'https://example.com/ruta.jpg',
+        ),
+        ModeloPublicacionRemota(
+          id: '2',
+          usuarioId: 'u2',
+          contenido: 'Otro lugar',
+          fechaCreacion: DateTime(2026),
+          lugarId: '42',
+          imagenUrl: 'https://example.com/lugar.jpg',
+        ),
+      ];
+
+      final metricas = MetricasComunidad.calcularRemotas(
+        publicaciones,
+        rutaId: '42',
+      );
+
+      expect(metricas.exploradores, 1);
+      expect(metricas.fotosUrls, ['https://example.com/ruta.jpg']);
     });
   });
 }

@@ -30,6 +30,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
   int _cuposGrupo = 4;
   int _minimo = 3;
   String _dificultad = 'Moderada';
+
   /// false = persona · true = grupo
   bool _comoGrupo = false;
   String? _comunidadId;
@@ -38,7 +39,8 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
   void initState() {
     super.initState();
     final lugares = LugaresDataSourceLocal.instancia.todos();
-    _lugarId = widget.lugarId ??
+    _lugarId =
+        widget.lugarId ??
         (lugares.isNotEmpty ? lugares.first.id : 'laguna_humantay');
   }
 
@@ -109,8 +111,8 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     final sesion = ref.read(sesionProvider);
     final nombrePersona =
         sesion.usuario?.nombreUsuario.trim().isNotEmpty == true
-            ? sesion.usuario!.nombreUsuario.trim()
-            : 'Lucía';
+        ? sesion.usuario!.nombreUsuario.trim()
+        : 'Lucía';
 
     String organizador = nombrePersona;
     String grupo = '';
@@ -120,7 +122,10 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     if (_comoGrupo) {
       final grupos = _misGrupos(store);
       if (grupos.isEmpty || _comunidadId == null) {
-        mostrarSnackHaku(context, 'Elige un grupo o crea la salida como persona');
+        mostrarSnackHaku(
+          context,
+          'Elige un grupo o crea la salida como persona',
+        );
         return;
       }
       final g = grupos.firstWhere((c) => c.id == _comunidadId);
@@ -162,18 +167,20 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     final textoInvitacion = _desc.text.trim().isNotEmpty
         ? _desc.text.trim()
         : grupo.isEmpty
-            ? 'Salida a ${lugar.nombre}. ¿Te unes?'
-            : 'Salida con $grupo a ${lugar.nombre}. Cupos limitados.';
+        ? 'Salida a ${lugar.nombre}. ¿Te unes?'
+        : 'Salida con $grupo a ${lugar.nombre}. Cupos limitados.';
 
-    await ref.read(almacenFeedProvider.notifier).crearPublicacion(
+    await ref
+        .read(almacenFeedProvider.notifier)
+        .crearPublicacion(
           PublicacionFeed(
             id: 'inv_$salidaId',
             autorId: AlmacenFeedNotifier.idUsuarioLocal,
             autor: nombrePersona,
-            usuario:
-                '@${nombrePersona.toLowerCase().replaceAll(' ', '')}',
+            usuario: '@${nombrePersona.toLowerCase().replaceAll(' ', '')}',
             avatarUrl: CatalogoImagenesHaku.resolverAvatar(
-                sesion.usuario?.avatarUrl),
+              sesion.usuario?.avatarUrl,
+            ),
             hace: 'ahora',
             texto: textoInvitacion,
             imagenUrl: lugar.imagenUrl,
@@ -204,9 +211,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
     final lugares = LugaresDataSourceLocal.instancia.todos();
     final store = ref.watch(almacenFeedProvider);
     final misGrupos = _misGrupos(store);
-    if (_comoGrupo &&
-        _comunidadId == null &&
-        misGrupos.isNotEmpty) {
+    if (_comoGrupo && _comunidadId == null && misGrupos.isNotEmpty) {
       _comunidadId = misGrupos.first.id;
     }
 
@@ -269,16 +274,13 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
               )
             else
               DropdownButtonFormField<String>(
-                value: _comunidadId,
+                initialValue: _comunidadId,
                 dropdownColor: PaletaRutas.carbon,
                 decoration: _deco('Grupo organizador'),
                 style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
                 items: [
                   for (final g in misGrupos)
-                    DropdownMenuItem(
-                      value: g.id,
-                      child: Text(g.nombre),
-                    ),
+                    DropdownMenuItem(value: g.id, child: Text(g.nombre)),
                 ],
                 onChanged: (v) => setState(() => _comunidadId = v),
               ),
@@ -303,7 +305,9 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: lugares.any((l) => l.id == _lugarId) ? _lugarId : null,
+            initialValue: lugares.any((l) => l.id == _lugarId)
+                ? _lugarId
+                : null,
             dropdownColor: PaletaRutas.carbon,
             decoration: _deco('Destino'),
             style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
@@ -426,8 +430,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
                   divisions: 28,
                   activeColor: const Color(0xFF2F6B5A),
                   inactiveColor: PaletaRutas.plomoOscuro,
-                  onChanged: (v) =>
-                      setState(() => _cuposAbiertos = v.round()),
+                  onChanged: (v) => setState(() => _cuposAbiertos = v.round()),
                 ),
               ),
               SizedBox(
@@ -470,8 +473,7 @@ class _EstadoPantallaCrearSalida extends ConsumerState<PantallaCrearSalida> {
                     divisions: 19,
                     activeColor: PaletaRutas.oro,
                     inactiveColor: PaletaRutas.plomoOscuro,
-                    onChanged: (v) =>
-                        setState(() => _cuposGrupo = v.round()),
+                    onChanged: (v) => setState(() => _cuposGrupo = v.round()),
                   ),
                 ),
                 SizedBox(

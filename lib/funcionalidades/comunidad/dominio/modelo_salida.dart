@@ -4,26 +4,35 @@ class ModeloSalidaRemota {
   final String id;
   final String titulo;
   final String organizadorId;
+
   /// De `usuario.nombre_nick` si el embed lo trae; vacío si no.
   final String organizadorNick;
   final String? comunidadId;
   final String? comunidadNombre;
+  final String? rutaId;
+  final String? rutaNombre;
+  final String? rutaResumen;
   final DateTime fechaHoraInicio;
   final double latitud;
   final double longitud;
   final String? lugarId;
   final String? lugarNombre;
+
   /// Solo si `lugar.foto_portada` existe en BD.
   final String? lugarFotoPortada;
   final String? notasGrupales;
+
   /// `publica` | `comunidad`
   final String tipo;
   final int cuposTotales;
   final int minimoParaSalir;
+
   /// `programada` | `en_curso` | `finalizada` | `cancelada`
   final String estado;
+
   /// usuario_id con `estado_participante = confirmado`
   final List<String> participanteIds;
+  final int? inscritosCantidad;
 
   const ModeloSalidaRemota({
     required this.id,
@@ -32,6 +41,9 @@ class ModeloSalidaRemota {
     this.organizadorNick = '',
     this.comunidadId,
     this.comunidadNombre,
+    this.rutaId,
+    this.rutaNombre,
+    this.rutaResumen,
     required this.fechaHoraInicio,
     required this.latitud,
     required this.longitud,
@@ -44,9 +56,10 @@ class ModeloSalidaRemota {
     this.minimoParaSalir = 1,
     this.estado = 'programada',
     this.participanteIds = const [],
+    this.inscritosCantidad,
   });
 
-  int get inscritos => participanteIds.length;
+  int get inscritos => inscritosCantidad ?? participanteIds.length;
 
   bool get llena => inscritos >= cuposTotales;
 
@@ -107,6 +120,12 @@ class ModeloSalidaRemota {
       orgMap = Map<String, dynamic>.from(orgRaw);
     }
 
+    Map<String, dynamic>? rutaMap;
+    final rutaRaw = m['ruta'];
+    if (rutaRaw is Map) {
+      rutaMap = Map<String, dynamic>.from(rutaRaw);
+    }
+
     final participanteIds = <String>[];
     final parts = m['salida_participante'];
     if (parts is List) {
@@ -126,6 +145,7 @@ class ModeloSalidaRemota {
 
     final comIdRaw = m['comunidad_id'] ?? comMap?['id'];
     final lugarIdRaw = m['punto_encuentro_lugar_id'] ?? lugarMap?['id'];
+    final rutaIdRaw = m['ruta_id'] ?? rutaMap?['id'];
     final foto = (lugarMap?['foto_portada'] as String?)?.trim();
 
     return ModeloSalidaRemota(
@@ -135,6 +155,9 @@ class ModeloSalidaRemota {
       organizadorNick: (orgMap?['nombre_nick'] as String?)?.trim() ?? '',
       comunidadId: comIdRaw == null ? null : '$comIdRaw',
       comunidadNombre: (comMap?['nombre'] as String?)?.trim(),
+      rutaId: rutaIdRaw == null ? null : '$rutaIdRaw',
+      rutaNombre: (rutaMap?['nombre'] as String?)?.trim(),
+      rutaResumen: (rutaMap?['resumen'] as String?)?.trim(),
       fechaHoraInicio: fecha.toLocal(),
       latitud: (m['punto_encuentro_lat'] as num?)?.toDouble() ?? 0,
       longitud: (m['punto_encuentro_lon'] as num?)?.toDouble() ?? 0,
@@ -147,6 +170,7 @@ class ModeloSalidaRemota {
       minimoParaSalir: (m['minimo_para_salir'] as num?)?.toInt() ?? 1,
       estado: (m['estado'] as String?)?.trim() ?? 'programada',
       participanteIds: participanteIds,
+      inscritosCantidad: (m['inscritos_count'] as num?)?.toInt(),
     );
   }
 }

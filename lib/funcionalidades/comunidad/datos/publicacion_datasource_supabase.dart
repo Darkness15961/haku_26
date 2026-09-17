@@ -40,10 +40,19 @@ publicacion_lugar (
     id,
     nombre
   )
+),
+publicacion_ruta (
+  ruta_id,
+  ruta:ruta_id (
+    id,
+    nombre
+  )
 )
 ''';
 
-  Future<List<ModeloPublicacionRemota>> listarPublicas({int limite = 40}) async {
+  Future<List<ModeloPublicacionRemota>> listarPublicas({
+    int limite = 40,
+  }) async {
     if (!supabaseListo) return const [];
 
     final rows = await clienteSupabase
@@ -113,6 +122,82 @@ publicacion_lugar (
     );
   }
 
+  Future<List<ModeloPublicacionRemota>> listarPorLugar(
+    String lugarId, {
+    int limite = 40,
+  }) async {
+    final id = int.tryParse(lugarId.trim());
+    if (!supabaseListo || id == null) return const [];
+    final rows = await clienteSupabase
+        .from('publicacion_lugar')
+        .select('''
+publicacion:publicacion_id!inner (
+  $_selectFeed
+)
+''')
+        .eq('lugar_id', id)
+        .eq('publicacion.estado', 'publico')
+        .order('fecha_etiquetado', ascending: false)
+        .limit(limite);
+    return _mapearVinculadas(rows);
+  }
+
+  Future<List<ModeloPublicacionRemota>> listarPorRuta(
+    String rutaId, {
+    int limite = 40,
+  }) async {
+    final id = int.tryParse(rutaId.trim());
+    if (!supabaseListo || id == null) return const [];
+    final rows = await clienteSupabase
+        .from('publicacion_ruta')
+        .select('''
+publicacion:publicacion_id!inner (
+  $_selectFeed
+)
+''')
+        .eq('ruta_id', id)
+        .eq('publicacion.estado', 'publico')
+        .order('fecha_etiquetado', ascending: false)
+        .limit(limite);
+    return _mapearVinculadas(rows);
+  }
+
+  Future<List<ModeloPublicacionRemota>> listarPorComunidad(
+    String comunidadId, {
+    int limite = 40,
+  }) async {
+    final id = int.tryParse(comunidadId.trim());
+    if (!supabaseListo || id == null) return const [];
+    final rows = await clienteSupabase
+        .from('publicacion_etiqueta_comunidad')
+        .select('''
+publicacion:publicacion_id!inner (
+  $_selectFeed
+)
+''')
+        .eq('comunidad_id', id)
+        // No filtrar estado: RLS decide entre comunidad pública/privada.
+        .order('fecha_etiquetado', ascending: false)
+        .limit(limite);
+    return _mapearVinculadas(rows);
+  }
+
+  List<ModeloPublicacionRemota> _mapearVinculadas(List<dynamic> rows) {
+    final out = <ModeloPublicacionRemota>[];
+    final vistos = <String>{};
+    for (final raw in rows) {
+      if (raw is! Map) continue;
+      final publicacion = raw['publicacion'];
+      if (publicacion is! Map) continue;
+      final modelo = ModeloPublicacionRemota.desdeFilaRemota(
+        Map<String, dynamic>.from(publicacion),
+      );
+      if (modelo.id.isEmpty || !vistos.add(modelo.id)) continue;
+      out.add(modelo);
+    }
+    return out;
+  }
+
   Future<String> subirImagen({
     required String userId,
     required Uint8List bytes,
@@ -125,13 +210,12 @@ publicacion_lugar (
     final path =
         '$userId/publicaciones/${DateTime.now().millisecondsSinceEpoch}.$extension';
     try {
-      await clienteSupabase.storage.from(bucketMedia).uploadBinary(
+      await clienteSupabase.storage
+          .from(bucketMedia)
+          .uploadBinary(
             path,
             bytes,
-            fileOptions: FileOptions(
-              contentType: contentType,
-              upsert: true,
-            ),
+            fileOptions: FileOptions(contentType: contentType, upsert: true),
           );
     } on StorageException catch (e) {
       throw AuthException(
@@ -143,6 +227,50 @@ publicacion_lugar (
     return clienteSupabase.storage.from(bucketMedia).getPublicUrl(path);
   }
 
+  /// Compensa Storage si falla cualquier validación o relación posterior.
+  Future<ModeloPublicacionRemota> crearConImagen({
+    required String userId,
+    required Uint8List bytes,
+    required String contentType,
+    required String extension,
+    required String contenido,
+    String? comunidadId,
+    String? lugarId,
+    String? rutaId,
+  }) async {
+    final url = await subirImagen(
+      userId: userId,
+      bytes: bytes,
+      contentType: contentType,
+      extension: extension,
+    );
+    try {
+      return await crear(
+        contenido: contenido,
+        comunidadId: comunidadId,
+        lugarId: lugarId,
+        rutaId: rutaId,
+        imagenUrl: url,
+      );
+    } catch (_) {
+      await _eliminarImagenSubida(url);
+      rethrow;
+    }
+  }
+
+  Future<void> _eliminarImagenSubida(String publicUrl) async {
+    try {
+      final segmentos = Uri.parse(publicUrl).pathSegments;
+      final bucketIndex = segmentos.lastIndexOf(bucketMedia);
+      if (bucketIndex < 0 || bucketIndex + 1 >= segmentos.length) return;
+      final path = segmentos.sublist(bucketIndex + 1).join('/');
+      if (path.isEmpty) return;
+      await clienteSupabase.storage.from(bucketMedia).remove([path]);
+    } catch (_) {
+      // La operación principal conserva su error original.
+    }
+  }
+
   /// Insert publicación + opcionales (comunidad / lugar / imagen).
   /// [contenido] obligatorio (CHECK BD 1..4000).
   Future<ModeloPublicacionRemota> crear({
@@ -150,6 +278,7 @@ publicacion_lugar (
     String estado = 'publico',
     String? comunidadId,
     String? lugarId,
+    String? rutaId,
     String? imagenUrl,
   }) async {
     if (!supabaseListo) {
@@ -168,11 +297,13 @@ publicacion_lugar (
       throw const AuthException('El texto es demasiado largo');
     }
 
-    final estadoNorm =
-        estado.trim().toLowerCase() == 'privado' ? 'privado' : 'publico';
+    final estadoNorm = estado.trim().toLowerCase() == 'privado'
+        ? 'privado'
+        : 'publico';
 
     final comNum = int.tryParse(comunidadId?.trim() ?? '');
     final lugarNum = int.tryParse(lugarId?.trim() ?? '');
+    final rutaNum = int.tryParse(rutaId?.trim() ?? '');
     final url = imagenUrl?.trim() ?? '';
 
     if (comunidadId != null &&
@@ -183,177 +314,50 @@ publicacion_lugar (
     if (lugarId != null && lugarId.trim().isNotEmpty && lugarNum == null) {
       throw const AuthException('Lugar inválido');
     }
-
-    // Pre-check: falla antes de crear fila huérfana.
-    if (comNum != null) {
-      await _assertPuedeEtiquetarComunidad(comNum);
+    if (rutaId != null && rutaId.trim().isNotEmpty && rutaNum == null) {
+      throw const AuthException('Ruta inválida');
     }
-    if (lugarNum != null) {
-      await _assertLugarActivo(lugarNum);
-    }
-
-    final insertado = await clienteSupabase
-        .from('publicacion')
-        .insert({
-          'usuario_id': user.id,
-          'contenido': texto,
-          'estado': estadoNorm,
-        })
-        .select('id')
-        .single();
-
-    final idRaw = insertado['id'];
-    final idNum = idRaw is int ? idRaw : int.parse('$idRaw');
 
     try {
-      // Multimedia primero: si falla etiqueta, el rollback deja menos basura visible.
-      if (url.isNotEmpty) {
-        await clienteSupabase.from('publicacion_multimedia').insert({
-          'publicacion_id': idNum,
-          'url_archivo': url,
-          'orden': 1,
-          // Columna NOT NULL sin default en schema remoto.
-          'tipo': 'imagen',
-        });
+      final raw = await clienteSupabase.rpc(
+        'crear_publicacion_completa',
+        params: {
+          'p_contenido': texto,
+          'p_estado': estadoNorm,
+          'p_comunidad_id': comNum,
+          'p_lugar_id': lugarNum,
+          'p_ruta_id': rutaNum,
+          'p_imagen_url': url.isEmpty ? null : url,
+        },
+      );
+      final idNum = raw is int ? raw : int.tryParse('$raw');
+      if (idNum == null) {
+        throw const AuthException(
+          'Respuesta inválida al crear la publicación.',
+        );
       }
-      if (comNum != null) {
-        await clienteSupabase.from('publicacion_etiqueta_comunidad').insert({
-          'publicacion_id': idNum,
-          'comunidad_id': comNum,
-        });
-      }
-      if (lugarNum != null) {
-        await clienteSupabase.from('publicacion_lugar').insert({
-          'publicacion_id': idNum,
-          'lugar_id': lugarNum,
-        });
-      }
-    } catch (e) {
-      await _revertirCreacion(idNum, user.id);
-      throw AuthException(_mensajeFalloExtra(e));
-    }
 
-    final creada = await porId('$idNum');
-    if (creada == null) {
-      await _revertirCreacion(idNum, user.id);
-      throw const AuthException(
-        'Se guardó mal la publicación; se revirtió. Probá de nuevo.',
+      final creada = await porId('$idNum');
+      if (creada == null) {
+        return ModeloPublicacionRemota(
+          id: '$idNum',
+          usuarioId: user.id,
+          contenido: texto,
+          estado: estadoNorm,
+          fechaCreacion: DateTime.now(),
+          imagenUrl: url.isEmpty ? null : url,
+          lugarId: lugarNum?.toString(),
+          rutaId: rutaNum?.toString(),
+        );
+      }
+      return creada;
+    } on PostgrestException catch (e) {
+      throw AuthException(
+        e.message.trim().isEmpty
+            ? 'No se pudo crear la publicación.'
+            : e.message,
       );
     }
-    return creada;
-  }
-
-  Future<void> _assertPuedeEtiquetarComunidad(int comunidadId) async {
-    final row = await clienteSupabase
-        .from('comunidad')
-        .select('id, tipo, estado, usuario_creador_id')
-        .eq('id', comunidadId)
-        .maybeSingle();
-    if (row == null) {
-      throw const AuthException(
-        'No podés etiquetar esa comunidad (no visible o no existe).',
-      );
-    }
-    if (row['estado'] != true) {
-      throw const AuthException('Esa comunidad está inactiva.');
-    }
-    final tipo = (row['tipo'] as String?)?.toLowerCase() ?? 'publico';
-    if (tipo == 'publico') return;
-
-    final uid = clienteSupabase.auth.currentUser?.id;
-    if (uid == null) {
-      throw const AuthException('Inicia sesión para etiquetar.');
-    }
-    if ('${row['usuario_creador_id'] ?? ''}' == uid) return;
-
-    final mem = await clienteSupabase
-        .from('comunidad_miembro')
-        .select('rol, estado')
-        .eq('comunidad_id', comunidadId)
-        .eq('usuario_id', uid)
-        .maybeSingle();
-    final est = (mem?['estado'] as String?)?.toLowerCase();
-    final rol = (mem?['rol'] as String?)?.toLowerCase();
-    if (est != 'aprobado' && rol != 'admin') {
-      throw const AuthException(
-        'Solo miembros aprobados pueden etiquetar esa comunidad privada.',
-      );
-    }
-  }
-
-  Future<void> _assertLugarActivo(int lugarId) async {
-    final row = await clienteSupabase
-        .from('lugar')
-        .select('id, estado')
-        .eq('id', lugarId)
-        .maybeSingle();
-    if (row == null || row['estado'] != true) {
-      throw const AuthException(
-        'Ese lugar no está activo en Explora. Elige otro o ninguno.',
-      );
-    }
-  }
-
-  /// Soft-delete verificado (exige fila devuelta). Sin eso quedan huérfanas.
-  Future<void> _revertirCreacion(int idNum, String userId) async {
-    try {
-      final row = await clienteSupabase
-          .from('publicacion')
-          .update({'estado': 'eliminado'})
-          .eq('id', idNum)
-          .eq('usuario_id', userId)
-          .select('id')
-          .maybeSingle();
-      if (row == null) {
-        // Último recurso: sin filtro usuario (RLS igual limita a propias).
-        await clienteSupabase
-            .from('publicacion')
-            .update({'estado': 'eliminado'})
-            .eq('id', idNum)
-            .select('id')
-            .maybeSingle();
-      }
-    } catch (_) {
-      // El caller ya va a lanzar el error de negocio.
-    }
-  }
-
-  String _mensajeFalloExtra(Object e) {
-    final raw = e is AuthException
-        ? e.message
-        : (e is StorageException
-            ? e.message
-            : (e is PostgrestException ? e.message : '$e'));
-    final low = raw.toLowerCase();
-    if (low.contains('tipo') && low.contains('null')) {
-      return 'Falta el tipo de multimedia en el servidor. '
-          'Hacé push de la migración 700 o reintentá tras actualizar.';
-    }
-    if (low.contains('bucket') ||
-        low.contains('storage') ||
-        low.contains('upload') ||
-        low.contains('payload') ||
-        low.contains('row size')) {
-      return 'No se pudo subir la foto al storage. Revisá sesión y bucket.';
-    }
-    if (low.contains('etiqueta') ||
-        low.contains('comunidad') ||
-        low.contains('row-level security') ||
-        low.contains('rls') ||
-        low.contains('42501')) {
-      return 'No se pudo etiquetar la comunidad. '
-          'Publicá sin comunidad o uníte/aprobá membresía. '
-          'La publicación fallida se revirtió.';
-    }
-    if (low.contains('lugar')) {
-      return 'No se pudo asociar el lugar. Probá otro o ninguno. '
-          'La publicación fallida se revirtió.';
-    }
-    if (raw.trim().isNotEmpty && raw.length < 160) {
-      return 'No se pudo guardar la publicación: $raw';
-    }
-    return 'No se pudo guardar foto/etiqueta. '
-        'La publicación fallida se revirtió.';
   }
 
   /// Soft-delete: `estado = eliminado` (no hard DELETE).

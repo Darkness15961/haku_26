@@ -9,11 +9,13 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../datos/nacionalidad_datasource.dart';
 import '../dominio/modelos/modelo_nacionalidad.dart';
+import '../dominio/servicios/politica_nickname.dart';
 import '../dominio/servicios/servicio_auth_supabase.dart';
 import '../dialogo_cuenta_existente.dart';
 import '../flujo_google.dart';
 import '../mensajes_auth_haku.dart';
 import '../proveedores/proveedor_sesion.dart';
+import '../widgets/ayuda_nickname.dart';
 import '../widgets/selector_nacionalidad.dart';
 import 'pantalla_iniciar_sesion.dart';
 
@@ -150,17 +152,10 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
       _aviso('El correo es demasiado largo');
       return;
     }
-    final nick = _normalizarNick(nickRaw);
-    if (nick.length < 3) {
-      _aviso('El nickname debe tener al menos 3 caracteres');
-      return;
-    }
-    if (nick.length > 50) {
-      _aviso('El nickname puede tener máximo 50 caracteres');
-      return;
-    }
-    if (!_nickOk(nick)) {
-      _aviso('Nickname: solo letras, números y _');
+    final nick = PoliticaNickname.normalizar(nickRaw);
+    final errorNick = PoliticaNickname.validar(nick);
+    if (errorNick != null) {
+      _aviso(errorNick);
       return;
     }
     if (clave != clave2) {
@@ -238,16 +233,6 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
 
   void _aviso(String texto) {
     mostrarSnackHaku(context, texto);
-  }
-
-  static String _normalizarNick(String raw) {
-    var n = raw.trim();
-    if (n.startsWith('@')) n = n.substring(1);
-    return n;
-  }
-
-  static bool _nickOk(String nick) {
-    return RegExp(r'^[A-Za-z0-9_]+$').hasMatch(nick);
   }
 
   static bool _correoOk(String correo) {
@@ -347,15 +332,26 @@ class _EstadoPantallaRegistro extends ConsumerState<PantallaRegistro> {
                   TextField(
                     controller: _nickCtrl,
                     textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.none,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    inputFormatters: formateadoresNickname(),
                     style: TipografiaHaku.interfaz(
                       fontSize: 14,
                       color: PaletaRutas.piedra,
                     ),
                     cursorColor: PaletaRutas.oro,
-                    decoration: decoracionCampoAuth(
-                      '@cómo te ven en HAKU',
-                      icono: Icons.alternate_email_rounded,
-                    ),
+                    decoration:
+                        decoracionCampoAuth(
+                          'cómo te ven en HAKU',
+                          icono: Icons.alternate_email_rounded,
+                          suffix: const BotonAyudaNickname(),
+                        ).copyWith(
+                          prefixText: '@',
+                          prefixStyle: TipografiaHaku.interfaz(
+                            color: PaletaRutas.plomoClaro,
+                          ),
+                        ),
                   ),
                   const SizedBox(height: 14),
                   _etiqueta('Correo electrónico'),

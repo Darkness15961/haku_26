@@ -22,8 +22,8 @@ class MenuAccionesDetalle extends ConsumerWidget {
     required this.abierto,
     required this.onToggle,
     required this.onCerrar,
-  })  : ruta = null,
-        _modo = _ModoMenu.lugar;
+  }) : ruta = null,
+       _modo = _ModoMenu.lugar;
 
   const MenuAccionesDetalle.ruta({
     super.key,
@@ -31,8 +31,8 @@ class MenuAccionesDetalle extends ConsumerWidget {
     required this.abierto,
     required this.onToggle,
     required this.onCerrar,
-  })  : lugar = null,
-        _modo = _ModoMenu.ruta;
+  }) : lugar = null,
+       _modo = _ModoMenu.ruta;
 
   final ModeloLugar? lugar;
   final ModeloRuta? ruta;
@@ -54,6 +54,7 @@ class MenuAccionesDetalle extends ConsumerWidget {
         builder: (_) => PantallaPublicaciones(
           rutaId: id,
           rutaTitulo: titulo,
+          destinoEsRuta: _modo == _ModoMenu.ruta,
           irAComunidadAlPublicar: false,
         ),
       ),
@@ -63,19 +64,17 @@ class MenuAccionesDetalle extends ConsumerWidget {
   Future<void> _compartir(BuildContext context) async {
     onCerrar();
     final texto = switch (_modo) {
-      _ModoMenu.lugar =>
-        CopyHaku.compartirLugar(
-          lugar!.nombre,
-          lugar!.categoria.etiqueta,
-          lugar!.provincia,
-        ),
-      _ModoMenu.ruta =>
-        CopyHaku.compartirRuta(
-          ruta!.titulo,
-          ruta!.distancia.isNotEmpty
-              ? ruta!.distancia
-              : '${ruta!.dias} día${ruta!.dias == 1 ? '' : 's'}',
-        ),
+      _ModoMenu.lugar => CopyHaku.compartirLugar(
+        lugar!.nombre,
+        lugar!.categoria.etiqueta,
+        lugar!.provincia,
+      ),
+      _ModoMenu.ruta => CopyHaku.compartirRuta(
+        ruta!.titulo,
+        ruta!.distancia.isNotEmpty
+            ? ruta!.distancia
+            : '${ruta!.dias} día${ruta!.dias == 1 ? '' : 's'}',
+      ),
     };
     await Clipboard.setData(ClipboardData(text: texto));
     if (!context.mounted) return;
@@ -95,26 +94,35 @@ class MenuAccionesDetalle extends ConsumerWidget {
     );
   }
 
-  void _mapa(BuildContext context) {
+  void _salidasRuta(BuildContext context) {
     onCerrar();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PantallaMapaRuta(ruta: ruta!),
+        builder: (_) =>
+            PantallaSalidas(rutaId: ruta!.id, rutaTitulo: ruta!.titulo),
       ),
+    );
+  }
+
+  void _mapa(BuildContext context) {
+    onCerrar();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => PantallaMapaRuta(ruta: ruta!)),
     );
   }
 
   List<Widget> _opciones(BuildContext context, WidgetRef ref) {
     return [
       BotonIconoAccion(
-        tooltip:
-            _modo == _ModoMenu.lugar ? 'Compartir lugar' : 'Compartir ruta',
+        tooltip: _modo == _ModoMenu.lugar
+            ? 'Compartir lugar'
+            : 'Compartir ruta',
         icono: Icons.ios_share_rounded,
         onTap: () => _compartir(context),
       ),
       ...switch (_modo) {
         _ModoMenu.lugar => _opcionesLugar(context),
-        _ModoMenu.ruta => _opcionesRuta(context),
+        _ModoMenu.ruta => _opcionesRuta(context, ref),
       },
       BotonIconoAccion(
         tooltip: 'Publicar experiencia',
@@ -137,24 +145,31 @@ class MenuAccionesDetalle extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _opcionesRuta(BuildContext context) {
-    if (ruta!.puntos.isEmpty) return const [];
+  List<Widget> _opcionesRuta(BuildContext context, WidgetRef ref) {
     return [
+      if (ruta!.puntos.isNotEmpty || ruta!.trazado.length >= 2)
+        BotonIconoAccion(
+          tooltip: ruta!.puntos.isEmpty
+              ? 'Ver recorrido en el mapa'
+              : 'Ver mapa · ${ruta!.puntos.length} paradas',
+          icono: Icons.map_outlined,
+          destacado: true,
+          badge: ruta!.puntos.isEmpty ? null : '${ruta!.puntos.length}',
+          onTap: () => _mapa(context),
+        ),
       BotonIconoAccion(
-        tooltip: 'Ver mapa · ${ruta!.puntos.length} paradas',
-        icono: Icons.map_outlined,
+        tooltip: 'Ver u organizar salidas',
+        icono: Icons.group_add_outlined,
         destacado: true,
-        badge: '${ruta!.puntos.length}',
-        onTap: () => _mapa(context),
+        onTap: () => _salidasRuta(context),
       ),
     ];
   }
 
   int get _contadorFab => switch (_modo) {
-        _ModoMenu.lugar =>
-          SenalesAtencion.contadorMenuDetalleLugar(lugar!.id),
-        _ModoMenu.ruta => SenalesAtencion.contadorMenuDetalleRuta(ruta!),
-      };
+    _ModoMenu.lugar => SenalesAtencion.contadorMenuDetalleLugar(lugar!.id),
+    _ModoMenu.ruta => SenalesAtencion.contadorMenuDetalleRuta(ruta!),
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

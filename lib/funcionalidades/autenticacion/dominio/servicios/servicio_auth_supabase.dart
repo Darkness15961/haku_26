@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../../nucleo/supabase/config_supabase.dart';
+import 'politica_nickname.dart';
 
 /// Resultado de registro / login nativo u OAuth.
 class ResultadoAuth {
@@ -52,17 +53,37 @@ class ServicioAuthSupabase {
     required String apellidos,
     int? nacionalidadId,
   }) async {
-    final nick = _normalizarNick(nombreNick);
-    final response = await _cliente.auth.signUp(
-      email: correo.trim(),
-      password: clave,
-      data: metadataRegistro(
-        nombres: nombres.trim(),
-        apellidos: apellidos.trim(),
-        nombreNick: nick,
-        nacionalidadId: nacionalidadId ?? ConfigSupabase.nacionalidadIdDefault,
-      ),
-    );
+    final nick = PoliticaNickname.normalizar(nombreNick);
+    final errorNick = PoliticaNickname.validar(nick);
+    if (errorNick != null) throw AuthException(errorNick);
+    if (!await nicknameDisponible(nick)) {
+      throw const AuthException('Ese nickname ya está en uso. Prueba otro.');
+    }
+    AuthResponse response;
+    try {
+      response = await _cliente.auth.signUp(
+        email: correo.trim(),
+        password: clave,
+        data: metadataRegistro(
+          nombres: nombres.trim(),
+          apellidos: apellidos.trim(),
+          nombreNick: nick,
+          nacionalidadId:
+              nacionalidadId ?? ConfigSupabase.nacionalidadIdDefault,
+        ),
+      );
+    } on AuthException {
+      // Si dos personas eligen el mismo nick al mismo tiempo, el índice de BD
+      // decide. Esta segunda consulta permite traducir el error de Auth.
+      bool? sigueDisponible;
+      try {
+        sigueDisponible = await nicknameDisponible(nick);
+      } catch (_) {}
+      if (sigueDisponible == false) {
+        throw const AuthException('Ese nickname ya está en uso. Prueba otro.');
+      }
+      rethrow;
+    }
 
     final user = response.user;
     if (user == null) {
@@ -72,6 +93,16 @@ class ServicioAuthSupabase {
     }
 
     return ResultadoAuth(usuario: user, sesion: response.session);
+  }
+
+  Future<bool> nicknameDisponible(String nombreNick) async {
+    final nick = PoliticaNickname.normalizar(nombreNick);
+    if (!PoliticaNickname.esValido(nick)) return false;
+    final raw = await _cliente.rpc(
+      'nickname_disponible',
+      params: {'p_nickname': nick, 'p_excluir_usuario': null},
+    );
+    return raw == true;
   }
 
   Future<ResultadoAuth> iniciarSesionConCorreo({
@@ -187,11 +218,5 @@ class ServicioAuthSupabase {
       _googleInicializado = false;
       rethrow;
     }
-  }
-
-  static String _normalizarNick(String raw) {
-    var n = raw.trim();
-    if (n.startsWith('@')) n = n.substring(1);
-    return n;
   }
 }

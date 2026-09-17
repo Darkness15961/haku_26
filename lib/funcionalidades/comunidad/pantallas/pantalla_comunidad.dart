@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nucleo/demo/senales_atencion.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/responsive/rejilla_lego_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
@@ -40,7 +39,7 @@ class PantallaComunidad extends ConsumerStatefulWidget {
 class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   static const _tabs = ['Para ti', 'Salidas', 'Comunidades', 'Mensajes'];
 
-  /// Filtro bandeja: 0 todos · 1 comunidades · 2 salidas · 3 privados (stub).
+  /// Filtro bandeja: 0 todos · 1 comunidades · 2 salidas · 3 privados.
   int _filtroMensajes = 0;
   final _buscaMensajes = TextEditingController();
   String _queryMensajes = '';
@@ -54,62 +53,55 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   Future<void> _abrirCrearPublicacion() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    final done = await Navigator.of(context).push<bool>(
+    await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(builder: (_) => const PantallaPublicaciones()),
     );
-    if (done == true && mounted) {
-      notificarPublicacionesCambiaron(ref);
-    }
   }
 
   Future<void> _abrirCrearSalida() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    final done = await Navigator.of(context).push<bool>(
+    await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => const PantallaCrearSalidaRemota(),
       ),
     );
-    if (done == true && mounted) {
-      notificarSalidasCambiaron(ref);
-      setState(() {});
-    }
   }
 
   Future<void> _abrirCrearComunidad() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    final done = await Navigator.of(context).push<bool>(
+    await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => const PantallaCrearComunidadRemota(),
       ),
     );
-    if (done == true && mounted) {
-      notificarComunidadesCambiaron(ref);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<int>(pestaniaComunidadProvider, (_, __) {
-      if (mounted) setState(() {});
-    });
-
     final pestania = ref.watch(pestaniaComunidadProvider);
+    final mensajesNoLeidos = ref.watch(totalNoLeidosChatProvider);
     final bottom = widget.mostrarAtras
         ? MediaQuery.paddingOf(context).bottom + 24
         : EspacioHaku.bottomNavClearance(context);
-    final postsAsync = ref.watch(publicacionesRemotasProvider);
-    final salidasAsync = ref.watch(salidasRemotasProvider);
-    final comunidadesAsync = ref.watch(comunidadesRemotasProvider);
-    // Solo cargar previews en tab Mensajes (evita RPC/SELECT al abrir Comunidad).
-    if (pestania == 3) {
-      ref.watch(chatBandejaRealtimeProvider);
-    }
+    final postsAsync = pestania == 0
+        ? ref.watch(publicacionesRemotasProvider)
+        : const AsyncValue<List<ModeloPublicacionRemota>>.data([]);
+    final salidasAsync = pestania == 1
+        ? ref.watch(salidasRemotasProvider)
+        : const AsyncValue<List<ModeloSalidaRemota>>.data([]);
+    final comunidadesAsync = pestania == 2
+        ? ref.watch(comunidadesRemotasProvider)
+        : const AsyncValue<List<ComunidadHaku>>.data([]);
+    // Mantener actualizado el badge aunque el usuario aún no abra Mensajes.
+    ref.watch(chatBandejaRealtimeProvider);
     final chatsAsync = pestania == 3
         ? ref.watch(previewsChatBandejaProvider)
         : const AsyncValue<List<PreviewChatSala>>.data([]);
-    final uidSesion = ref.watch(sesionProvider).usuario?.id ?? '';
+    final uidSesion = ref.watch(
+      sesionProvider.select((s) => s.usuario?.id ?? ''),
+    );
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -176,17 +168,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                         IconButton(
                           tooltip: 'Notificaciones',
                           onPressed: () {
-                            final ir = SenalesAtencion.mensajesSinLeer() > 0
-                                ? 3
-                                : SenalesAtencion.salidasAbiertas() > 0
-                                ? 1
-                                : 0;
+                            final ir = mensajesNoLeidos > 0 ? 3 : 0;
                             ref.read(pestaniaComunidadProvider.notifier).state =
                                 ir;
                           },
                           icon: BadgeContadorOverlay(
-                            cantidad:
-                                SenalesAtencion.totalPendientesComunidad(),
+                            cantidad: mensajesNoLeidos,
                             compacto: true,
                             child: const Icon(
                               Icons.notifications_outlined,
@@ -218,8 +205,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
                         label: _tabs[i],
                         selected: pestania == i,
                         contador: switch (i) {
-                          1 => SenalesAtencion.salidasAbiertas(),
-                          // Sin tabla de no-leídos: no inventar badge en Mensajes.
+                          3 => mensajesNoLeidos,
                           _ => 0,
                         },
                         onTap: () =>
@@ -343,7 +329,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   ) {
     if (!supabaseListo) {
       return [
-        _sliverMsgCentro('Conectá Supabase para ver publicaciones.', bottom),
+        _sliverMsgCentro(
+          'Las publicaciones no están disponibles en este momento.',
+          bottom,
+        ),
       ];
     }
     if (async.isLoading && !async.hasValue) {
@@ -360,10 +349,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     }
     if (async.hasError && !async.hasValue) {
       return [
-        _sliverMsgCentro(
-          'No se pudieron cargar las publicaciones.\n'
-          'Si acabas de desplegar, confirma el push de RLS (Bloque E).',
+        _sliverError(
+          'No pudimos cargar las publicaciones.',
           bottom,
+          () => ref.invalidate(publicacionesRemotasProvider),
         ),
       ];
     }
@@ -372,7 +361,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       return [
         _sliverMsgCentro(
           'Todavía no hay publicaciones públicas.\n'
-          'Tocá + para crear la primera (sin likes inventados).',
+          'Toca + para compartir la primera experiencia.',
           bottom,
         ),
       ];
@@ -381,15 +370,16 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final cols = EspacioHaku.columnasPublicaciones(context);
     if (cols <= 1) {
       return [
-        for (var i = 0; i < posts.length; i++)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: i == posts.length - 1 ? bottom : 18,
-              ),
+        SliverPadding(
+          padding: EdgeInsets.only(bottom: bottom),
+          sliver: SliverList.builder(
+            itemCount: posts.length,
+            itemBuilder: (context, i) => Padding(
+              padding: EdgeInsets.only(bottom: i == posts.length - 1 ? 0 : 18),
               child: TarjetaPublicacionRemota(publicacion: posts[i]),
             ),
           ),
+        ),
       ];
     }
 
@@ -436,15 +426,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     }
     if (async.hasError && !async.hasValue) {
       return [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 32, 24, bottom),
-            child: Text(
-              'No se pudieron cargar las salidas.',
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
-            ),
-          ),
+        _sliverError(
+          'No pudimos cargar las salidas.',
+          bottom,
+          () => ref.invalidate(salidasRemotasProvider),
         ),
       ];
     }
@@ -459,7 +444,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
               children: [
                 Text(
                   !supabaseListo
-                      ? 'Sin conexión con el servidor.'
+                      ? 'Contenido temporalmente no disponible.'
                       : 'Aún no hay salidas.',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
@@ -523,15 +508,10 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     }
     if (async.hasError && !async.hasValue) {
       return [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 32, 24, bottom),
-            child: Text(
-              'No se pudieron cargar las comunidades.',
-              textAlign: TextAlign.center,
-              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
-            ),
-          ),
+        _sliverError(
+          'No pudimos cargar las comunidades.',
+          bottom,
+          () => ref.invalidate(comunidadesRemotasProvider),
         ),
       ];
     }
@@ -546,7 +526,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
               children: [
                 Text(
                   !supabaseListo
-                      ? 'Sin conexión con el servidor.'
+                      ? 'Contenido temporalmente no disponible.'
                       : 'Aún no hay comunidades visibles.',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
@@ -608,10 +588,15 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     double bottom,
   ) {
     if (!supabaseListo) {
-      return [_sliverMsgCentro('Conectá Supabase para ver tus chats.', bottom)];
+      return [
+        _sliverMsgCentro(
+          'Los mensajes no están disponibles en este momento.',
+          bottom,
+        ),
+      ];
     }
     if (uidSesion.isEmpty) {
-      return [_sliverMsgCentro('Iniciá sesión para ver tus mensajes.', bottom)];
+      return [_sliverMsgCentro('Inicia sesión para ver tus mensajes.', bottom)];
     }
     if (async.isLoading && !async.hasValue) {
       return [
@@ -626,19 +611,25 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       ];
     }
     if (async.hasError && !async.hasValue) {
-      return [_sliverMsgCentro('No se pudieron cargar los chats.', bottom)];
+      return [
+        _sliverError(
+          'No pudimos cargar los mensajes.',
+          bottom,
+          () => ref.invalidate(previewsChatBandejaProvider),
+        ),
+      ];
     }
     final previews = _filtrarBandeja(async.valueOrNull ?? const []);
     if (previews.isEmpty) {
       final vacio = _queryMensajes.isNotEmpty
           ? 'No hay chats con ese nombre.'
           : (_filtroMensajes == 3
-                ? 'Todavía no tenés chats privados.\nTocá el nombre de alguien dentro de un chat grupal.'
+                ? 'Todavía no tienes chats privados.\nToca el nombre de alguien dentro de un chat grupal.'
                 : (_filtroMensajes == 2
-                      ? 'Todavía no tenés chats de salidas.\nEntrá a una salida e abrí el chat.'
+                      ? 'Todavía no tienes chats de salidas.\nEntra a una salida y abre el chat.'
                       : (_filtroMensajes == 1
-                            ? 'Todavía no tenés chats de comunidades.\nEl admin debe abrir el chat una vez.'
-                            : 'Acá vas a ver todos tus chats.')));
+                            ? 'Todavía no tienes chats de comunidades.\nUn administrador debe abrir el chat por primera vez.'
+                            : 'Aquí verás todos tus chats.')));
       return [_sliverMsgCentro(vacio, bottom)];
     }
 
@@ -700,6 +691,38 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
           texto,
           textAlign: TextAlign.center,
           style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+        ),
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _sliverError(
+    String texto,
+    double bottom,
+    VoidCallback onReintentar,
+  ) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 40, 24, bottom),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 36,
+              color: PaletaRutas.plomo,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              texto,
+              textAlign: TextAlign.center,
+              style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onReintentar,
+              child: const Text('Reintentar'),
+            ),
+          ],
         ),
       ),
     );

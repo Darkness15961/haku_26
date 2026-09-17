@@ -25,6 +25,14 @@ final chatBandejaRealtimeProvider = Provider.autoDispose<void>((ref) {
   final uid = ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
   if (uid.isEmpty) return;
   Timer? debounce;
+  Timer? reconciliacion;
+
+  void refrescar() {
+    debounce?.cancel();
+    debounce = Timer(const Duration(milliseconds: 300), () {
+      ref.invalidate(previewsChatBandejaProvider);
+    });
+  }
 
   final channel = clienteSupabase
       .channel('bandeja_chat_$uid')
@@ -32,17 +40,71 @@ final chatBandejaRealtimeProvider = Provider.autoDispose<void>((ref) {
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'mensaje',
-        callback: (_) {
-          debounce?.cancel();
-          debounce = Timer(const Duration(milliseconds: 300), () {
-            ref.invalidate(previewsChatBandejaProvider);
-          });
-        },
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'sala_participante',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'usuario_id',
+          value: uid,
+        ),
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'sala_chat',
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'comunidad_miembro',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'usuario_id',
+          value: uid,
+        ),
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'salida_participante',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'usuario_id',
+          value: uid,
+        ),
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'comunidad',
+        callback: (_) => refrescar(),
+      )
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'salida',
+        callback: (_) => refrescar(),
       )
       .subscribe();
 
+  // Un DELETE de roster puede dejar de ser visible por RLS justo después de
+  // quitar el acceso. Esta reconciliación acotada evita una bandeja obsoleta.
+  reconciliacion = Timer.periodic(
+    const Duration(seconds: 30),
+    (_) => ref.invalidate(previewsChatBandejaProvider),
+  );
+
   ref.onDispose(() {
     debounce?.cancel();
+    reconciliacion?.cancel();
     try {
       clienteSupabase.removeChannel(channel);
     } catch (_) {}
@@ -53,6 +115,10 @@ final chatBandejaRealtimeProvider = Provider.autoDispose<void>((ref) {
 final chatRecargaMensajeProvider = StateProvider.family<String?, String>(
   (ref, salaId) => null,
 );
+
+/// Mensaje recargado que pertenece a una página antigua mantenida por la UI.
+final chatMensajePaginadoActualizadoProvider =
+    StateProvider.family<ModeloMensajeChat?, String>((ref, salaId) => null);
 
 void forzarRecargaMensajeChat(WidgetRef ref, String salaId, String mensajeId) {
   final id = mensajeId.trim();
@@ -65,25 +131,20 @@ void forzarRecargaMensajeChat(WidgetRef ref, String salaId, String mensajeId) {
 /// Historial + Realtime INSERT/UPDATE + reacciones de una sala.
 final mensajesSalaProvider = StreamProvider.autoDispose
     .family<List<ModeloMensajeChat>, String>((ref, salaId) async* {
+      ref.watch(perfilVersionProvider);
       if (!supabaseListo || salaId.trim().isEmpty) {
         yield const [];
         return;
       }
 
       final ds = ref.watch(chatDataSourceProvider);
-      final uid = clienteSupabase.auth.currentUser?.id ?? '';
-      List<ModeloMensajeChat> seed;
-      try {
-        seed = await ds.listarMensajes(salaId);
-      } catch (e, st) {
-        // No fingir chat vacío: el UI muestra error real.
-        yield* Stream<List<ModeloMensajeChat>>.error(e, st);
-        return;
-      }
-
       final controller = StreamController<List<ModeloMensajeChat>>();
-      var buffer = List<ModeloMensajeChat>.from(seed);
-      controller.add(List.unmodifiable(buffer));
+      var buffer = <ModeloMensajeChat>[];
+      final suscrito = Completer<void>();
+      Timer? reconectar;
+      RealtimeChannel? channel;
+      var seedCargado = false;
+      final reaccionesPendientes = <String>{};
 
       void emitir() {
         if (!controller.isClosed) {
@@ -103,21 +164,17 @@ final mensajesSalaProvider = StreamProvider.autoDispose
           buffer = [...buffer, m];
         }
         emitir();
-        if (m.usuarioId.isNotEmpty && m.usuarioId != uid) {
-          unawaited(
-            ds.marcarLeido(salaId).then((_) {
-              try {
-                ref.invalidate(previewsChatBandejaProvider);
-              } catch (_) {}
-            }),
-          );
-        }
       }
 
       Future<void> refrescarMensaje(String mensajeId) async {
         if (mensajeId.isEmpty || controller.isClosed) return;
-        // Solo si el mensaje está en el buffer de esta sala (filtro cliente).
-        if (!buffer.any((m) => m.id == mensajeId)) return;
+        final estabaEnBuffer = buffer.any((m) => m.id == mensajeId);
+        if (!estabaEnBuffer) {
+          // Una reacción puede llegar entre el snapshot de historial y su
+          // incorporación al buffer. Se reconcilia al terminar el seed.
+          if (!seedCargado) reaccionesPendientes.add(mensajeId);
+          if (!seedCargado) return;
+        }
         try {
           final fresco = await ds.recargarMensaje(mensajeId);
           if (fresco == null || controller.isClosed) return;
@@ -126,13 +183,17 @@ final mensajesSalaProvider = StreamProvider.autoDispose
           if (i >= 0) {
             buffer[i] = fresco;
           } else {
-            buffer = [...buffer, fresco];
+            final notifier = ref.read(
+              chatMensajePaginadoActualizadoProvider(salaId).notifier,
+            );
+            notifier.state = null;
+            notifier.state = fresco;
+            return;
           }
           emitir();
         } catch (_) {}
       }
 
-      RealtimeChannel? channel;
       try {
         channel = ds.suscribirSala(
           salaId: salaId,
@@ -156,29 +217,35 @@ final mensajesSalaProvider = StreamProvider.autoDispose
             refrescarMensaje(mensajeId);
           },
           onEstado: (status, error) {
+            if (status == RealtimeSubscribeStatus.subscribed) {
+              if (!suscrito.isCompleted) suscrito.complete();
+              return;
+            }
             if (status != RealtimeSubscribeStatus.channelError &&
                 status != RealtimeSubscribeStatus.timedOut) {
               return;
             }
-            if (!controller.isClosed) {
-              controller.addError(
-                const AuthException(
-                  'Conexión en tiempo real interrumpida. Reabrí el chat.',
-                ),
+            final fallo = AuthException(
+              'Conexión en tiempo real interrumpida. Reintentando…',
+            );
+            final yaEstabaSuscrito = suscrito.isCompleted;
+            if (!yaEstabaSuscrito) {
+              suscrito.completeError(fallo);
+            } else if (!controller.isClosed) {
+              controller.addError(fallo);
+              reconectar ??= Timer(
+                const Duration(seconds: 2),
+                ref.invalidateSelf,
               );
             }
           },
         );
-      } catch (_) {}
-
-      // Reload puntual desde UI (p. ej. tras toggle de reacción propia).
-      ref.listen<String?>(chatRecargaMensajeProvider(salaId), (_, id) {
-        if (id == null || id.isEmpty) return;
-        // ignore: unawaited_futures
-        refrescarMensaje(id);
-      });
+      } catch (e, st) {
+        if (!suscrito.isCompleted) suscrito.completeError(e, st);
+      }
 
       ref.onDispose(() {
+        reconectar?.cancel();
         final c = channel;
         channel = null;
         if (c != null && supabaseListo) {
@@ -189,149 +256,68 @@ final mensajesSalaProvider = StreamProvider.autoDispose
         if (!controller.isClosed) controller.close();
       });
 
-      unawaited(
-        ds.marcarLeido(salaId).then((_) {
-          try {
-            ref.invalidate(previewsChatBandejaProvider);
-          } catch (_) {}
-        }),
-      );
+      try {
+        await suscrito.future.timeout(const Duration(seconds: 12));
+        final seed = await ds.listarMensajes(salaId);
+        final porId = <String, ModeloMensajeChat>{
+          for (final mensaje in seed) mensaje.id: mensaje,
+          // Los eventos recibidos durante la carga son más recientes.
+          for (final mensaje in buffer) mensaje.id: mensaje,
+        };
+        buffer = porId.values.toList()
+          ..sort((a, b) {
+            final fecha = a.fechaEnvio.compareTo(b.fechaEnvio);
+            return fecha != 0 ? fecha : a.id.compareTo(b.id);
+          });
+        seedCargado = true;
+        emitir();
+        final pendientes = reaccionesPendientes.toList(growable: false);
+        reaccionesPendientes.clear();
+        for (final id in pendientes) {
+          unawaited(refrescarMensaje(id));
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) {
+          controller.addError(e, st);
+          await controller.close();
+        }
+        yield* controller.stream;
+        return;
+      }
+
+      // Reload puntual desde UI (p. ej. tras toggle de reacción propia).
+      ref.listen<String?>(chatRecargaMensajeProvider(salaId), (_, id) {
+        if (id == null || id.isEmpty) return;
+        // ignore: unawaited_futures
+        refrescarMensaje(id);
+      });
 
       yield* controller.stream;
     });
 
-/// Bandeja Mensajes: comunidades + salidas (lectura; sin crear sala).
+/// Bandeja Mensajes en una sola RPC: privados + comunidades + salidas.
 final previewsChatBandejaProvider = FutureProvider<List<PreviewChatSala>>((
   ref,
 ) async {
   ref.watch(comunidadesVersionProvider);
   ref.watch(salidasVersionProvider);
   ref.watch(chatVersionProvider);
+  ref.watch(perfilVersionProvider);
   final uid = ref.watch(sesionProvider.select((s) => s.usuario?.id ?? ''));
   if (!supabaseListo || uid.isEmpty) return const [];
 
   final ds = ref.read(chatDataSourceProvider);
-  final out = <PreviewChatSala>[];
-  var fuentesOk = 0;
-
-  // Conversaciones privadas reales del usuario.
-  try {
-    out.addAll(await ds.listarChatsPrivados());
-    fuentesOk++;
-  } catch (_) {}
-
-  // Comunidades mías (en paralelo por ítem: evita cascada N×3 secuencial).
-  try {
-    final todas = await ref.watch(comunidadesRemotasProvider.future);
-    final mias = todas
-        .where((c) => c.esMiembro(uid) || c.creadorId == uid)
-        .toList();
-    final previews = await Future.wait(
-      mias.map((c) async {
-        final puedeCrear = c.esAdminDe(uid);
-        String? salaIdExistente;
-        var enRoster = false;
-        ModeloMensajeChat? ultimo;
-        var noLeidos = 0;
-        try {
-          salaIdExistente = await ds.idSalaComunidadSiExiste(c.id);
-          if (salaIdExistente != null && salaIdExistente.isNotEmpty) {
-            enRoster = await ds.soyParticipanteSala(salaIdExistente);
-            if (enRoster) {
-              final meta = await Future.wait([
-                ds.ultimoMensajeSala(salaIdExistente, comunidadId: c.id),
-                ds.contarNoLeidos(salaIdExistente),
-              ]);
-              ultimo = meta[0] as ModeloMensajeChat?;
-              noLeidos = meta[1] as int;
-            }
-          }
-        } catch (_) {}
-        // Solo roster o admin (crear / reentrar). Fuera del chat → no listar.
-        if (!enRoster && !puedeCrear) return null;
-        return PreviewChatSala(
-          salaId: enRoster ? (salaIdExistente ?? '') : '',
-          titulo: c.nombre,
-          fotoPortada: c.imagenUrl.trim().isEmpty ? null : c.imagenUrl,
-          comunidadId: c.id,
-          tipo: 'comunidad',
-          ultimo: ultimo,
-          noLeidos: noLeidos,
-          puedeCrearSala: puedeCrear,
-        );
-      }),
-    );
-    for (final p in previews) {
-      if (p != null) out.add(p);
-    }
-    fuentesOk++;
-  } catch (_) {}
-
-  // Salidas: organizador o confirmado.
-  try {
-    final salidas = await ref.watch(salidasRemotasProvider.future);
-    final mias = salidas
-        .where((s) => s.organizadorId == uid || s.inscrito(uid))
-        .toList();
-    final previews = await Future.wait(
-      mias.map((s) async {
-        final puedeCrear = s.organizadorId == uid;
-        String? salaIdExistente;
-        var enRoster = false;
-        ModeloMensajeChat? ultimo;
-        var noLeidos = 0;
-        try {
-          salaIdExistente = await ds.idSalaSalidaSiExiste(s.id);
-          if (salaIdExistente != null && salaIdExistente.isNotEmpty) {
-            enRoster = await ds.soyParticipanteSala(salaIdExistente);
-            if (enRoster) {
-              final meta = await Future.wait([
-                ds.ultimoMensajeSala(salaIdExistente),
-                ds.contarNoLeidos(salaIdExistente),
-              ]);
-              ultimo = meta[0] as ModeloMensajeChat?;
-              noLeidos = meta[1] as int;
-            }
-          }
-        } catch (_) {}
-        if (!enRoster && !puedeCrear) return null;
-        return PreviewChatSala(
-          salaId: enRoster ? (salaIdExistente ?? '') : '',
-          titulo: s.etiquetaPrincipal,
-          fotoPortada: (s.lugarFotoPortada?.trim().isNotEmpty ?? false)
-              ? s.lugarFotoPortada
-              : null,
-          salidaId: s.id,
-          tipo: 'salida',
-          ultimo: ultimo,
-          noLeidos: noLeidos,
-          puedeCrearSala: puedeCrear,
-        );
-      }),
-    );
-    for (final p in previews) {
-      if (p != null) out.add(p);
-    }
-    fuentesOk++;
-  } catch (_) {}
-
-  if (fuentesOk == 0) {
-    throw const AuthException('No se pudo cargar la bandeja de mensajes');
-  }
-
-  out.sort((a, b) {
-    final fa = a.ultimo?.fechaEnvio;
-    final fb = b.ultimo?.fechaEnvio;
-    if (fa == null && fb == null) return a.titulo.compareTo(b.titulo);
-    if (fa == null) return 1;
-    if (fb == null) return -1;
-    return fb.compareTo(fa);
-  });
-  return out;
+  return ds.listarBandeja();
 });
 
 /// Compat: mismo provider unificado.
 final previewsChatComunidadProvider = previewsChatBandejaProvider;
+
+final totalNoLeidosChatProvider = Provider<int>((ref) {
+  final previews = ref.watch(previewsChatBandejaProvider).valueOrNull;
+  if (previews == null) return 0;
+  return previews.fold<int>(0, (total, chat) => total + chat.noLeidos);
+});
 
 void notificarChatCambio(WidgetRef ref) {
   ref.read(chatVersionProvider.notifier).state++;

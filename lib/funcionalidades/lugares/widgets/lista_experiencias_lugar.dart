@@ -17,14 +17,8 @@ import 'metricas_comunidad.dart';
 
 /// Publicaciones de experiencia en un lugar o ruta.
 class ListaExperienciasLugar extends ConsumerWidget {
-  const ListaExperienciasLugar({
-    super.key,
-    this.lugarId,
-    this.rutaId,
-  }) : assert(
-          lugarId != null || rutaId != null,
-          'Indica lugarId o rutaId',
-        );
+  const ListaExperienciasLugar({super.key, this.lugarId, this.rutaId})
+    : assert(lugarId != null || rutaId != null, 'Indica lugarId o rutaId');
 
   final String? lugarId;
   final String? rutaId;
@@ -39,14 +33,38 @@ class ListaExperienciasLugar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Remoto: posts reales con lugar_id → puente Explora ↔ Comunidad.
-    if (supabaseListo && lugarId != null && lugarId!.trim().isNotEmpty) {
-      final remotas =
-          ref.watch(publicacionesRemotasProvider).valueOrNull ?? const [];
-      final lid = lugarId!.trim();
-      final delLugar =
-          remotas.where((p) => (p.lugarId ?? '').trim() == lid).toList();
-      if (delLugar.isEmpty) {
+    // Remoto: relaciones reales de Lugar o Ruta → Comunidad.
+    if (supabaseListo) {
+      final rid = rutaId?.trim() ?? '';
+      final lid = lugarId?.trim() ?? '';
+      final async = rid.isNotEmpty
+          ? ref.watch(publicacionesPorRutaProvider(rid))
+          : ref.watch(publicacionesPorLugarProvider(lid));
+      if (async.isLoading && !async.hasValue) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 18),
+          child: Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: PaletaRutas.oro,
+            ),
+          ),
+        );
+      }
+      if (async.hasError && !async.hasValue) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'No se pudieron cargar las experiencias.',
+            style: TipografiaHaku.interfaz(
+              fontSize: 13,
+              color: PaletaRutas.oroSuave,
+            ),
+          ),
+        );
+      }
+      final remotas = async.valueOrNull ?? const [];
+      if (remotas.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
@@ -62,7 +80,7 @@ class ListaExperienciasLugar extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final p in delLugar) ...[
+          for (final p in remotas) ...[
             TarjetaPublicacionRemota(publicacion: p),
             const SizedBox(height: 12),
           ],
@@ -153,10 +171,7 @@ class _TarjetaExperienciaLugar extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          AvatarHaku(
-                            url: publicacion.avatarUrl,
-                            size: 28,
-                          ),
+                          AvatarHaku(url: publicacion.avatarUrl, size: 28),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -195,8 +210,8 @@ class _TarjetaExperienciaLugar extends StatelessWidget {
                           Tooltip(
                             message: esGrupo
                                 ? (grupo.isNotEmpty
-                                    ? 'Visita en grupo · $grupo'
-                                    : 'Visita en grupo')
+                                      ? 'Visita en grupo · $grupo'
+                                      : 'Visita en grupo')
                                 : 'Visita solo/a',
                             child: Icon(
                               esGrupo

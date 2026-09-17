@@ -20,7 +20,8 @@ class PantallaCrearGrupo extends ConsumerStatefulWidget {
   const PantallaCrearGrupo({super.key});
 
   @override
-  ConsumerState<PantallaCrearGrupo> createState() => _EstadoPantallaCrearGrupo();
+  ConsumerState<PantallaCrearGrupo> createState() =>
+      _EstadoPantallaCrearGrupo();
 }
 
 class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
@@ -206,9 +207,12 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                                       fit: BoxFit.cover,
                                       errorWidget: (_, __, ___) =>
                                           const ColoredBox(
-                                        color: Color(0xFFD4C8B8),
-                                        child: SizedBox(width: 52, height: 52),
-                                      ),
+                                            color: Color(0xFFD4C8B8),
+                                            child: SizedBox(
+                                              width: 52,
+                                              height: 52,
+                                            ),
+                                          ),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -231,10 +235,12 @@ class _EstadoPantallaCrearGrupo extends ConsumerState<PantallaCrearGrupo> {
                                           '${r.dias} d · ${r.dificultadTexto}',
                                           style: TipografiaHaku.interfaz(
                                             fontSize: 12,
-                                            color: (sel
-                                                    ? PaletaRutas.oro
-                                                    : PaletaRutas.plomoClaro)
-                                                .withValues(alpha: 0.85),
+                                            color:
+                                                (sel
+                                                        ? PaletaRutas.oro
+                                                        : PaletaRutas
+                                                              .plomoClaro)
+                                                    .withValues(alpha: 0.85),
                                           ),
                                         ),
                                       ],
@@ -323,7 +329,9 @@ class _EstadoPantallaCrearComunidad
         ? 'Comunidad'
         : _descCtrl.text.trim();
 
-    final id = await ref.read(almacenFeedProvider.notifier).crearComunidad(
+    final id = await ref
+        .read(almacenFeedProvider.notifier)
+        .crearComunidad(
           nombre: nombre,
           descripcion: desc,
           categorias: _categorias.toList(),
@@ -331,22 +339,21 @@ class _EstadoPantallaCrearComunidad
         );
 
     if (!mounted) return;
-    Navigator.of(context).pop(true);
-    await Navigator.of(context).push(
+    await Navigator.of(context).pushReplacement<void, bool>(
       MaterialPageRoute<void>(
         builder: (_) => PantallaDetalleComunidad(comunidadId: id),
       ),
+      result: true,
     );
-    if (!mounted) return;
-    mostrarSnackHaku(context, 'Comunidad "$nombre" creada', destacado: true);
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
     final personas = ref.watch(almacenFeedProvider).exploradores;
-    final lista =
-        personas.isEmpty ? FeedInicioDataSourceLocal.sugerencias : personas;
+    final lista = personas.isEmpty
+        ? FeedInicioDataSourceLocal.sugerencias
+        : personas;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -515,10 +522,7 @@ class _EstadoPantallaCrearComunidad
 InputDecoration _inputDecoration(String hint) {
   return InputDecoration(
     hintText: hint,
-    hintStyle: TipografiaHaku.interfaz(
-      fontSize: 14,
-      color: PaletaRutas.plomo,
-    ),
+    hintStyle: TipografiaHaku.interfaz(fontSize: 14, color: PaletaRutas.plomo),
     filled: true,
     fillColor: PaletaRutas.carbon,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -545,10 +549,7 @@ class _EncabezadoSeccion extends StatelessWidget {
   final String titulo;
   final VoidCallback onBack;
 
-  const _EncabezadoSeccion({
-    required this.titulo,
-    required this.onBack,
-  });
+  const _EncabezadoSeccion({required this.titulo, required this.onBack});
 
   @override
   Widget build(BuildContext context) {

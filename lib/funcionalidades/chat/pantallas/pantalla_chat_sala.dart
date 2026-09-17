@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -47,6 +49,8 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
   bool _enviando = false;
   bool _cargandoMas = false;
   bool _hayMas = true;
+  bool _appActiva = true;
+  String? _ultimoMensajeMarcado;
   List<ModeloMensajeChat> _extraAntiguos = const [];
 
   /// Mensajes enviados locales hasta que Realtime / seed los confirme.
@@ -55,6 +59,9 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
   @override
   void initState() {
     super.initState();
+    _appActiva =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     WidgetsBinding.instance.addObserver(this);
     _scroll.addListener(_onScroll);
   }
@@ -70,8 +77,8 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appActiva = state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed) {
-      ref.read(chatDataSourceProvider).marcarLeido(widget.salaId);
       ref.invalidate(mensajesSalaProvider(widget.salaId));
       notificarChatCambio(ref);
     }
@@ -107,10 +114,39 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
   }
 
   void _onScroll() {
-    if (!_scroll.hasClients || _cargandoMas || !_hayMas) return;
+    if (!_scroll.hasClients) return;
+    if (_scroll.position.maxScrollExtent - _scroll.position.pixels <= 160) {
+      _marcarLeidoSiVisible(
+        ref.read(mensajesSalaProvider(widget.salaId)).valueOrNull ?? const [],
+      );
+    }
+    if (_cargandoMas || !_hayMas) return;
     if (_scroll.position.pixels <= 80) {
       _cargarMas();
     }
+  }
+
+  void _marcarLeidoSiVisible(List<ModeloMensajeChat> mensajes) {
+    if (!_appActiva || !mounted || mensajes.isEmpty) return;
+    final cercaDelFinal =
+        !_scroll.hasClients ||
+        _scroll.position.maxScrollExtent - _scroll.position.pixels <= 160;
+    if (!cercaDelFinal) return;
+
+    final ultimoId = mensajes.last.id;
+    if (ultimoId.isEmpty || ultimoId == _ultimoMensajeMarcado) return;
+    _ultimoMensajeMarcado = ultimoId;
+    unawaited(
+      ref
+          .read(chatDataSourceProvider)
+          .marcarLeido(widget.salaId)
+          .then((_) => ref.invalidate(previewsChatBandejaProvider))
+          .catchError((_) {
+            if (_ultimoMensajeMarcado == ultimoId) {
+              _ultimoMensajeMarcado = null;
+            }
+          }),
+    );
   }
 
   Future<void> _cargarMas() async {
@@ -816,7 +852,26 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
       final cercaDelFinal =
           !_scroll.hasClients ||
           _scroll.position.maxScrollExtent - _scroll.position.pixels <= 160;
-      if (cercaDelFinal) _scrollAlFinal();
+      if (cercaDelFinal) {
+        _scrollAlFinal();
+        _marcarLeidoSiVisible(next.valueOrNull ?? const []);
+      }
+    });
+    ref.listen(chatMensajePaginadoActualizadoProvider(widget.salaId), (
+      _,
+      fresco,
+    ) {
+      if (fresco == null) return;
+      final i = _extraAntiguos.indexWhere((m) => m.id == fresco.id);
+      if (i < 0 || !mounted) return;
+      setState(() {
+        final copia = [..._extraAntiguos];
+        copia[i] = fresco;
+        _extraAntiguos = copia;
+      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _marcarLeidoSiVisible(async.valueOrNull ?? const []);
     });
 
     final contexto = cid.isNotEmpty

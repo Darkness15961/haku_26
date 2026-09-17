@@ -1,20 +1,8 @@
 /// Categorías de filtrado de la lista de rutas (guía visual).
-enum CategoriaRuta {
-  recomendadas,
-  populares,
-  naturaleza,
-  cultura,
-}
+enum CategoriaRuta { recomendadas, populares, naturaleza, cultura }
 
 /// Qué documenta la ruta: un camino o un hilo de cultura viva.
-enum HiloCultura {
-  camino,
-  tejido,
-  ceramica,
-  comida,
-  teatro,
-  pintura,
-}
+enum HiloCultura { camino, tejido, ceramica, comida, teatro, pintura }
 
 extension HiloCulturaX on HiloCultura {
   String get etiqueta {
@@ -35,6 +23,14 @@ extension HiloCulturaX on HiloCultura {
   }
 }
 
+/// Coordenada del trazado real. No se deriva de las paradas.
+class CoordenadaRuta {
+  final double lat;
+  final double lng;
+
+  const CoordenadaRuta({required this.lat, required this.lng});
+}
+
 /// Parada / hito de una ruta (para mapa simulado y BD futura `puntos_ruta`).
 class PuntoRuta {
   final String id;
@@ -43,6 +39,8 @@ class PuntoRuta {
   final double lat;
   final double lng;
   final String? nota;
+  final String? lugarId;
+  final int? altitudM;
 
   const PuntoRuta({
     required this.id,
@@ -51,6 +49,8 @@ class PuntoRuta {
     required this.lat,
     required this.lng,
     this.nota,
+    this.lugarId,
+    this.altitudM,
   });
 
   factory PuntoRuta.fromJson(Map<String, dynamic> json) {
@@ -61,22 +61,27 @@ class PuntoRuta {
       lat: (json['lat'] as num?)?.toDouble() ?? 0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0,
       nota: json['nota'] as String?,
+      lugarId: json['lugarId']?.toString(),
+      altitudM: (json['altitudM'] as num?)?.toInt(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'nombre': nombre,
-        'tipo': tipo,
-        'lat': lat,
-        'lng': lng,
-        'nota': nota,
-      };
+    'id': id,
+    'nombre': nombre,
+    'tipo': tipo,
+    'lat': lat,
+    'lng': lng,
+    'nota': nota,
+    'lugarId': lugarId,
+    'altitudM': altitudM,
+  };
 }
 
 /// Modelo de una ruta turística / caminata.
 class ModeloRuta {
   final String id;
+  final String slug;
   final String titulo;
   final String subtitulo;
   final String descripcion;
@@ -100,12 +105,17 @@ class ModeloRuta {
   final String comoLlegar;
   final String transporte;
   final List<String> tips;
+  final List<String> requisitos;
+  final List<String> advertencias;
+  final List<CoordenadaRuta> trazado;
   final HiloCultura hilo;
+
   /// Provincia del Cusco a la que pertenece el lugar / experiencia.
   final String provincia;
 
   const ModeloRuta({
     required this.id,
+    this.slug = '',
     required this.titulo,
     this.subtitulo = '',
     required this.descripcion,
@@ -129,6 +139,9 @@ class ModeloRuta {
     this.comoLlegar = '',
     this.transporte = '',
     this.tips = const [],
+    this.requisitos = const [],
+    this.advertencias = const [],
+    this.trazado = const [],
     this.hilo = HiloCultura.camino,
     this.provincia = 'Cusco',
   });
@@ -136,6 +149,7 @@ class ModeloRuta {
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
     return ModeloRuta(
       id: json['id'] as String,
+      slug: json['slug'] as String? ?? '',
       titulo: json['titulo'] as String? ?? '',
       subtitulo: json['subtitulo'] as String? ?? '',
       descripcion: json['descripcion'] as String? ?? '',
@@ -152,7 +166,8 @@ class ModeloRuta {
       altitud: json['altitud'] as String? ?? '',
       tiempoCaminata: json['tiempoCaminata'] as String? ?? '',
       mejorEpoca: json['mejorEpoca'] as String? ?? '',
-      etiquetas: (json['etiquetas'] as List<dynamic>?)
+      etiquetas:
+          (json['etiquetas'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -167,7 +182,18 @@ class ModeloRuta {
       puntoPartida: json['puntoPartida'] as String? ?? '',
       comoLlegar: json['comoLlegar'] as String? ?? '',
       transporte: json['transporte'] as String? ?? '',
-      tips: (json['tips'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+      tips:
+          (json['tips'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+          const [],
+      requisitos:
+          (json['requisitos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      advertencias:
+          (json['advertencias'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
           const [],
       hilo: HiloCultura.values.firstWhere(
         (h) => h.name == json['hilo'],
@@ -177,9 +203,124 @@ class ModeloRuta {
     );
   }
 
+  factory ModeloRuta.desdeFilaRemota(Map<String, dynamic> json) {
+    final dificultad =
+        (json['dificultad'] as String?)?.trim().toLowerCase() ?? 'moderado';
+    final nivel = switch (dificultad) {
+      'facil' => 1,
+      'exigente' => 4,
+      _ => 2,
+    };
+    final meses = (json['meses_recomendados'] as List<dynamic>? ?? const [])
+        .whereType<num>()
+        .map((e) => e.toInt())
+        .where((e) => e >= 1 && e <= 12)
+        .toList();
+    final distanciaM = (json['distancia_m'] as num?)?.toInt();
+    final duracionMin = (json['duracion_minutos'] as num?)?.toInt();
+    final altitudMax = (json['altitud_max_m'] as num?)?.toInt();
+    final paradas = <PuntoRuta>[];
+    for (final raw in json['paradas'] as List<dynamic>? ?? const []) {
+      if (raw is! Map) continue;
+      final p = Map<String, dynamic>.from(raw);
+      final id = '${p['id'] ?? ''}';
+      final nombre = (p['nombre'] as String?)?.trim() ?? '';
+      final lat = (p['latitud'] as num?)?.toDouble();
+      final lng = (p['longitud'] as num?)?.toDouble();
+      if (id.isEmpty ||
+          nombre.isEmpty ||
+          lat == null ||
+          lng == null ||
+          !lat.isFinite ||
+          !lng.isFinite ||
+          lat < -90 ||
+          lat > 90 ||
+          lng < -180 ||
+          lng > 180) {
+        continue;
+      }
+      paradas.add(
+        PuntoRuta(
+          id: id,
+          nombre: nombre,
+          tipo: (p['tipo'] as String?)?.trim() ?? 'parada',
+          lat: lat,
+          lng: lng,
+          nota: (p['instrucciones'] as String?)?.trim(),
+          lugarId: p['lugar_id']?.toString(),
+          altitudM: (p['altitud_m'] as num?)?.toInt(),
+        ),
+      );
+    }
+    final trazado = <CoordenadaRuta>[];
+    final geojson = json['trazado_geojson'];
+    if (geojson is Map) {
+      final coordinates = geojson['coordinates'];
+      if (coordinates is List) {
+        for (final raw in coordinates) {
+          if (raw is! List || raw.length < 2) continue;
+          final lng = raw[0];
+          final lat = raw[1];
+          if (lat is num && lng is num) {
+            final latitud = lat.toDouble();
+            final longitud = lng.toDouble();
+            if (latitud.isFinite &&
+                longitud.isFinite &&
+                latitud >= -90 &&
+                latitud <= 90 &&
+                longitud >= -180 &&
+                longitud <= 180) {
+              trazado.add(CoordenadaRuta(lat: latitud, lng: longitud));
+            }
+          }
+        }
+      }
+    }
+    final requisitos = _listaTexto(json['requisitos']);
+    final advertencias = _listaTexto(json['advertencias']);
+
+    return ModeloRuta(
+      id: '${json['id'] ?? ''}',
+      slug: (json['slug'] as String?)?.trim() ?? '',
+      titulo: (json['nombre'] as String?)?.trim() ?? '',
+      subtitulo: (json['resumen'] as String?)?.trim() ?? '',
+      descripcion: (json['descripcion'] as String?)?.trim() ?? '',
+      imagenUrl: (json['foto_portada'] as String?)?.trim() ?? '',
+      categoria: _categoriaRemota(json['tipo']),
+      cantidadLugares:
+          (json['cantidad_paradas'] as num?)?.toInt() ?? paradas.length,
+      dias: (json['dias'] as num?)?.toInt() ?? 1,
+      distancia: _distancia(distanciaM),
+      nivelDificultad: nivel,
+      dificultadTexto: switch (dificultad) {
+        'facil' => 'Fácil',
+        'exigente' => 'Exigente',
+        _ => 'Moderada',
+      },
+      altitud: altitudMax == null ? '' : '$altitudMax m.s.n.m.',
+      tiempoCaminata: _duracion(duracionMin),
+      mejorEpoca: _meses(meses),
+      etiquetas: _listaTexto(json['etiquetas']),
+      tipoSitio: (json['tipo'] as String?)?.trim(),
+      puntos: paradas,
+      trazado: trazado,
+      puntoPartida: paradas.isEmpty ? '' : paradas.first.nombre,
+      comoLlegar: (json['acceso'] as String?)?.trim() ?? '',
+      transporte: (json['transporte'] as String?)?.trim() ?? '',
+      tips: [...requisitos, ...advertencias],
+      requisitos: requisitos,
+      advertencias: advertencias,
+      hilo: _hiloRemoto(json['hilo_cultural']),
+      provincia: (json['zona'] as String?)?.trim().isNotEmpty == true
+          ? (json['zona'] as String).trim()
+          : 'Cusco',
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'slug': slug,
       'titulo': titulo,
       'subtitulo': subtitulo,
       'descripcion': descripcion,
@@ -203,6 +344,8 @@ class ModeloRuta {
       'comoLlegar': comoLlegar,
       'transporte': transporte,
       'tips': tips,
+      'requisitos': requisitos,
+      'advertencias': advertencias,
       'hilo': hilo.name,
       'provincia': provincia,
     };
@@ -210,6 +353,7 @@ class ModeloRuta {
 
   ModeloRuta copyWith({
     String? id,
+    String? slug,
     String? titulo,
     String? subtitulo,
     String? descripcion,
@@ -233,11 +377,15 @@ class ModeloRuta {
     String? comoLlegar,
     String? transporte,
     List<String>? tips,
+    List<String>? requisitos,
+    List<String>? advertencias,
+    List<CoordenadaRuta>? trazado,
     HiloCultura? hilo,
     String? provincia,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
+      slug: slug ?? this.slug,
       titulo: titulo ?? this.titulo,
       subtitulo: subtitulo ?? this.subtitulo,
       descripcion: descripcion ?? this.descripcion,
@@ -261,8 +409,65 @@ class ModeloRuta {
       comoLlegar: comoLlegar ?? this.comoLlegar,
       transporte: transporte ?? this.transporte,
       tips: tips ?? this.tips,
+      requisitos: requisitos ?? this.requisitos,
+      advertencias: advertencias ?? this.advertencias,
+      trazado: trazado ?? this.trazado,
       hilo: hilo ?? this.hilo,
       provincia: provincia ?? this.provincia,
     );
   }
+}
+
+List<String> _listaTexto(Object? raw) {
+  if (raw is! List) return const [];
+  return raw.map((e) => '$e'.trim()).where((e) => e.isNotEmpty).toList();
+}
+
+CategoriaRuta _categoriaRemota(Object? raw) {
+  return switch ('$raw'.toLowerCase()) {
+    'cultural' || 'urbana' => CategoriaRuta.cultura,
+    'senderismo' => CategoriaRuta.naturaleza,
+    _ => CategoriaRuta.recomendadas,
+  };
+}
+
+HiloCultura _hiloRemoto(Object? raw) {
+  return HiloCultura.values.firstWhere(
+    (hilo) => hilo.name == '$raw'.toLowerCase(),
+    orElse: () => HiloCultura.camino,
+  );
+}
+
+String _distancia(int? metros) {
+  if (metros == null) return '';
+  if (metros < 1000) return '$metros m';
+  final km = metros / 1000;
+  return '${km == km.roundToDouble() ? km.toStringAsFixed(0) : km.toStringAsFixed(1)} km';
+}
+
+String _duracion(int? minutos) {
+  if (minutos == null) return '';
+  final horas = minutos ~/ 60;
+  final resto = minutos % 60;
+  if (horas == 0) return '$resto min';
+  return resto == 0 ? '$horas h' : '$horas h $resto min';
+}
+
+String _meses(List<int> meses) {
+  if (meses.isEmpty) return '';
+  const nombres = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ];
+  return meses.map((m) => nombres[m - 1]).join(' · ');
 }

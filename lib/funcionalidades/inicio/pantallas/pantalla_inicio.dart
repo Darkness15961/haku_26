@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../autenticacion/navegacion_auth.dart';
+import '../../chat/proveedores/proveedor_chat.dart';
 import '../../comunidad/indice.dart';
 import '../../lugares/pantallas/pantalla_explora_lugares.dart';
 import '../../perfil_usuario/indice.dart';
 import '../../publicaciones/indice.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import '../../../nucleo/demo/senales_atencion.dart';
 import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
 import '../../../nucleo/navegacion/control_retroceso.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
-import '../proveedores/proveedor_almacen_feed.dart';
 import '../proveedores/proveedor_navegacion_inicio.dart';
 import '../widgets/barra_navegacion_curva.dart';
 import '../widgets/riel_navegacion_haku.dart';
@@ -30,6 +29,7 @@ class PantallaInicio extends ConsumerStatefulWidget {
 class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
   /// 0 Inicio, 1 Explora, 2 Comunidad, 3 Perfil
   int _indiceSeleccionado = 0;
+  final Set<int> _pestanasMontadas = {0};
 
   static const List<Widget> _pantallas = [
     PantallaFeedInicio(),
@@ -67,6 +67,16 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    final inicial = ref.read(pestaniaShellInicioProvider);
+    if (inicial >= 0 && inicial < _pantallas.length) {
+      _indiceSeleccionado = inicial;
+      _pestanasMontadas.add(inicial);
+    }
+  }
+
   int _indiceVisualDesdeStack(int stack) => stack < 2 ? stack : stack + 1;
 
   int? _indiceStackDesdeVisual(int visual) {
@@ -75,8 +85,13 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
   }
 
   void _irATab(int stack) {
+    if (stack != _indiceSeleccionado) {
+      setState(() {
+        _pestanasMontadas.add(stack);
+        _indiceSeleccionado = stack;
+      });
+    }
     ref.read(pestaniaShellInicioProvider.notifier).state = stack;
-    setState(() => _indiceSeleccionado = stack);
   }
 
   Future<void> _seleccionarPestaniaVisual(int visual) async {
@@ -98,14 +113,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
   Future<void> _abrirPublicar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    final done = await abrirPantallaHaku<bool>(
-      context,
-      const PantallaPublicaciones(),
-    );
-    // Cierra el hilo: feed remoto se refresca aunque Comunidad no estuviera visible.
-    if (done == true && mounted) {
-      notificarPublicacionesCambiaron(ref);
-    }
+    await abrirPantallaHaku<bool>(context, const PantallaPublicaciones());
   }
 
   void _onRetrocesoSistema(bool didPop, Object? result) {
@@ -119,15 +127,22 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(almacenFeedProvider);
     ref.listen<int>(pestaniaShellInicioProvider, (prev, next) {
-      if (next != _indiceSeleccionado && mounted) {
-        setState(() => _indiceSeleccionado = next);
+      if (next >= 0 &&
+          next < _pantallas.length &&
+          next != _indiceSeleccionado &&
+          mounted) {
+        setState(() {
+          _pestanasMontadas.add(next);
+          _indiceSeleccionado = next;
+        });
       }
     });
 
-    final pendientes = SenalesAtencion.totalPendientesComunidad();
-    final contadorNav = [0, 0, 0, pendientes, 0];
+    // La bandeja y su Realtime viven con la sesión, no solo al abrir Mensajes.
+    ref.watch(chatBandejaRealtimeProvider);
+    final noLeidos = ref.watch(totalNoLeidosChatProvider);
+    final contadorNav = [0, 0, 0, noLeidos, 0];
     final puedePopRuta = Navigator.of(context).canPop();
     final riel = EspacioHaku.usarRielLateral(context);
 
@@ -158,7 +173,12 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
               child: IndexedStack(
                 index: _indiceSeleccionado,
                 sizing: StackFit.expand,
-                children: _pantallas,
+                children: [
+                  for (var i = 0; i < _pantallas.length; i++)
+                    _pestanasMontadas.contains(i)
+                        ? _pantallas[i]
+                        : const SizedBox.shrink(),
+                ],
               ),
             ),
           ],
