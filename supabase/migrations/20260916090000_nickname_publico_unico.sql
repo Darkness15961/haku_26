@@ -6,6 +6,8 @@
 -- - comienza y termina con letra o número;
 -- - nombres operativos reservados.
 
+BEGIN;
+
 -- 1) Normalizar de forma determinista las cuentas existentes.
 -- Se guardan los valores previos antes de usar placeholders únicos para que
 -- "Ana" y "ana" puedan migrarse sin chocar con el UNIQUE antiguo.
@@ -480,3 +482,5 @@ COMMENT ON FUNCTION public.nickname_disponible(text, uuid) IS
   'Valida formato, reserva y disponibilidad case-insensitive del nickname.';
 COMMENT ON FUNCTION public.handle_new_user() IS
   'Crea public.usuario; respeta nickname explícito único o genera uno para OAuth.';
+
+COMMIT;
