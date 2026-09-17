@@ -238,9 +238,11 @@ publicacion:publicacion_id!inner (
     required String contentType,
     required String extension,
     required String contenido,
+    String estado = 'publico',
     String? comunidadId,
     String? lugarId,
     String? rutaId,
+    String? salidaId,
   }) async {
     final url = await subirImagen(
       userId: userId,
@@ -251,9 +253,11 @@ publicacion:publicacion_id!inner (
     try {
       return await crear(
         contenido: contenido,
+        estado: estado,
         comunidadId: comunidadId,
         lugarId: lugarId,
         rutaId: rutaId,
+        salidaId: salidaId,
         imagenUrl: url,
       );
     } catch (_) {
@@ -275,7 +279,7 @@ publicacion:publicacion_id!inner (
     }
   }
 
-  /// Insert publicación + opcionales (comunidad / lugar / imagen).
+  /// Insert publicación + opcionales (comunidad / lugar / ruta / salida / imagen).
   /// [contenido] obligatorio (CHECK BD 1..4000).
   Future<ModeloPublicacionRemota> crear({
     required String contenido,
@@ -283,6 +287,7 @@ publicacion:publicacion_id!inner (
     String? comunidadId,
     String? lugarId,
     String? rutaId,
+    String? salidaId,
     String? imagenUrl,
   }) async {
     if (!supabaseListo) {
@@ -308,6 +313,7 @@ publicacion:publicacion_id!inner (
     final comNum = int.tryParse(comunidadId?.trim() ?? '');
     final lugarNum = int.tryParse(lugarId?.trim() ?? '');
     final rutaNum = int.tryParse(rutaId?.trim() ?? '');
+    final salidaNum = int.tryParse(salidaId?.trim() ?? '');
     final url = imagenUrl?.trim() ?? '';
 
     if (comunidadId != null &&
@@ -321,6 +327,9 @@ publicacion:publicacion_id!inner (
     if (rutaId != null && rutaId.trim().isNotEmpty && rutaNum == null) {
       throw const AuthException('Ruta inválida');
     }
+    if (salidaId != null && salidaId.trim().isNotEmpty && salidaNum == null) {
+      throw const AuthException('Salida inválida');
+    }
 
     try {
       final raw = await clienteSupabase.rpc(
@@ -331,6 +340,7 @@ publicacion:publicacion_id!inner (
           'p_comunidad_id': comNum,
           'p_lugar_id': lugarNum,
           'p_ruta_id': rutaNum,
+          'p_salida_id': salidaNum,
           'p_imagen_url': url.isEmpty ? null : url,
         },
       );
