@@ -29,11 +29,11 @@ distrito:distrito_id (
   codigo,
   provincia_id,
   provincia:provincia_id ( id, nombre, codigo )
-)
-,
+),
 lugar_categoria (
   categoria:categoria_id ( id, nombre, tipo )
-)
+),
+lugar_guardado_por_mi
 ''';
 
   Future<List<ModeloLugar>> listarActivos() async {
@@ -226,5 +226,63 @@ lugar_categoria (
       throw const AuthException('El lugar se creó pero no se pudo recargar.');
     }
     return creado;
+  }
+
+  Future<void> guardarLugar(String lugarId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Debes iniciar sesión para guardar');
+    }
+
+    final idNum = int.tryParse(lugarId.trim());
+    if (idNum == null) return;
+
+    try {
+      await clienteSupabase.from('lugar_guardado').insert({
+        'lugar_id': idNum,
+        'usuario_id': user.id,
+      });
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return;
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo guardar el lugar' : e.message,
+      );
+    }
+  }
+
+  Future<void> quitarGuardadoLugar(String lugarId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return;
+
+    final idNum = int.tryParse(lugarId.trim());
+    if (idNum == null) return;
+
+    await clienteSupabase
+        .from('lugar_guardado')
+        .delete()
+        .eq('lugar_id', idNum)
+        .eq('usuario_id', user.id);
+  }
+
+  Future<List<ModeloLugar>> listarLugaresGuardados() async {
+    if (!supabaseListo) return const [];
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return const [];
+
+    final rows = await clienteSupabase
+        .from('lugar_guardado')
+        .select('lugar:lugar_id!inner($_selectFicha)')
+        .eq('usuario_id', user.id)
+        .eq('lugar.estado', true)
+        .order('fecha_creacion', ascending: false);
+
+    return (rows as List<dynamic>)
+        .whereType<Map>()
+        .map((row) => row['lugar'])
+        .whereType<Map>()
+        .map((l) => ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(l)))
+        .toList();
   }
 }

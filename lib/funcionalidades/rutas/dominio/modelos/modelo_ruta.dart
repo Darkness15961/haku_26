@@ -113,6 +113,9 @@ class ModeloRuta {
   /// Provincia del Cusco a la que pertenece el lugar / experiencia.
   final String provincia;
 
+  final bool guardadoPorMi;
+  final String? usuarioCreadorId;
+
   const ModeloRuta({
     required this.id,
     this.slug = '',
@@ -144,6 +147,8 @@ class ModeloRuta {
     this.trazado = const [],
     this.hilo = HiloCultura.camino,
     this.provincia = 'Cusco',
+    this.guardadoPorMi = false,
+    this.usuarioCreadorId,
   });
 
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
@@ -200,6 +205,8 @@ class ModeloRuta {
         orElse: () => HiloCultura.camino,
       ),
       provincia: json['provincia'] as String? ?? 'Cusco',
+      guardadoPorMi: json['guardadoPorMi'] as bool? ?? false,
+      usuarioCreadorId: json['usuarioCreadorId'] as String?,
     );
   }
 
@@ -314,6 +321,8 @@ class ModeloRuta {
       provincia: (json['zona'] as String?)?.trim().isNotEmpty == true
           ? (json['zona'] as String).trim()
           : 'Cusco',
+      guardadoPorMi: json['ruta_guardada_por_mi'] == true,
+      usuarioCreadorId: json['usuario_creador_id']?.toString(),
     );
   }
 
@@ -348,6 +357,8 @@ class ModeloRuta {
       'advertencias': advertencias,
       'hilo': hilo.name,
       'provincia': provincia,
+      'guardadoPorMi': guardadoPorMi,
+      'usuarioCreadorId': usuarioCreadorId,
     };
   }
 
@@ -382,6 +393,8 @@ class ModeloRuta {
     List<CoordenadaRuta>? trazado,
     HiloCultura? hilo,
     String? provincia,
+    bool? guardadoPorMi,
+    String? usuarioCreadorId,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
@@ -414,6 +427,8 @@ class ModeloRuta {
       trazado: trazado ?? this.trazado,
       hilo: hilo ?? this.hilo,
       provincia: provincia ?? this.provincia,
+      guardadoPorMi: guardadoPorMi ?? this.guardadoPorMi,
+      usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
     );
   }
 }

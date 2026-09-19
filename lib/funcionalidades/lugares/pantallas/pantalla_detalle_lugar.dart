@@ -10,7 +10,10 @@ import '../../rutas/widgets/menu_acciones_detalle.dart';
 import '../../rutas/widgets/menu_acciones_flotante.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../dominio/modelos/modelo_lugar.dart';
+import '../datos/lugar_datasource_supabase.dart';
 import '../proveedores/proveedor_lugares.dart';
+import '../../autenticacion/navegacion_auth.dart';
+import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../widgets/boton_ver_salidas_lugar.dart';
 import '../widgets/fila_metricas_comunidad.dart';
 import '../widgets/lista_experiencias_lugar.dart';
@@ -32,8 +35,48 @@ class PantallaDetalleLugar extends ConsumerStatefulWidget {
 
 class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
   bool _menuAbierto = false;
+  bool _isMutatingGuardado = false;
+  late bool _guardadoOptimista;
+  ModeloLugar? _lugarReciente;
 
   void _toggleMenu() => setState(() => _menuAbierto = !_menuAbierto);
+
+  void _avisar(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(mensaje),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  Future<void> _toggleFavorito(ModeloLugar lugar) async {
+    if (_isMutatingGuardado) return;
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+
+    setState(() {
+      _isMutatingGuardado = true;
+      _guardadoOptimista = !_guardadoOptimista;
+    });
+
+    try {
+      final repo = LugarDataSourceSupabase();
+      if (_guardadoOptimista) {
+        await repo.guardarLugar(lugar.id);
+      } else {
+        await repo.quitarGuardadoLugar(lugar.id);
+      }
+      ref.invalidate(lugarDetalleProvider(lugar.id));
+    } catch (e) {
+      if (mounted) {
+        setState(() => _guardadoOptimista = !_guardadoOptimista);
+        _avisar('Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isMutatingGuardado = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +153,16 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
     final actividades = lugar.actividades.map((e) => e.nombre).toList();
     final sinEtiquetas = tematicas.isEmpty && actividades.isEmpty;
 
+    if (_lugarReciente != lugar) {
+      if (!_isMutatingGuardado) {
+        _guardadoOptimista = lugar.guardadoPorMi;
+      }
+      _lugarReciente = lugar;
+    }
+
+    final uidActual = ref.watch(sesionProvider.select((s) => s.usuario?.id));
+    final esAutor = uidActual != null && uidActual == lugar.usuarioCreadorId;
+
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
       body: Stack(
@@ -121,6 +174,20 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                 pinned: true,
                 backgroundColor: PaletaRutas.ink,
                 foregroundColor: PaletaRutas.piedra,
+                actions: [
+                  if (!esAutor)
+                    IconButton(
+                      icon: Icon(
+                        _guardadoOptimista ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: _guardadoOptimista ? PaletaRutas.oro : null,
+                      ),
+                      onPressed: () => _toggleFavorito(lugar),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.ios_share_rounded),
+                    onPressed: () => _avisar('Compartido'),
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,

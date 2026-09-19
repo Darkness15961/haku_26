@@ -113,7 +113,7 @@ class _EstadoPantallaInicio extends ConsumerState<PantallaInicio> {
   Future<void> _abrirPublicar() async {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await abrirPantallaHaku<bool>(context, const PantallaPublicaciones());
+    await abrirPantallaHaku<bool>(context, const PantallaCrearPublicacion());
   }
 
   void _onRetrocesoSistema(bool didPop, Object? result) {

@@ -86,6 +86,8 @@ class ModeloLugar {
   final DateTime? descubiertoEn;
   final bool creadoPorUsuario;
   final bool remoto;
+  final bool guardadoPorMi;
+  final String? usuarioCreadorId;
 
   const ModeloLugar({
     required this.id,
@@ -112,6 +114,8 @@ class ModeloLugar {
     this.descubiertoEn,
     this.creadoPorUsuario = false,
     this.remoto = false,
+    this.guardadoPorMi = false,
+    this.usuarioCreadorId,
   });
 
   List<CategoriaLugar> get categoriasEfectivas =>
@@ -165,6 +169,8 @@ class ModeloLugar {
     DateTime? descubiertoEn,
     bool? creadoPorUsuario,
     bool? remoto,
+    bool? guardadoPorMi,
+    String? usuarioCreadorId,
   }) {
     return ModeloLugar(
       id: id ?? this.id,
@@ -191,6 +197,8 @@ class ModeloLugar {
       descubiertoEn: descubiertoEn ?? this.descubiertoEn,
       creadoPorUsuario: creadoPorUsuario ?? this.creadoPorUsuario,
       remoto: remoto ?? this.remoto,
+      guardadoPorMi: guardadoPorMi ?? this.guardadoPorMi,
+      usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
     );
   }
 
@@ -215,6 +223,8 @@ class ModeloLugar {
         'descubierto_en': descubiertoEn?.toIso8601String(),
         'creado_por_usuario': creadoPorUsuario,
         'remoto': remoto,
+        'guardado_por_mi': guardadoPorMi,
+        'usuario_creador_id': usuarioCreadorId,
       };
 
   factory ModeloLugar.desdeMapa(Map<String, dynamic> m) {
@@ -251,6 +261,8 @@ class ModeloLugar {
       descubiertoEn: DateTime.tryParse(m['descubierto_en'] as String? ?? ''),
       creadoPorUsuario: m['creado_por_usuario'] as bool? ?? false,
       remoto: m['remoto'] as bool? ?? false,
+      guardadoPorMi: m['guardado_por_mi'] as bool? ?? false,
+      usuarioCreadorId: m['usuario_id']?.toString(),
     );
   }
 
@@ -340,6 +352,8 @@ class ModeloLugar {
       nivelExploracion: NivelExploracion.nuevoEnHaku,
       calificacion: 0,
       remoto: true,
+      guardadoPorMi: m['lugar_guardado_por_mi'] == true,
+      usuarioCreadorId: m['usuario_id']?.toString(),
     );
   }
 

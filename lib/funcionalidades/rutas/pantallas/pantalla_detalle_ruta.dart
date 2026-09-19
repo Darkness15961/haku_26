@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../autenticacion/navegacion_auth.dart';
+import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../comunidad/dominio/modelo_publicacion.dart';
 import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
@@ -13,6 +14,7 @@ import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import '../../lugares/widgets/metricas_comunidad.dart';
 import '../../lugares/widgets/recuerdos_comunidad.dart';
 import '../dominio/modelos/modelo_ruta.dart';
+import '../datos/rutas_datasource_supabase.dart';
 import '../proveedores/proveedor_rutas.dart';
 import '../widgets/decoracion_detalle_fondo.dart';
 import '../widgets/estilos_rutas.dart';
@@ -38,6 +40,22 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
 
   final ScrollController _scroll = ScrollController();
   bool _menuAbierto = false;
+  late bool _guardadoOptimista;
+  bool _isMutatingGuardado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _guardadoOptimista = widget.ruta.guardadoPorMi;
+  }
+
+  @override
+  void didUpdateWidget(covariant PantallaDetalleRuta oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isMutatingGuardado && oldWidget.ruta != widget.ruta) {
+      _guardadoOptimista = widget.ruta.guardadoPorMi;
+    }
+  }
 
   void _toggleMenu() => setState(() => _menuAbierto = !_menuAbierto);
 
@@ -50,11 +68,33 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
   double get _offset => _scroll.hasClients ? _scroll.offset : 0.0;
 
   Future<void> _toggleFavorito() async {
+    if (_isMutatingGuardado) return;
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
-    await ref
-        .read(almacenFeedProvider.notifier)
-        .toggleFavoritoRuta(widget.ruta.id);
+
+    setState(() {
+      _isMutatingGuardado = true;
+      _guardadoOptimista = !_guardadoOptimista;
+    });
+
+    try {
+      final repo = RutasDataSourceSupabase();
+      if (_guardadoOptimista) {
+        await repo.guardarRuta(widget.ruta.id);
+      } else {
+        await repo.quitarGuardadoRuta(widget.ruta.id);
+      }
+      ref.invalidate(rutaDetalleProvider(widget.ruta.id));
+    } catch (e) {
+      if (mounted) {
+        setState(() => _guardadoOptimista = !_guardadoOptimista);
+        _avisar('Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isMutatingGuardado = false);
+      }
+    }
   }
 
   void _avisar(String mensaje) {
@@ -117,10 +157,16 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     final horizontal = size.width > 804 ? (size.width - 760) / 2 : 22.0;
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final favorito = ref
-        .watch(almacenFeedProvider)
-        .favoritosRutaIds
-        .contains(ruta.id);
+    
+    // Si la rutaProvider ya nos dio un dato fresco, y no estamos mutando,
+    // sincronizamos la variable optimista.
+    if (!_isMutatingGuardado) {
+      _guardadoOptimista = ruta.guardadoPorMi;
+    }
+
+    final favorito = _guardadoOptimista;
+    final uidActual = ref.watch(sesionProvider.select((s) => s.usuario?.id));
+    final esAutor = uidActual != null && uidActual == ruta.usuarioCreadorId;
     final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
     final publicacionesRemotas = supabaseListo
         ? ref.watch(publicacionesPorRutaProvider(ruta.id)).valueOrNull ??
@@ -496,19 +542,21 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                   ),
                   Row(
                     children: [
-                      _BotonCircular(
-                        tooltip: favorito
-                            ? 'Quitar de guardados'
-                            : 'Guardar ruta',
-                        icono: favorito
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        colorIcono: favorito
-                            ? PaletaRutas.oro
-                            : PaletaRutas.piedra,
-                        onTap: _toggleFavorito,
-                      ),
-                      const SizedBox(width: 8),
+                      if (!esAutor) ...[
+                        _BotonCircular(
+                          tooltip: favorito
+                              ? 'Quitar de guardados'
+                              : 'Guardar ruta',
+                          icono: favorito
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          colorIcono: favorito
+                              ? PaletaRutas.oro
+                              : PaletaRutas.piedra,
+                          onTap: _toggleFavorito,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       _BotonCircular(
                         tooltip: 'Compartir',
                         icono: Icons.ios_share_rounded,

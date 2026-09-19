@@ -20,6 +20,11 @@ class ModeloPublicacionRemota {
   final String? lugarNombre;
   final String? rutaId;
   final String? rutaNombre;
+  final String? salidaId;
+  final String? salidaNombre;
+  final int cantidadMeGusta;
+  final bool leDiMeGusta;
+  final bool guardadoPorMi;
 
   const ModeloPublicacionRemota({
     required this.id,
@@ -39,6 +44,11 @@ class ModeloPublicacionRemota {
     this.lugarNombre,
     this.rutaId,
     this.rutaNombre,
+    this.salidaId,
+    this.salidaNombre,
+    this.cantidadMeGusta = 0,
+    this.leDiMeGusta = false,
+    this.guardadoPorMi = false,
   });
 
   String get etiquetaAutor {
@@ -171,6 +181,40 @@ class ModeloPublicacionRemota {
       }
     }
 
+    String? salidaId;
+    String? salidaNombre;
+    final salidas = m['publicacion_salida'];
+    if (salidas is List && salidas.isNotEmpty) {
+      final raw = salidas.first;
+      if (raw is Map) {
+        final row = Map<String, dynamic>.from(raw);
+        final sid = row['salida_id'];
+        final s = row['salida'];
+        Map<String, dynamic>? salida;
+        if (s is Map) salida = Map<String, dynamic>.from(s);
+        if (sid != null) salidaId = '$sid';
+        salidaNombre = (salida?['titulo'] as String?)?.trim();
+        if ((salidaId == null || salidaId.isEmpty) && salida?['id'] != null) {
+          salidaId = '${salida!['id']}';
+        }
+      }
+    }
+
+    int cantidadMeGusta = 0;
+    if (m['cantidad_me_gusta'] != null) {
+      cantidadMeGusta = int.tryParse('${m['cantidad_me_gusta']}') ?? 0;
+    } else if (m['publicacion_me_gusta'] != null && m['publicacion_me_gusta'] is List) {
+      final likes = m['publicacion_me_gusta'] as List;
+      if (likes.isNotEmpty && likes.first is Map && likes.first['count'] != null) {
+        cantidadMeGusta = int.tryParse('${likes.first['count']}') ?? 0;
+      } else {
+        cantidadMeGusta = likes.length;
+      }
+    }
+
+    bool leDiMeGusta = m['le_di_me_gusta'] == true;
+    bool guardadoPorMi = m['publicacion_guardada_por_mi'] == true;
+
     return ModeloPublicacionRemota(
       id: idRaw == null ? '' : '$idRaw',
       usuarioId: uidRaw == null ? '' : '$uidRaw'.trim(),
@@ -189,6 +233,11 @@ class ModeloPublicacionRemota {
       lugarNombre: lugarNombre,
       rutaId: rutaId,
       rutaNombre: rutaNombre,
+      salidaId: salidaId,
+      salidaNombre: salidaNombre,
+      cantidadMeGusta: cantidadMeGusta,
+      leDiMeGusta: leDiMeGusta,
+      guardadoPorMi: guardadoPorMi,
     );
   }
 }

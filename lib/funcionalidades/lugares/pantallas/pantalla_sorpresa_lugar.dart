@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
-import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../publicaciones/pantallas/pantalla_crear_publicacion.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/modelo_lugar.dart';
@@ -344,10 +344,8 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                       if (!ok || !context.mounted) return;
                       await Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => PantallaPublicaciones(
-                            rutaId: lugar.id,
-                            rutaTitulo: lugar.nombre,
-                            irAComunidadAlPublicar: false,
+                          builder: (_) => PantallaCrearPublicacion(
+                            lugarInicial: lugar,
                           ),
                         ),
                       );

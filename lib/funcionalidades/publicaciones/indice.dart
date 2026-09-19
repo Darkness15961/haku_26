@@ -1,1 +1,1 @@
-export 'pantallas/pantalla_publicaciones.dart';
+export 'pantallas/pantalla_crear_publicacion.dart';

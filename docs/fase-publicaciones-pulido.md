@@ -97,15 +97,15 @@ FASE PUBLICACIONES PULIDO
 - [x] A.9 Publicar (crear RPC + video Bunny + compensación)
 
 ### Bloque B — Limpiar legacy
-- [ ] B.1 Reemplazar todas las rutas a PantallaPublicaciones
-- [ ] B.2 Reemplazar todas las rutas a PantallaCrearPublicacionRemota
-- [ ] B.3 Eliminar archivos obsoletos
-- [ ] B.4 Limpiar imports y catálogo demo
+- [x] B.1 Reemplazar todas las rutas a PantallaPublicaciones
+- [x] B.2 Reemplazar todas las rutas a PantallaCrearPublicacionRemota
+- [x] B.3 Eliminar archivos obsoletos
+- [x] B.4 Limpiar imports y catálogo demo
 
 ### Bloque C — Pulir feed
-- [ ] C.1 Tarjeta texto-only sin crash
-- [ ] C.2 Badge salida + ruta + privacidad en tarjeta
-- [ ] C.3 Menú eliminar publicación propia
+- [x] C.1 Tarjeta texto-only sin crash
+- [x] C.2 Badge salida + ruta + privacidad en tarjeta
+- [x] C.3 Menú eliminar publicación propia
 
 ---
 

@@ -7,7 +7,7 @@ import '../../../nucleo/demo/senales_atencion.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/pantallas/pantalla_salidas.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
-import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../publicaciones/pantallas/pantalla_crear_publicacion.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../pantallas/pantalla_mapa_ruta.dart';
 import 'boton_icono_accion.dart';
@@ -46,16 +46,11 @@ class MenuAccionesDetalle extends ConsumerWidget {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !context.mounted) return;
 
-    final id = _modo == _ModoMenu.lugar ? lugar!.id : ruta!.id;
-    final titulo = _modo == _ModoMenu.lugar ? lugar!.nombre : ruta!.titulo;
-
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PantallaPublicaciones(
-          rutaId: id,
-          rutaTitulo: titulo,
-          destinoEsRuta: _modo == _ModoMenu.ruta,
-          irAComunidadAlPublicar: false,
+        builder: (_) => PantallaCrearPublicacion(
+          lugarInicial: _modo == _ModoMenu.lugar ? lugar : null,
+          rutaInicial: _modo == _ModoMenu.ruta ? ruta : null,
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/supabase/cliente_supabase.dart';
+import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
@@ -558,7 +559,18 @@ class _ChipContexto extends StatelessWidget {
 /// Pantalla unificada para crear publicaciones.
 /// Reemplaza a PantallaPublicaciones (legacy) y PantallaCrearPublicacionRemota.
 class PantallaCrearPublicacion extends ConsumerStatefulWidget {
-  const PantallaCrearPublicacion({super.key});
+  const PantallaCrearPublicacion({
+    super.key,
+    this.lugarInicial,
+    this.comunidadInicial,
+    this.salidaInicial,
+    this.rutaInicial,
+  });
+
+  final ModeloLugar? lugarInicial;
+  final ComunidadHaku? comunidadInicial;
+  final ModeloSalidaRemota? salidaInicial;
+  final ModeloRuta? rutaInicial;
 
   @override
   ConsumerState<PantallaCrearPublicacion> createState() =>
@@ -587,6 +599,15 @@ class _EstadoPantallaCrearPublicacion
 
   bool _guardando = false;
   double? _progresoVideo; // null = sin video; 0.0..1.0 = progreso TUS
+
+  @override
+  void initState() {
+    super.initState();
+    _lugar = widget.lugarInicial;
+    _comunidad = widget.comunidadInicial;
+    _salida = widget.salidaInicial;
+    _ruta = widget.rutaInicial;
+  }
 
   @override
   void dispose() {
@@ -669,9 +690,9 @@ class _EstadoPantallaCrearPublicacion
             },
           );
         } catch (_) {
-          // Compensación: intentar cancelar Bunny y soft-delete de la pub.
+          // Compensación: intentar cancelar Bunny y hacer un borrado definitivo de la pub.
           try { await servicio.cancelar(publicacionId); } catch (_) {}
-          try { await ds.eliminarLogica(creada.id); } catch (_) {}
+          try { await ds.eliminarFisica(creada.id); } catch (_) {}
           rethrow;
         }
         // Estado Bunny puede tardar; no bloquear al usuario si falla consulta.
@@ -790,410 +811,543 @@ class _EstadoPantallaCrearPublicacion
   @override
   Widget build(BuildContext context) {
     final avatarUrl = ref.watch(sesionProvider).usuario?.avatarUrl;
-    final bottom = MediaQuery.paddingOf(context).bottom + 16;
+    final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── HEADER ────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: _guardando ? null : () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: PaletaRutas.piedra),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Nueva publicación',
-                      textAlign: TextAlign.center,
-                      style: TipografiaHaku.titulo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _guardando ? null : _publicar,
-                    child: _guardando
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: PaletaRutas.oro,
-                            ),
-                          )
-                        : Text(
-                            'Publicar',
-                            style: TipografiaHaku.interfaz(
-                              fontWeight: FontWeight.w800,
-                              color: PaletaRutas.oro,
-                            ),
-                          ),
-                  ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── FONDO ANDINO ───────────────────────────────────────────────
+          Image.asset(
+            CatalogoImagenesHaku.fondoPublicaciones,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) =>
+                const ColoredBox(color: PaletaRutas.ink),
+          ),
+          // Overlay degradado de arriba (transparente) a abajo (casi opaco)
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.25, 0.55, 1.0],
+                colors: [
+                  Color(0x88000000),
+                  Color(0xBB0A0A0F),
+                  Color(0xE50A0A0F),
+                  Color(0xFF0A0A0F),
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: LineaEncabezadoInca(altura: 2),
-            ),
+          ),
 
-            // ── CONTENIDO ─────────────────────────────────────────────────
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          // ── CONTENIDO ──────────────────────────────────────────────────
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // ── HEADER PREMIUM ────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+                  child: Row(
                     children: [
-                      // Avatar del usuario
-                      AvatarHaku(url: avatarUrl, size: 44),
-                      const SizedBox(width: 12),
-
-                      // Toggle + textarea
+                      IconButton(
+                        onPressed: _guardando
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: PaletaRutas.piedra,
+                        ),
+                      ),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // A.2: Toggle público / solo comunidad
-                            GestureDetector(
-                              onTap: () => setState(() => _esPrivado = !_esPrivado),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: PaletaRutas.carbon,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: _esPrivado
-                                        ? PaletaRutas.oro.withValues(alpha: 0.5)
-                                        : PaletaRutas.plomo.withValues(alpha: 0.3),
+                        child: Text(
+                          'Compartir momento',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                      ),
+                      // Botón publicar tipo pill dorado
+                      GestureDetector(
+                        onTap: _guardando ? null : _publicar,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: _guardando
+                                ? null
+                                : const LinearGradient(
+                                    colors: [
+                                      Color(0xFFD4A843),
+                                      Color(0xFFB8860B),
+                                    ],
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _esPrivado ? Icons.lock_outline : Icons.public,
-                                      size: 14,
-                                      color: _esPrivado
-                                          ? PaletaRutas.oro
-                                          : PaletaRutas.plomoClaro,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _esPrivado ? 'Solo comunidad' : 'Público',
-                                      style: TipografiaHaku.interfaz(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: _esPrivado
-                                            ? PaletaRutas.oro
-                                            : PaletaRutas.plomoClaro,
-                                      ),
+                            color: _guardando
+                                ? PaletaRutas.plomo.withValues(alpha: 0.3)
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: _guardando
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: PaletaRutas.oro
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 3),
                                     ),
                                   ],
+                          ),
+                          child: _guardando
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: PaletaRutas.oro,
+                                  ),
+                                )
+                              : Text(
+                                  'Publicar',
+                                  style: TipografiaHaku.interfaz(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    color: PaletaRutas.ink,
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // A.1: textarea expansible
-                            TextField(
-                              controller: _texto,
-                              minLines: 3,
-                              maxLines: null,
-                              enabled: !_guardando,
-                              style: TipografiaHaku.interfaz(
-                                color: PaletaRutas.piedra,
-                                fontSize: 16,
-                              ),
-                              cursorColor: PaletaRutas.oro,
-                              decoration: InputDecoration(
-                                hintText: '\u00bfQué estás explorando?',
-                                hintStyle: TipografiaHaku.interfaz(
-                                  color: PaletaRutas.plomo,
-                                  fontSize: 16,
-                                ),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ],
                   ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: LineaEncabezadoInca(altura: 2),
+                ),
 
-                  // A.8: Chips de contexto ──────────────────────────────────
-                  if (_hayChips) ...[
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          if (_lugar != null)
-                            _ChipContexto(
-                              icono: Icons.place_outlined,
-                              etiqueta: _lugar!.nombre,
-                              onQuitar: () => setState(() => _lugar = null),
-                            ),
-                          if (_comunidad != null)
-                            _ChipContexto(
-                              icono: Icons.groups_outlined,
-                              etiqueta: _comunidad!.nombre,
-                              onQuitar: () => setState(() => _comunidad = null),
-                            ),
-                          if (_salida != null)
-                            _ChipContexto(
-                              icono: Icons.hiking,
-                              etiqueta: _salida!.etiquetaPrincipal,
-                              onQuitar: () => setState(() => _salida = null),
-                            ),
-                          if (_ruta != null)
-                            _ChipContexto(
-                              icono: Icons.route_outlined,
-                              etiqueta: _ruta!.titulo,
-                              onQuitar: () => setState(() => _ruta = null),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // A.3: Preview foto inline ─────────────────────────────────
-                  if (_fotoBytes != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        children: [
-                          Image.memory(
-                            _fotoBytes!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                // ── ÁREA DE CONTENIDO (GLASSMORPHISM CARD) ─────────────
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(12, 16, 12, bottom + 16),
+                    children: [
+                      // Card principal translúcida
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: PaletaRutas.carbon.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: PaletaRutas.plomo.withValues(alpha: 0.18),
                           ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: IconButton(
-                              onPressed: _guardando
-                                  ? null
-                                  : () => setState(() {
-                                      _foto = null;
-                                      _fotoBytes = null;
-                                    }),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.black54,
-                              ),
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // A.3: Preview video inline ────────────────────────────────
-                  if (_video != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: PaletaRutas.carbon,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: PaletaRutas.oro.withValues(alpha: 0.45),
+                          ],
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.movie_outlined,
-                            color: PaletaRutas.oro,
-                            size: 32,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  _video!.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TipografiaHaku.interfaz(
-                                    fontWeight: FontWeight.w700,
-                                    color: PaletaRutas.piedra,
+                                // Avatar
+                                AvatarHaku(url: avatarUrl, size: 44),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // A.2: Toggle público / privado
+                                      GestureDetector(
+                                        onTap: () => setState(
+                                            () => _esPrivado = !_esPrivado),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _esPrivado
+                                                ? PaletaRutas.oro
+                                                    .withValues(alpha: 0.12)
+                                                : PaletaRutas.ink
+                                                    .withValues(alpha: 0.5),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: _esPrivado
+                                                  ? PaletaRutas.oro
+                                                      .withValues(alpha: 0.5)
+                                                  : PaletaRutas.plomo
+                                                      .withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                _esPrivado
+                                                    ? Icons.lock_outline
+                                                    : Icons.public,
+                                                size: 14,
+                                                color: _esPrivado
+                                                    ? PaletaRutas.oro
+                                                    : PaletaRutas.plomoClaro,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _esPrivado
+                                                    ? 'Solo comunidad'
+                                                    : 'Público',
+                                                style:
+                                                    TipografiaHaku.interfaz(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _esPrivado
+                                                      ? PaletaRutas.oro
+                                                      : PaletaRutas
+                                                          .plomoClaro,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      // Textarea
+                                      TextField(
+                                        controller: _texto,
+                                        minLines: 3,
+                                        maxLines: null,
+                                        enabled: !_guardando,
+                                        style: TipografiaHaku.interfaz(
+                                          color: PaletaRutas.piedra,
+                                          fontSize: 16,
+                                        ),
+                                        cursorColor: PaletaRutas.oro,
+                                        decoration: InputDecoration(
+                                          hintText:
+                                              '\u00bfQué estás explorando?',
+                                          hintStyle: TipografiaHaku.interfaz(
+                                            color: PaletaRutas.plomo,
+                                            fontSize: 16,
+                                          ),
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                if (_videoTamano != null)
-                                  Text(
-                                    '${_mostrarTamano(_videoTamano!)} \u00b7 máximo 10 min',
-                                    style: TipografiaHaku.interfaz(
-                                      fontSize: 11,
-                                      color: PaletaRutas.plomoClaro,
-                                    ),
-                                  ),
                               ],
                             ),
+
+                            // A.8: Chips de contexto
+                            if (_hayChips) ...[
+                              const SizedBox(height: 12),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    if (_lugar != null)
+                                      _ChipContexto(
+                                        icono: Icons.place_outlined,
+                                        etiqueta: _lugar!.nombre,
+                                        onQuitar: () =>
+                                            setState(() => _lugar = null),
+                                      ),
+                                    if (_comunidad != null)
+                                      _ChipContexto(
+                                        icono: Icons.groups_outlined,
+                                        etiqueta: _comunidad!.nombre,
+                                        onQuitar: () =>
+                                            setState(() => _comunidad = null),
+                                      ),
+                                    if (_salida != null)
+                                      _ChipContexto(
+                                        icono: Icons.hiking,
+                                        etiqueta: _salida!.etiquetaPrincipal,
+                                        onQuitar: () =>
+                                            setState(() => _salida = null),
+                                      ),
+                                    if (_ruta != null)
+                                      _ChipContexto(
+                                        icono: Icons.route_outlined,
+                                        etiqueta: _ruta!.titulo,
+                                        onQuitar: () =>
+                                            setState(() => _ruta = null),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // A.3: Preview foto
+                      if (_fotoBytes != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            children: [
+                              Image.memory(
+                                _fotoBytes!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  onPressed: _guardando
+                                      ? null
+                                      : () => setState(() {
+                                          _foto = null;
+                                          _fotoBytes = null;
+                                        }),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.black54,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            tooltip: 'Quitar video',
-                            onPressed: _guardando
-                                ? null
-                                : () => setState(() {
-                                    _video = null;
-                                    _videoTamano = null;
-                                  }),
-                            icon: const Icon(
-                              Icons.close_rounded,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // A.3: Preview video
+                      if (_video != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                PaletaRutas.carbon.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  PaletaRutas.oro.withValues(alpha: 0.45),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.movie_outlined,
+                                color: PaletaRutas.oro,
+                                size: 32,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _video!.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TipografiaHaku.interfaz(
+                                        fontWeight: FontWeight.w700,
+                                        color: PaletaRutas.piedra,
+                                      ),
+                                    ),
+                                    if (_videoTamano != null)
+                                      Text(
+                                        '${_mostrarTamano(_videoTamano!)} \u00b7 máximo 10 min',
+                                        style: TipografiaHaku.interfaz(
+                                          fontSize: 11,
+                                          color: PaletaRutas.plomoClaro,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Quitar video',
+                                onPressed: _guardando
+                                    ? null
+                                    : () => setState(() {
+                                        _video = null;
+                                        _videoTamano = null;
+                                      }),
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: PaletaRutas.plomoClaro,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_guardando && _progresoVideo != null) ...[
+                          const SizedBox(height: 10),
+                          LinearProgressIndicator(
+                            value: _progresoVideo,
+                            minHeight: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            color: PaletaRutas.oro,
+                            backgroundColor: PaletaRutas.carbon,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Subiendo video ${((_progresoVideo ?? 0) * 100).round()}%',
+                            textAlign: TextAlign.center,
+                            style: TipografiaHaku.interfaz(
+                              fontSize: 12,
                               color: PaletaRutas.plomoClaro,
                             ),
                           ),
                         ],
+                      ],
+                    ],
+                  ),
+                ),
+
+                // ── BARRA INFERIOR PREMIUM ─────────────────────────────
+                Container(
+                  decoration: BoxDecoration(
+                    color: PaletaRutas.carbon.withValues(alpha: 0.85),
+                    border: Border(
+                      top: BorderSide(
+                        color: PaletaRutas.oro.withValues(alpha: 0.15),
                       ),
                     ),
-                    // A.9: barra de progreso subida TUS
-                    if (_guardando && _progresoVideo != null) ...[
-                      const SizedBox(height: 10),
-                      LinearProgressIndicator(
-                        value: _progresoVideo,
-                        minHeight: 4,
-                        borderRadius: BorderRadius.circular(8),
-                        color: PaletaRutas.oro,
-                        backgroundColor: PaletaRutas.carbon,
+                  ),
+                  padding: EdgeInsets.fromLTRB(4, 6, 4, bottom + 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _BotonAdjunto(
+                        icono: Icons.image_outlined,
+                        etiqueta: 'Foto',
+                        activo: _foto != null,
+                        onTap: _guardando ? null : _elegirFoto,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Subiendo video ${((_progresoVideo ?? 0) * 100).round()}%',
-                        textAlign: TextAlign.center,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          color: PaletaRutas.plomoClaro,
-                        ),
+                      _BotonAdjunto(
+                        icono: Icons.video_library_outlined,
+                        etiqueta: 'Video',
+                        activo: _video != null,
+                        onTap: _guardando ? null : _elegirVideo,
+                      ),
+                      _BotonAdjunto(
+                        icono: Icons.place_outlined,
+                        etiqueta: 'Lugar',
+                        activo: _lugar != null,
+                        onTap: _guardando
+                            ? null
+                            : () async {
+                                final r = await mostrarSelectorLugar(
+                                    context, ref);
+                                if (r != null) setState(() => _lugar = r);
+                              },
+                      ),
+                      _BotonAdjunto(
+                        icono: Icons.groups_outlined,
+                        etiqueta: 'Comunidad',
+                        activo: _comunidad != null,
+                        onTap: _guardando
+                            ? null
+                            : () async {
+                                final r = await mostrarSelectorComunidad(
+                                    context, ref);
+                                if (r != null) {
+                                  setState(() => _comunidad = r);
+                                }
+                              },
+                      ),
+                      _BotonAdjunto(
+                        icono: Icons.hiking,
+                        etiqueta: 'Salida',
+                        activo: _salida != null,
+                        onTap: _guardando
+                            ? null
+                            : () async {
+                                final r = await mostrarSelectorSalida(
+                                    context, ref);
+                                if (r != null) setState(() => _salida = r);
+                              },
+                      ),
+                      _BotonAdjunto(
+                        icono: Icons.route_outlined,
+                        etiqueta: 'Ruta',
+                        activo: _ruta != null,
+                        onTap: _guardando
+                            ? null
+                            : () async {
+                                final r = await mostrarSelectorRuta(
+                                    context, ref);
+                                if (r != null) setState(() => _ruta = r);
+                              },
                       ),
                     ],
-                  ],
-                ],
-              ),
-            ),
-
-            // ── BARRA INFERIOR DE ADJUNTOS ─────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: PaletaRutas.ink,
-                border: Border(
-                  top: BorderSide(color: PaletaRutas.carbon),
+                  ),
                 ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Row(
-                children: [
-                  // Foto
-                  IconButton(
-                    onPressed: _guardando ? null : _elegirFoto,
-                    tooltip: 'Foto',
-                    icon: Icon(
-                      Icons.image_outlined,
-                      color: _foto != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                  // Video
-                  IconButton(
-                    onPressed: _guardando ? null : _elegirVideo,
-                    tooltip: 'Video',
-                    icon: Icon(
-                      Icons.video_library_outlined,
-                      color: _video != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                  // A.4: Lugar
-                  IconButton(
-                    onPressed: _guardando
-                        ? null
-                        : () async {
-                            final r =
-                                await mostrarSelectorLugar(context, ref);
-                            if (r != null) setState(() => _lugar = r);
-                          },
-                    tooltip: 'Lugar',
-                    icon: Icon(
-                      Icons.place_outlined,
-                      color: _lugar != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                  // A.5: Comunidad
-                  IconButton(
-                    onPressed: _guardando
-                        ? null
-                        : () async {
-                            final r =
-                                await mostrarSelectorComunidad(context, ref);
-                            if (r != null) setState(() => _comunidad = r);
-                          },
-                    tooltip: 'Comunidad',
-                    icon: Icon(
-                      Icons.groups_outlined,
-                      color: _comunidad != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                  // A.6: Salida
-                  IconButton(
-                    onPressed: _guardando
-                        ? null
-                        : () async {
-                            final r =
-                                await mostrarSelectorSalida(context, ref);
-                            if (r != null) setState(() => _salida = r);
-                          },
-                    tooltip: 'Salida',
-                    icon: Icon(
-                      Icons.hiking,
-                      color: _salida != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                  // A.7: Ruta
-                  IconButton(
-                    onPressed: _guardando
-                        ? null
-                        : () async {
-                            final r =
-                                await mostrarSelectorRuta(context, ref);
-                            if (r != null) setState(() => _ruta = r);
-                          },
-                    tooltip: 'Ruta',
-                    icon: Icon(
-                      Icons.route_outlined,
-                      color: _ruta != null
-                          ? PaletaRutas.oro
-                          : PaletaRutas.plomoClaro,
-                    ),
-                  ),
-                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botón de adjuntar con icono + texto debajo (barra inferior).
+class _BotonAdjunto extends StatelessWidget {
+  const _BotonAdjunto({
+    required this.icono,
+    required this.etiqueta,
+    required this.activo,
+    required this.onTap,
+  });
+
+  final IconData icono;
+  final String etiqueta;
+  final bool activo;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icono,
+              size: 22,
+              color: activo ? PaletaRutas.oro : PaletaRutas.plomoClaro,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              etiqueta,
+              style: TipografiaHaku.interfaz(
+                fontSize: 10,
+                fontWeight: activo ? FontWeight.w700 : FontWeight.w500,
+                color: activo ? PaletaRutas.oro : PaletaRutas.plomo,
               ),
             ),
           ],

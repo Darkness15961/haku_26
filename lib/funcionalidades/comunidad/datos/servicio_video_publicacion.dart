@@ -290,14 +290,14 @@ class ServicioVideoPublicacion {
         final message = '${details['error'] ?? ''}'.trim();
         if (message.isNotEmpty) throw ErrorVideoPublicacion(message);
       }
-      throw const ErrorVideoPublicacion(
-        'No se pudo conectar con el servicio de video.',
+      throw ErrorVideoPublicacion(
+        'Error del servidor de video (HTTP ${error.status}): ${error.details}',
       );
     } on ErrorVideoPublicacion {
       rethrow;
-    } catch (_) {
-      throw const ErrorVideoPublicacion(
-        'No se pudo conectar con el servicio de video.',
+    } catch (e) {
+      throw ErrorVideoPublicacion(
+        'Error de red al conectar con el servidor de video: $e',
       );
     }
   }

@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
-import '../../inicio/proveedores/proveedor_almacen_feed.dart';
-import '../../inicio/widgets/publicacion_estilo_threads.dart';
-import '../../lugares/datos/lugares_datasource_local.dart';
+import '../../comunidad/widgets/tarjeta_publicacion_remota.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
-import '../../lugares/proveedores/proveedor_explora_ui.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
-import '../../rutas/proveedores/proveedor_rutas.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
+import '../proveedores/proveedores_guardados_remotos.dart';
 
 /// Guardados reales: rutas + publicaciones.
 class PantallaFavoritos extends ConsumerWidget {
@@ -19,34 +17,30 @@ class PantallaFavoritos extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(almacenFeedProvider);
-    final idsRutas = store.favoritosRutaIds
-        .where((id) => !id.startsWith('lugar_'))
-        .toSet();
-    final idsRutasOrdenados = idsRutas.toList()..sort();
-    final rutasAsync = ref.watch(
-      rutasGuardadasProvider(idsRutasOrdenados.join(',')),
-    );
-    final catalogoRutas = rutasAsync.valueOrNull ?? const [];
-    final rutasPorId = {for (final ruta in catalogoRutas) ruta.id: ruta};
-    final rutas = [
-      for (final id in idsRutas)
-        if (rutasPorId[id] != null) rutasPorId[id]!,
-    ];
-    final rutasNoDisponibles = rutasAsync.hasValue
-        ? idsRutas.where((id) => !rutasPorId.containsKey(id)).toList()
-        : const <String>[];
-    final lugares = [
-      for (final id in store.favoritosRutaIds)
-        if (id.startsWith('lugar_'))
-          LugaresDataSourceLocal.instancia.porId(id.substring('lugar_'.length)),
-    ].whereType();
-    final posts = [
-      for (final p in store.publicaciones)
-        if (store.guardadosIds.contains(p.id)) p,
-    ];
+    if (!supabaseListo) {
+      return const Scaffold(
+        backgroundColor: PaletaRutas.ink,
+        body: Center(
+          child: Text(
+            'Se requiere conexión',
+            style: TextStyle(color: PaletaRutas.plomoClaro),
+          ),
+        ),
+      );
+    }
+
+    final rutasAsync = ref.watch(rutasGuardadasRemotasProvider);
+    final lugaresAsync = ref.watch(lugaresGuardadosRemotosProvider);
+    final pubsAsync = ref.watch(publicacionesGuardadasRemotasProvider);
+
+    final rutas = rutasAsync.valueOrNull ?? [];
+    final lugares = lugaresAsync.valueOrNull ?? [];
+    final posts = pubsAsync.valueOrNull ?? [];
+
+    final bool estaCargando =
+        rutasAsync.isLoading || lugaresAsync.isLoading || pubsAsync.isLoading;
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
-    final vacio = idsRutas.isEmpty && lugares.isEmpty && posts.isEmpty;
+    final vacio = rutas.isEmpty && lugares.isEmpty && posts.isEmpty && !estaCargando;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -98,16 +92,19 @@ class PantallaFavoritos extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         BotonPrimarioRuta(
-                          texto: 'Rutas',
+                          texto: 'Explorar',
                           icono: Icons.map_outlined,
                           onPressed: () {
-                            irAExplora(ref, modo: ModoExplora.rutas);
                             Navigator.of(context).pop();
                           },
                         ),
                       ],
                     )
-                  : ListView(
+                  : estaCargando && vacio
+                      ? const Center(
+                          child: CircularProgressIndicator(color: PaletaRutas.oro),
+                        )
+                      : ListView(
                       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                       children: [
                         if (lugares.isNotEmpty) ...[
@@ -137,7 +134,7 @@ class PantallaFavoritos extends ConsumerWidget {
                           ],
                           const SizedBox(height: 12),
                         ],
-                        if (idsRutas.isNotEmpty) ...[
+                        if (rutas.isNotEmpty) ...[
                           Text(
                             'Rutas',
                             style: TipografiaHaku.titulo(
@@ -147,23 +144,6 @@ class PantallaFavoritos extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          if (rutasAsync.isLoading && !rutasAsync.hasValue)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: PaletaRutas.oro,
-                                ),
-                              ),
-                            )
-                          else if (rutasAsync.hasError && !rutasAsync.hasValue)
-                            _ErrorRutasGuardadas(
-                              onReintentar: () => ref.invalidate(
-                                rutasGuardadasProvider(
-                                  idsRutasOrdenados.join(','),
-                                ),
-                              ),
-                            ),
                           for (final r in rutas) ...[
                             _TileRuta(
                               titulo: r.titulo,
@@ -176,16 +156,6 @@ class PantallaFavoritos extends ConsumerWidget {
                                   ),
                                 );
                               },
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                          for (final id in rutasNoDisponibles) ...[
-                            _TileRuta(
-                              titulo: 'Ruta ya no disponible',
-                              subtitulo: 'Guardado · $id',
-                              onQuitar: () => ref
-                                  .read(almacenFeedProvider.notifier)
-                                  .toggleFavoritoRuta(id),
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -202,9 +172,8 @@ class PantallaFavoritos extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
                           for (var i = 0; i < posts.length; i++) ...[
-                            PublicacionEstiloThreads(
+                            TarjetaPublicacionRemota(
                               publicacion: posts[i],
-                              indice: i,
                             ),
                             const SizedBox(height: 12),
                           ],
@@ -221,17 +190,13 @@ class PantallaFavoritos extends ConsumerWidget {
 
 class _TileRuta extends StatelessWidget {
   final String titulo;
-  final String? subtitulo;
   final String? imagen;
   final VoidCallback? onTap;
-  final VoidCallback? onQuitar;
 
   const _TileRuta({
     required this.titulo,
-    this.subtitulo,
     this.imagen,
     this.onTap,
-    this.onQuitar,
   });
 
   @override
@@ -279,35 +244,15 @@ class _TileRuta extends StatelessWidget {
                         color: PaletaRutas.piedra,
                       ),
                     ),
-                    if (subtitulo != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitulo!,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          color: PaletaRutas.plomoClaro,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
-              if (onQuitar != null)
-                IconButton(
-                  tooltip: 'Quitar de guardados',
-                  onPressed: onQuitar,
-                  icon: const Icon(
-                    Icons.bookmark_remove_outlined,
-                    color: PaletaRutas.oro,
-                  ),
-                )
-              else
-                Icon(
-                  onTap == null
-                      ? Icons.info_outline_rounded
-                      : Icons.chevron_right,
-                  color: PaletaRutas.plomo,
-                ),
+              Icon(
+                onTap == null
+                    ? Icons.info_outline_rounded
+                    : Icons.chevron_right,
+                color: PaletaRutas.plomo,
+              ),
             ],
           ),
         ),
@@ -316,25 +261,4 @@ class _TileRuta extends StatelessWidget {
   }
 }
 
-class _ErrorRutasGuardadas extends StatelessWidget {
-  const _ErrorRutasGuardadas({required this.onReintentar});
 
-  final VoidCallback onReintentar;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        children: [
-          Text(
-            'No pudimos actualizar tus rutas guardadas.',
-            textAlign: TextAlign.center,
-            style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
-          ),
-          TextButton(onPressed: onReintentar, child: const Text('Reintentar')),
-        ],
-      ),
-    );
-  }
-}

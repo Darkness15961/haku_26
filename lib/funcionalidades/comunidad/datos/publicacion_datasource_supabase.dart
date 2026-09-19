@@ -51,7 +51,17 @@ publicacion_ruta (
     id,
     nombre
   )
-)
+),
+publicacion_salida (
+  salida_id,
+  salida:salida_id (
+    id,
+    titulo
+  )
+),
+publicacion_me_gusta(count),
+le_di_me_gusta,
+publicacion_guardada_por_mi
 ''';
 
   Future<List<ModeloPublicacionRemota>> listarPublicas({
@@ -394,5 +404,113 @@ publicacion:publicacion_id!inner (
     if (row == null) {
       throw const AuthException('No se pudo eliminar la publicación');
     }
+  }
+
+  /// Hard-delete: Borrado permanente de la base de datos.
+  /// Se usa para limpiar registros creados cuando falla la subida de un archivo.
+  Future<void> eliminarFisica(String id) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return;
+    
+    final idNum = int.tryParse(id.trim());
+    if (idNum == null) return;
+    await clienteSupabase
+        .from('publicacion')
+        .delete()
+        .eq('id', idNum)
+        .eq('usuario_id', user.id);
+  }
+
+  Future<void> darMeGusta(String publicacionId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Debes iniciar sesión para dar me gusta');
+    }
+
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) return;
+
+    try {
+      await clienteSupabase.from('publicacion_me_gusta').insert({
+        'publicacion_id': idNum,
+        'usuario_id': user.id,
+      });
+    } on PostgrestException catch (e) {
+      // Si ya le dio me gusta, ignoramos el error de clave primaria duplicada (23505)
+      if (e.code == '23505') return;
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo dar me gusta' : e.message,
+      );
+    }
+  }
+
+  Future<void> quitarMeGusta(String publicacionId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return;
+
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) return;
+
+    await clienteSupabase
+        .from('publicacion_me_gusta')
+        .delete()
+        .eq('publicacion_id', idNum)
+        .eq('usuario_id', user.id);
+  }
+
+  Future<void> guardarPublicacion(String publicacionId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Debes iniciar sesión para guardar');
+    }
+
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) return;
+
+    try {
+      await clienteSupabase.from('publicacion_guardada').insert({
+        'publicacion_id': idNum,
+        'usuario_id': user.id,
+      });
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return;
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo guardar la publicación' : e.message,
+      );
+    }
+  }
+
+  Future<void> quitarGuardadoPublicacion(String publicacionId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return;
+
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) return;
+
+    await clienteSupabase
+        .from('publicacion_guardada')
+        .delete()
+        .eq('publicacion_id', idNum)
+        .eq('usuario_id', user.id);
+  }
+
+  Future<List<ModeloPublicacionRemota>> listarPublicacionesGuardadas() async {
+    if (!supabaseListo) return const [];
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return const [];
+
+    final rows = await clienteSupabase
+        .from('publicacion_guardada')
+        .select('publicacion:publicacion_id!inner($_selectFeed)')
+        .eq('usuario_id', user.id)
+        .eq('publicacion.estado', 'publico')
+        .order('fecha_creacion', ascending: false);
+
+    return _mapearVinculadas(rows);
   }
 }

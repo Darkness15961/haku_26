@@ -9,7 +9,7 @@ import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../inicio/proveedores/proveedor_comunidad_ui.dart';
-import '../../publicaciones/pantallas/pantalla_publicaciones.dart';
+import '../../publicaciones/pantallas/pantalla_crear_publicacion.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelo_comunidad.dart';
@@ -54,7 +54,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     final ok = await asegurarSesion(context, ref);
     if (!ok || !mounted) return;
     await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const PantallaPublicaciones()),
+      MaterialPageRoute<bool>(builder: (_) => const PantallaCrearPublicacion()),
     );
   }
 

@@ -2,7 +2,6 @@ export 'pantallas/pantalla_comunidad.dart';
 export 'pantallas/pantalla_detalle_comunidad.dart';
 export 'pantallas/pantalla_crear_comunidad_remota.dart';
 export 'pantallas/pantalla_chat_comunidad.dart';
-export 'pantallas/pantalla_crear_publicacion_remota.dart';
 export 'pantallas/pantalla_salidas.dart';
 export 'pantallas/pantalla_crear_salida.dart';
 export 'pantallas/pantalla_crear_salida_remota.dart';
