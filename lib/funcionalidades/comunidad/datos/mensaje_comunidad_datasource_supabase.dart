@@ -115,42 +115,33 @@ usuario:usuario_id (
     }
     if (nums.isEmpty) return const {};
 
-    final resultados = await Future.wait(
-      nums.map((idNum) async {
-        try {
-          final sala = await clienteSupabase
-              .from('sala_chat')
-              .select('id')
-              .eq('tipo', 'comunidad')
-              .eq('comunidad_id', idNum)
-              .maybeSingle();
-          if (sala == null || sala['id'] == null) return null;
-          final salaNum = sala['id'];
-          final row = await clienteSupabase
-              .from('mensaje')
-              .select(_selectMensaje)
-              .eq('sala_id', salaNum)
-              .order('fecha_envio', ascending: false)
-              .order('id', ascending: false)
-              .limit(1)
-              .maybeSingle();
-          if (row == null) return null;
-          return ModeloMensajeComunidad.desdeFilaRemota(
-            Map<String, dynamic>.from(row),
-            comunidadIdFallback: '$idNum',
-          ).copyWith(comunidadId: '$idNum');
-        } catch (_) {
-          return null;
-        }
-      }),
-    );
+    try {
+      final rows = await clienteSupabase.rpc(
+        'obtener_ultimos_mensajes_comunidades',
+        params: {'p_comunidad_ids': nums},
+      );
 
-    final map = <String, ModeloMensajeComunidad>{};
-    for (final m in resultados) {
-      if (m == null || m.id.isEmpty || m.comunidadId.isEmpty) continue;
-      map[m.comunidadId] = m;
+      final map = <String, ModeloMensajeComunidad>{};
+      if (rows is List) {
+        for (final row in rows) {
+          if (row is! Map) continue;
+          final cid = row['comunidad_id']?.toString() ?? '';
+          if (cid.isEmpty) continue;
+          
+          final m = ModeloMensajeComunidad.desdeFilaRemota(
+            Map<String, dynamic>.from(row),
+            comunidadIdFallback: cid,
+          ).copyWith(comunidadId: cid);
+          
+          if (m.id.isNotEmpty && m.comunidadId.isNotEmpty) {
+            map[m.comunidadId] = m;
+          }
+        }
+      }
+      return map;
+    } catch (_) {
+      return const {};
     }
-    return map;
   }
 
   Future<ModeloMensajeComunidad> enviar({

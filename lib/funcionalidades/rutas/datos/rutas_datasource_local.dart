@@ -105,7 +105,7 @@ class RutasDataSourceLocal {
       transporte: 'Colectivo / taxi / tour privado',
       comoLlegar:
           'Sale desde Cusco por la carretera hacia Pisac (≈45 min). Continúa a Urubamba y Ollantaytambo. Puedes hacerlo en un día largo o dormir en el valle.',
-      tips: const [
+      tips: [
         'Mercado de Pisac abre fuerte los martes/jueves/domingo',
         'Llevar efectivo en soles para artesanos',
       ],
@@ -168,7 +168,7 @@ class RutasDataSourceLocal {
       transporte: 'A pie (todo el circuito)',
       comoLlegar:
           'Comienza en la Plaza de Armas. Baja a Qorikancha, sube por San Blas y continúa hasta Sacsayhuamán (taxi opcional en el tramo final).',
-      tips: const [
+      tips: [
         'Boleto turístico parcial cubre Sacsayhuamán',
         'Hidrátate: la altura se siente al subir',
       ],
@@ -229,7 +229,7 @@ class RutasDataSourceLocal {
       transporte: 'Tren a Aguas Calientes + bus CONSETUR',
       comoLlegar:
           'Tren desde Poroy u Ollantaytambo hasta Aguas Calientes. De ahí, bus a la ciudadela o caminata empinada (≈1.5 h). Entrada con horario.',
-      tips: const [
+      tips: [
         'Compra tickets con fecha y circuito',
         'Llega al primer bus si quieres menos gente',
       ],
@@ -283,7 +283,7 @@ class RutasDataSourceLocal {
       transporte: 'Van desde Cusco (salida ~4–5 am)',
       comoLlegar:
           'Van o tour desde Cusco hasta Mollepata y luego Soraypampa. Desde allí, caminata de ~1.5–2 h hasta la laguna. Caballos opcionales en tramos.',
-      tips: const [
+      tips: [
         'Salida muy temprano para evitar nubes',
         'Bastones ayudan en el último tramo',
       ],
@@ -338,7 +338,7 @@ class RutasDataSourceLocal {
       transporte: 'Tour o van privada desde Cusco',
       comoLlegar:
           'Traslado temprano a Cusipata y luego a Phulawasipata. Caminata de altura hasta el mirador. Alternativa: Red Valley.',
-      tips: const [
+      tips: [
         'Aclimatación obligatoria',
         'Capa térmica + impermeable',
       ],
@@ -392,7 +392,7 @@ class RutasDataSourceLocal {
       transporte: 'Taxi / colectivo / bicicleta',
       comoLlegar:
           'Desde Cusco o Urubamba hacia Maras. Visita Moray primero y luego las salineras. Hay opción en bici desde Urubamba.',
-      tips: const [
+      tips: [
         'Entrada separada a salineras',
         'Mejor luz al atardecer en Maras',
       ],
@@ -446,7 +446,7 @@ class RutasDataSourceLocal {
       transporte: 'A pie desde el centro',
       comoLlegar:
           'Sube por Cuesta San Blas. Los talleres abren de mañana; pregunta por la demostración.',
-      tips: const [
+      tips: [
         'Lleva ropa que pueda mancharse de barro',
       ],
     ),
@@ -476,7 +476,7 @@ class RutasDataSourceLocal {
       transporte: 'A pie',
       comoLlegar:
           'Entra al mercado por la puerta principal. El fogón suele estar en el segundo nivel de comidas.',
-      tips: const [
+      tips: [
         'Prueba el jugo de tumbo antes del almuerzo',
       ],
     ),
@@ -506,7 +506,7 @@ class RutasDataSourceLocal {
       transporte: 'Taxi o bus turístico',
       comoLlegar:
           'Consulta fechas de ensayo público. Llega temprano: el aforo es limitado.',
-      tips: const [
+      tips: [
         'Silencio durante las escenas sagradas',
       ],
     ),
@@ -536,7 +536,7 @@ class RutasDataSourceLocal {
       transporte: 'A pie',
       comoLlegar:
           'Busca los estudios con puerta azul cerca de la plazuela. Reserva el cupo del día.',
-      tips: const [
+      tips: [
         'Puedes llevarte tu pieza al final',
       ],
     ),
@@ -566,7 +566,7 @@ class RutasDataSourceLocal {
       transporte: 'Colectivo o taxi',
       comoLlegar:
           'Desde Cusco ~45 min. Las asociaciones tejedoras reciben grupos por la mañana.',
-      tips: const [
+      tips: [
         'Compra directa apoya a las tejedoras',
       ],
     ),

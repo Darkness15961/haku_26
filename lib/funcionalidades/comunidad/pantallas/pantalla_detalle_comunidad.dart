@@ -12,11 +12,13 @@ import '../../rutas/widgets/boton_fondo_textil.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/modelo_comunidad.dart';
+import '../dominio/modelo_publicacion.dart';
 import '../proveedores/proveedor_comunidad.dart';
 import '../proveedores/proveedor_publicaciones.dart';
 import '../widgets/chip_categoria_comunidad.dart';
 import '../widgets/tarjeta_publicacion_remota.dart';
 import '../../chat/indice.dart';
+import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import 'pantalla_salidas.dart';
 
 class PantallaDetalleComunidad extends ConsumerStatefulWidget {
@@ -527,15 +529,9 @@ class _EstadoPantallaDetalleComunidad
                         ),
                       )
                     else
-                      for (final publicacion
-                          in publicacionesAsync.valueOrNull!) ...[
-                        TarjetaPublicacionRemota(
-                          publicacion: publicacion,
-                          compacta: true,
-                          habilitarComunidad: false,
-                        ),
-                        const SizedBox(height: 14),
-                      ],
+                      _GaleriaPublicacionesComunidad(
+                        publicaciones: publicacionesAsync.valueOrNull!,
+                      ),
                     const SizedBox(height: 8),
                     const LineaEncabezadoInca(altura: 2),
                     const SizedBox(height: 14),
@@ -866,6 +862,115 @@ class _FilaMiembroRemoto extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GaleriaPublicacionesComunidad extends StatelessWidget {
+  final List<ModeloPublicacionRemota> publicaciones;
+
+  const _GaleriaPublicacionesComunidad({required this.publicaciones});
+
+  void _abrirFeedCompleto(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PaletaRutas.ink,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        return SizedBox(
+          height: MediaQuery.sizeOf(ctx).height * 0.9,
+          child: Column(
+            children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Publicaciones',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: PaletaRutas.plomo,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: LineaEncabezadoInca(altura: 2),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: publicaciones.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, i) {
+                  return TarjetaPublicacionRemota(
+                    publicacion: publicaciones[i],
+                    compacta: false,
+                    habilitarComunidad: false,
+                  );
+                },
+              ),
+            ),
+          ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Tomar las primeras 3 para la previsualización
+    final top3 = publicaciones.take(3).toList();
+    final extras = publicaciones.length > 3 ? publicaciones.length - 3 : 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < top3.length; i++)
+          TarjetaExperienciaLugarRemota(
+            publicacion: top3[i],
+            onTap: () => _abrirFeedCompleto(context),
+          ),
+        if (extras > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: InkWell(
+              onTap: () => _abrirFeedCompleto(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ver $extras publicaciones más',
+                      style: TipografiaHaku.interfaz(
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.arrow_forward_rounded, color: PaletaRutas.oro, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

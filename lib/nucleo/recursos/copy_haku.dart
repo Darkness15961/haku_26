@@ -134,7 +134,7 @@ abstract final class CopyHaku {
   static const cardComunidadCta = 'Ver ficha';
 
   static const experienciasVacias =
-      'Nadie dejó su historia aún. Sé el primero de tu cuadrilla.';
+      'Nadie dejó su historia aún. Sé el primero en compartir tu experiencia.';
 
   static const portadaTituloFallback = 'Cuando baja el ruido';
   static const portadaSubtituloFallback = 'Calles que ya caminaste de noche';
@@ -153,7 +153,7 @@ abstract final class CopyHaku {
   static const insigniaVecinoMapaDesc = 'Primeros pasos en el mapa';
 
   static const seccionExperienciasSub =
-      'Lo que contó la gente — sola o en cuadrilla';
+      'Publicaciones de las personas';
 
   static String compartirPerfil(String usuario) =>
       'Te paso el perfil de $usuario en HAKU — échale un ojo.';

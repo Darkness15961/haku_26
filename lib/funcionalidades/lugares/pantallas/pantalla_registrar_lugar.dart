@@ -34,7 +34,7 @@ class PantallaRegistrarLugar extends ConsumerStatefulWidget {
 
 class _EstadoPantallaRegistrarLugar
     extends ConsumerState<PantallaRegistrarLugar> {
-  static const _pasos = 5;
+  static const _pasos = 4;
 
   final _nombre = TextEditingController();
   final _descripcion = TextEditingController();
@@ -42,7 +42,6 @@ class _EstadoPantallaRegistrarLugar
 
   int _paso = 0;
   XFile? _foto;
-  String _acceso = 'Caminando';
   bool _publicando = false;
   bool _ubicando = false;
 
@@ -388,7 +387,6 @@ class _EstadoPantallaRegistrarLugar
           ..._tematicaIds,
           ..._actividadIds,
         ],
-        acceso: _acceso,
         fotoPortadaUrl: fotoUrl,
         latitud: _latitud!,
         longitud: _longitud!,
@@ -488,48 +486,7 @@ class _EstadoPantallaRegistrarLugar
 
   TextStyle get _textoPaso => TipografiaHaku.interfaz(color: PaletaRutas.piedra);
 
-  Widget _opcionAcceso(String valor) {
-    final sel = _acceso == valor;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: PaletaRutas.carbon,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => setState(() => _acceso = valor),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: sel
-                    ? PaletaRutas.oro
-                    : PaletaRutas.plomoOscuro.withValues(alpha: 0.55),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  sel ? Icons.radio_button_checked : Icons.radio_button_off,
-                  color: sel ? PaletaRutas.oro : PaletaRutas.plomo,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  valor,
-                  style: TipografiaHaku.interfaz(
-                    fontWeight: FontWeight.w700,
-                    color: sel ? PaletaRutas.oro : PaletaRutas.piedra,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _botonUbicacion({
     required IconData icono,
@@ -1035,19 +992,6 @@ class _EstadoPantallaRegistrarLugar
                 ),
               ),
             ],
-          ],
-        );
-      case 3:
-        return ListView(
-          children: [
-            Text('¿Cómo llegaste al lugar?', style: _tituloPaso),
-            const SizedBox(height: 8),
-            Text(
-              'Cuéntanos cómo llegaste tú (caminando, auto…).',
-              style: _ayudaPaso,
-            ),
-            const SizedBox(height: 18),
-            ...['Caminando', 'Auto', 'Transporte', 'Caballo'].map(_opcionAcceso),
           ],
         );
       default:

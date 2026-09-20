@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../lugares/navegacion_lugar.dart';
@@ -12,6 +11,7 @@ import '../datos/publicacion_datasource_supabase.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
 import '../proveedores/proveedor_publicaciones.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
+import '../../publicaciones/pantallas/pantalla_editar_publicacion.dart';
 import 'video_publicacion_haku.dart';
 
 /// Card remota con lenguaje visual del feed Threads (sin likes inventados).
@@ -130,18 +130,27 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
 
             // ── 3. MEDIA (Foto/Video) ──
             if (video.isNotEmpty || imagen.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: AspectRatio(
-                  aspectRatio: EspacioHaku.aspectPublicacion(context),
-                  child: video.isNotEmpty
-                      ? VideoPublicacionHaku(
-                          publicacionId: p.id,
-                          url: video,
-                          miniaturaUrl: p.videoMiniaturaUrl,
-                          estadoInicial: p.videoEstado ?? 'processing',
-                        )
-                      : ImagenHaku(url: imagen, fit: BoxFit.cover),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.4, // Nunca más del 40% de la pantalla
+                      minHeight: 200, // Altura mínima decente
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: video.isNotEmpty
+                          ? VideoPublicacionHaku(
+                              publicacionId: p.id,
+                              url: video,
+                              miniaturaUrl: p.videoMiniaturaUrl,
+                              estadoInicial: p.videoEstado ?? 'processing',
+                            )
+                          : ImagenHaku(url: imagen, fit: BoxFit.cover),
+                    ),
+                  ),
                 ),
               ),
 
@@ -610,6 +619,19 @@ class _BotonOpcionesPub extends ConsumerWidget {
         padding: EdgeInsets.zero,
         itemBuilder: (_) => [
           PopupMenuItem(
+            value: 'editar',
+            child: Row(
+              children: [
+                const Icon(Icons.edit_outlined, color: PaletaRutas.oro, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  'Editar publicación',
+                  style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
             value: 'eliminar',
             child: Row(
               children: [
@@ -624,7 +646,13 @@ class _BotonOpcionesPub extends ConsumerWidget {
           ),
         ],
         onSelected: (val) async {
-          if (val == 'eliminar') {
+          if (val == 'editar') {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PantallaEditarPublicacion(publicacion: publicacion),
+              ),
+            );
+          } else if (val == 'eliminar') {
             final conf = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
@@ -20,6 +20,7 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../proveedores/proveedor_aportaciones_perfil.dart';
+import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import '../widgets/insignia_perfil.dart';
 import '../widgets/sheet_lista_perfil.dart';
 import '../widgets/tarjeta_estadistica_perfil.dart';
@@ -989,21 +990,12 @@ class _ContenidoPublicaciones extends StatelessWidget {
       );
     }
 
-    // Mosaico estable (evita overflow del card completo en GridView).
-    final cols = EspacioHaku.esHorizontal(context) ? 3 : 2;
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: publicaciones.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: cols,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1,
-      ),
-      itemBuilder: (context, i) {
-        return _CeldaPublicacionPerfil(publicacion: publicaciones[i]);
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final p in publicaciones)
+          _CeldaPublicacionPerfil(publicacion: p),
+      ],
     );
   }
 }
@@ -1095,44 +1087,9 @@ class _CeldaPublicacionPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagen = publicacion.imagenUrl?.trim() ?? '';
-    return Material(
-      color: PaletaRutas.carbon,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _abrirDetalle(context),
-        child: imagen.isNotEmpty
-            ? ImagenHaku(url: imagen, fit: BoxFit.cover)
-            : Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.notes_rounded,
-                      size: 18,
-                      color: PaletaRutas.oro.withValues(alpha: 0.8),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Text(
-                        publicacion.contenido.trim().isEmpty
-                            ? 'Sin texto'
-                            : publicacion.contenido,
-                        maxLines: 5,
-                        overflow: TextOverflow.ellipsis,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          height: 1.3,
-                          color: PaletaRutas.piedra,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-      ),
+    return TarjetaExperienciaLugarRemota(
+      publicacion: publicacion,
+      onTap: () => _abrirDetalle(context),
     );
   }
 }

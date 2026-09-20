@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../nucleo/supabase/cliente_supabase.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
+import '../../comunidad/datos/servicio_video_publicacion.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
@@ -549,36 +552,26 @@ class _ChipContexto extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla principal unificada (A.1 — A.8)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Pantalla unificada para crear publicaciones.
-/// Reemplaza a PantallaPublicaciones (legacy) y PantallaCrearPublicacionRemota.
-class PantallaCrearPublicacion extends ConsumerStatefulWidget {
-  const PantallaCrearPublicacion({
+/// Pantalla unificada para editar publicaciones.
+class PantallaEditarPublicacion extends ConsumerStatefulWidget {
+  const PantallaEditarPublicacion({
     super.key,
-    this.lugarInicial,
-    this.comunidadInicial,
-    this.salidaInicial,
-    this.rutaInicial,
+    required this.publicacion,
   });
 
-  final ModeloLugar? lugarInicial;
-  final ComunidadHaku? comunidadInicial;
-  final ModeloSalidaRemota? salidaInicial;
-  final ModeloRuta? rutaInicial;
+  final ModeloPublicacionRemota publicacion;
 
   @override
-  ConsumerState<PantallaCrearPublicacion> createState() =>
-      _EstadoPantallaCrearPublicacion();
+  ConsumerState<PantallaEditarPublicacion> createState() =>
+      _EstadoPantallaEditarPublicacion();
 }
 
-class _EstadoPantallaCrearPublicacion
-    extends ConsumerState<PantallaCrearPublicacion> {
+class _EstadoPantallaEditarPublicacion
+    extends ConsumerState<PantallaEditarPublicacion> {
   final _texto = TextEditingController();
   final _picker = ImagePicker();
 
@@ -587,6 +580,9 @@ class _EstadoPantallaCrearPublicacion
   Uint8List? _fotoBytes;
   XFile? _video;
   int? _videoTamano;
+  
+  String? _fotoUrlActual;
+  bool _fotoEliminada = false;
 
   // Privacidad (A.2)
   bool _esPrivado = false;
@@ -603,10 +599,32 @@ class _EstadoPantallaCrearPublicacion
   @override
   void initState() {
     super.initState();
-    _lugar = widget.lugarInicial;
-    _comunidad = widget.comunidadInicial;
-    _salida = widget.salidaInicial;
-    _ruta = widget.rutaInicial;
+    _texto.text = widget.publicacion.contenido;
+    _esPrivado = widget.publicacion.estado == 'privado';
+    _fotoUrlActual = widget.publicacion.imagenUrl;
+    
+    Future.microtask(() {
+      final lugares = ref.read(lugaresListaProvider);
+      final comunidades = ref.read(comunidadesListaProvider);
+      final salidas = ref.read(salidasRemotasProvider).valueOrNull ?? const [];
+      final rutas = ref.read(rutasPublicadasProvider).valueOrNull ?? const [];
+      
+      setState(() {
+        if (widget.publicacion.lugarId != null) {
+          _lugar = lugares.cast<ModeloLugar?>().firstWhere((l) => l?.id == widget.publicacion.lugarId, orElse: () => null);
+        }
+        if (widget.publicacion.comunidades.isNotEmpty) {
+          final cId = widget.publicacion.comunidades.first.comunidadId.toString();
+          _comunidad = comunidades.cast<ComunidadHaku?>().firstWhere((c) => c?.id == cId, orElse: () => null);
+        }
+        if (widget.publicacion.salidaId != null) {
+          _salida = salidas.cast<ModeloSalidaRemota?>().firstWhere((s) => s?.id == widget.publicacion.salidaId, orElse: () => null);
+        }
+        if (widget.publicacion.rutaId != null) {
+          _ruta = rutas.cast<ModeloRuta?>().firstWhere((r) => r?.id == widget.publicacion.rutaId, orElse: () => null);
+        }
+      });
+    });
   }
 
   @override
@@ -622,7 +640,7 @@ class _EstadoPantallaCrearPublicacion
   //   2. Foto → subirImagen → RPC con p_imagen_url.
   //   3. Video → RPC (crea publicación), preparar ticket Bunny, subir TUS.
   //      Si Bunny falla → soft-delete de la publicación crea (compensación).
-  Future<void> _publicar() async {
+  Future<void> _guardarEdicion() async {
     final contenido = _texto.text.trim();
     if (contenido.isEmpty) {
       mostrarSnackHaku(context, 'Escribe algo para publicar');
@@ -664,42 +682,16 @@ class _EstadoPantallaCrearPublicacion
 
       if (_video != null) {
         // ── Caso video ───────────────────────────────────────────────────
-        final creada = await ds.crear(
-          contenido: contenido,
-          estado: estado,
-          comunidadId: comunidadId,
-          lugarId: lugarId,
-          rutaId: rutaId,
-          salidaId: salidaId,
-        );
-        final publicacionId = int.tryParse(creada.id);
-        if (publicacionId == null) {
-          throw const ErrorVideoPublicacion(
-            'No se pudo identificar la publicación creada.',
-          );
-        }
-
-        final servicio = ServicioVideoPublicacion();
-        try {
-          final ticket = await servicio.preparar(publicacionId);
-          await servicio.subir(
-            archivo: _video!,
-            ticket: ticket,
-            alProgresar: (progreso) {
-              if (mounted) setState(() => _progresoVideo = progreso);
-            },
-          );
-        } catch (_) {
-          // Compensación: intentar cancelar Bunny y hacer un borrado definitivo de la pub.
-          try { await servicio.cancelar(publicacionId); } catch (_) {}
-          try { await ds.eliminarFisica(creada.id); } catch (_) {}
-          rethrow;
-        }
-        // Estado Bunny puede tardar; no bloquear al usuario si falla consulta.
-        try { await servicio.consultarEstado(publicacionId); } catch (_) {}
-
+        // FIXME: Al integrar Bunny Stream, ajustar esta lógica para actualizar 
+        // el registro en Supabase y subir el nuevo archivo, o eliminar el anterior.
+        mostrarSnackHaku(context, 'La edición de video estará disponible pronto');
+        setState(() {
+          _guardando = false;
+          _progresoVideo = null;
+        });
+        return;
       } else if (_foto != null && _fotoBytes != null) {
-        // ── Caso foto ────────────────────────────────────────────────────
+        // ── Caso foto nueva ──────────────────────────────────────────────
         final nombre = _foto!.name.toLowerCase();
         final ext = nombre.endsWith('.png')
             ? 'png'
@@ -707,7 +699,9 @@ class _EstadoPantallaCrearPublicacion
         final contentType = ext == 'png'
             ? 'image/png'
             : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
-        await ds.crearConImagen(
+            
+        await ds.editarConImagen(
+          publicacionId: widget.publicacion.id,
           userId: uid,
           bytes: _fotoBytes!,
           contentType: contentType,
@@ -718,17 +712,22 @@ class _EstadoPantallaCrearPublicacion
           lugarId: lugarId,
           rutaId: rutaId,
           salidaId: salidaId,
+          eliminarImagenActual: true,
+          imagenUrlActual: widget.publicacion.imagenUrl,
         );
 
       } else {
-        // ── Caso texto (con o sin etiquetas) ────────────────────────────
-        await ds.crear(
+        // ── Caso solo texto (o mantiene foto actual, o eliminó foto) ────
+        await ds.editar(
+          publicacionId: widget.publicacion.id,
           contenido: contenido,
           estado: estado,
           comunidadId: comunidadId,
           lugarId: lugarId,
           rutaId: rutaId,
           salidaId: salidaId,
+          nuevaImagenUrl: _fotoEliminada ? null : _fotoUrlActual,
+          eliminarImagenActual: _fotoEliminada,
         );
       }
 
@@ -736,21 +735,17 @@ class _EstadoPantallaCrearPublicacion
       if (!mounted) return;
       mostrarSnackHaku(
         context,
-        _video == null
-            ? 'Publicado'
-            : 'Video subido. Bunny Stream lo está procesando.',
+        'Publicación actualizada',
         destacado: true,
       );
       Navigator.of(context).pop(true);
-    } on ErrorVideoPublicacion catch (e) {
-      if (mounted) mostrarSnackHaku(context, e.mensaje);
     } on AuthException catch (e) {
       if (mounted) mostrarSnackHaku(context, e.message);
     } catch (_) {
       if (mounted) {
         mostrarSnackHaku(
           context,
-          'No se pudo publicar. Revisa tu conexión o membresía.',
+          'No se pudo actualizar. Revisa tu conexión.',
         );
       }
     } finally {
@@ -761,23 +756,6 @@ class _EstadoPantallaCrearPublicacion
         });
       }
     }
-  }
-
-  Future<void> _elegirFoto() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 85,
-    );
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-    setState(() {
-      _foto = file;
-      _fotoBytes = bytes;
-      _video = null;
-      _videoTamano = null;
-    });
   }
 
   Future<void> _elegirVideo() async {
@@ -794,10 +772,30 @@ class _EstadoPantallaCrearPublicacion
         _videoTamano = tamano;
         _foto = null;
         _fotoBytes = null;
+        _fotoEliminada = true; // Si elige video, eliminamos la foto actual
       });
     } on ErrorVideoPublicacion catch (error) {
       if (mounted) mostrarSnackHaku(context, error.mensaje);
     }
+  }
+
+  Future<void> _elegirFoto() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _foto = file;
+      _fotoBytes = bytes;
+      _fotoEliminada = false;
+      _video = null;
+      _videoTamano = null;
+      // La foto nueva reemplazará a la actual
+    });
   }
 
   String _mostrarTamano(int bytes) {
@@ -862,7 +860,7 @@ class _EstadoPantallaCrearPublicacion
                       ),
                       Expanded(
                         child: Text(
-                          'Compartir momento',
+                          'Editar publicación',
                           textAlign: TextAlign.center,
                           style: TipografiaHaku.titulo(
                             fontSize: 17,
@@ -873,7 +871,7 @@ class _EstadoPantallaCrearPublicacion
                       ),
                       // Botón publicar tipo pill dorado
                       GestureDetector(
-                        onTap: _guardando ? null : _publicar,
+                        onTap: _guardando ? null : _guardarEdicion,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
@@ -914,7 +912,7 @@ class _EstadoPantallaCrearPublicacion
                                   ),
                                 )
                               : Text(
-                                  'Publicar',
+                                  'Guardar',
                                   style: TipografiaHaku.interfaz(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14,
@@ -1134,17 +1132,24 @@ class _EstadoPantallaCrearPublicacion
 
                       const SizedBox(height: 16),
 
-                      // A.3: Preview foto
-                      if (_fotoBytes != null) ...[
+                      // A.3: Preview foto (nueva o actual)
+                      if ((_fotoBytes != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Stack(
                             children: [
-                              Image.memory(
-                                _fotoBytes!,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                              if (_fotoBytes != null)
+                                Image.memory(
+                                  _fotoBytes!,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              else
+                                CachedNetworkImage(
+                                  imageUrl: _fotoUrlActual!,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
                               Positioned(
                                 top: 8,
                                 right: 8,
@@ -1154,6 +1159,7 @@ class _EstadoPantallaCrearPublicacion
                                       : () => setState(() {
                                           _foto = null;
                                           _fotoBytes = null;
+                                          _fotoEliminada = true;
                                         }),
                                   style: IconButton.styleFrom(
                                     backgroundColor: Colors.black54,
@@ -1176,12 +1182,10 @@ class _EstadoPantallaCrearPublicacion
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color:
-                                PaletaRutas.carbon.withValues(alpha: 0.75),
+                            color: PaletaRutas.carbon.withValues(alpha: 0.75),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color:
-                                  PaletaRutas.oro.withValues(alpha: 0.45),
+                              color: PaletaRutas.oro.withValues(alpha: 0.45),
                             ),
                           ),
                           child: Row(
@@ -1194,8 +1198,7 @@ class _EstadoPantallaCrearPublicacion
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       _video!.name,
@@ -1254,7 +1257,6 @@ class _EstadoPantallaCrearPublicacion
                         ],
                       ],
                     ],
-                  ),
                 ),
 
                 // ── BARRA INFERIOR PREMIUM ─────────────────────────────
@@ -1282,7 +1284,7 @@ class _EstadoPantallaCrearPublicacion
                       const Spacer(),
                       _BotonAdjuntoMini(
                         icono: Icons.image_outlined,
-                        activo: _foto != null,
+                        activo: (_foto != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null,
                         onTap: _guardando ? null : _elegirFoto,
                       ),
                       const SizedBox(width: 16),

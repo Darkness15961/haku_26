@@ -178,7 +178,7 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                   if (!esAutor)
                     IconButton(
                       icon: Icon(
-                        _guardadoOptimista ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        _guardadoOptimista ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
                         color: _guardadoOptimista ? PaletaRutas.oro : null,
                       ),
                       onPressed: () => _toggleFavorito(lugar),
@@ -304,16 +304,7 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                           color: PaletaRutas.piedra.withValues(alpha: 0.94),
                         ),
                       ),
-                      if (lugar.acceso.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        _TituloBloque('Cómo llegar'),
-                        const SizedBox(height: 10),
-                        _TarjetaInfo(
-                          icono: Icons.directions_walk_rounded,
-                          titulo: 'Acceso',
-                          cuerpo: lugar.acceso,
-                        ),
-                      ],
+
                       if (lugar.distrito.isNotEmpty ||
                           lugar.provincia.isNotEmpty ||
                           lugar.altitud.isNotEmpty ||
@@ -438,64 +429,7 @@ class _ChipClasificacion extends StatelessWidget {
   }
 }
 
-class _TarjetaInfo extends StatelessWidget {
-  const _TarjetaInfo({
-    required this.icono,
-    required this.titulo,
-    required this.cuerpo,
-  });
 
-  final IconData icono;
-  final String titulo;
-  final String cuerpo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: PaletaRutas.carbon,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: PaletaRutas.plomo.withValues(alpha: 0.28),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icono, size: 20, color: PaletaRutas.oro),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titulo,
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: PaletaRutas.plomo,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  cuerpo,
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 14,
-                    height: 1.4,
-                    fontWeight: FontWeight.w600,
-                    color: PaletaRutas.piedra,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _FilaDato extends StatelessWidget {
   const _FilaDato(this.icono, this.etiqueta, this.valor);

@@ -326,8 +326,7 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      if (lugar.acceso.isNotEmpty)
-                        _ChipOscuro(Icons.directions_walk, lugar.acceso),
+
                       if (lugar.altitud.isNotEmpty)
                         _ChipOscuro(
                           Icons.landscape_outlined,

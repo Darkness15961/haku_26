@@ -10,6 +10,7 @@ import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../proveedores/proveedores_guardados_remotos.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
 
 /// Guardados reales: rutas + publicaciones.
 class PantallaFavoritos extends ConsumerWidget {
@@ -172,10 +173,10 @@ class PantallaFavoritos extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
                           for (var i = 0; i < posts.length; i++) ...[
-                            TarjetaPublicacionRemota(
+                            _TilePublicacionGuardada(
                               publicacion: posts[i],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                           ],
                         ],
                       ],
@@ -261,4 +262,117 @@ class _TileRuta extends StatelessWidget {
   }
 }
 
+class _TilePublicacionGuardada extends StatelessWidget {
+  final ModeloPublicacionRemota publicacion;
 
+  const _TilePublicacionGuardada({required this.publicacion});
+
+  void _abrirDetalle(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return GestureDetector(
+          onTap: () => Navigator.of(ctx).pop(),
+          child: Container(
+            color: PaletaRutas.ink.withValues(alpha: 0.8),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GestureDetector(
+              onTap: () {}, // Evitar cerrar al tocar la tarjeta
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 650),
+                child: SingleChildScrollView(
+                  child: TarjetaPublicacionRemota(
+                    publicacion: publicacion,
+                    compacta: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imagen = publicacion.imagenUrl?.trim() ?? '';
+    final texto = publicacion.contenido.trim();
+    final sinTexto = texto.isEmpty;
+
+    return Material(
+      color: PaletaRutas.carbon,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _abrirDetalle(context),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: imagen.isEmpty
+                    ? Container(
+                        width: 64,
+                        height: 64,
+                        color: PaletaRutas.plomoOscuro,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.notes_rounded,
+                          color: PaletaRutas.oro.withValues(alpha: 0.8),
+                        ),
+                      )
+                    : ImagenHaku(
+                        url: imagen,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      publicacion.etiquetaAutor,
+                      style: TipografiaHaku.titulo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      sinTexto ? 'Publicación visual' : texto,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 13,
+                        color: sinTexto ? PaletaRutas.plomo : PaletaRutas.plomoClaro,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Icon(
+                  Icons.open_in_new_rounded,
+                  size: 16,
+                  color: PaletaRutas.plomo,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

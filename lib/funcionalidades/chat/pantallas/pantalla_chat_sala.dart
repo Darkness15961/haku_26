@@ -1225,22 +1225,10 @@ Future<void> abrirChatComunidad(
     if (existente != null && existente.isNotEmpty) {
       final enRoster = await ds.soyParticipanteSala(existente);
       if (!enRoster) {
-        final comunidad = await ref.read(
-          comunidadDetalleProvider(comunidadId).future,
-        );
-        final esAdmin =
-            comunidad != null && uid.isNotEmpty && comunidad.esAdminDe(uid);
-        if (!esAdmin) {
-          if (context.mounted) {
-            mostrarSnackHaku(
-              context,
-              'No estás en el chat grupal. Pedile al admin que te agregue.',
-            );
-          }
-          return;
-        }
+        if (!context.mounted) return;
+        final acepto = await _mostrarDialogoNormasChat(context);
+        if (acepto != true) return;
       }
-      // Admin fuera del roster: asegurar lo reincorpora. Miembro en roster: entra.
       salaId = await ds.asegurarSalaComunidad(comunidadId);
     } else {
       final comunidad = await ref.read(
@@ -1338,18 +1326,9 @@ Future<void> abrirChatSalida(
     if (existente != null && existente.isNotEmpty) {
       final enRoster = await ds.soyParticipanteSala(existente);
       if (!enRoster) {
-        final salida = await ref.read(salidaDetalleProvider(salidaId).future);
-        final esOrg =
-            salida != null && uid.isNotEmpty && salida.organizadorId == uid;
-        if (!esOrg) {
-          if (context.mounted) {
-            mostrarSnackHaku(
-              context,
-              'No estás en el chat de la salida. Pedile al organizador que te agregue.',
-            );
-          }
-          return;
-        }
+        if (!context.mounted) return;
+        final acepto = await _mostrarDialogoNormasChat(context);
+        if (acepto != true) return;
       }
       salaId = await ds.asegurarSalaSalida(salidaId);
     } else {
@@ -1418,4 +1397,54 @@ Future<void> abrirChatSalida(
       );
     }
   }
+}
+
+Future<bool?> _mostrarDialogoNormasChat(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: PaletaRutas.carbon,
+      title: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: PaletaRutas.oro),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Normas de convivencia',
+              style: TipografiaHaku.titulo(
+                color: PaletaRutas.piedra,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Al ingresar a este chat grupal te comprometes a ser respetuoso con los demás miembros. No se tolerará spam, lenguaje ofensivo ni comportamiento inapropiado.',
+        style: TipografiaHaku.interfaz(
+          color: PaletaRutas.plomoClaro,
+          height: 1.4,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(
+            'Cancelar',
+            style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(
+            'Aceptar y Unirse',
+            style: TipografiaHaku.interfaz(
+              color: PaletaRutas.oro,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

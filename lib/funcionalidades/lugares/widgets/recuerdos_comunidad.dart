@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../comunidad/dominio/modelo_publicacion.dart';
 import '../../comunidad/proveedores/proveedor_publicaciones.dart';
+import '../../inicio/datos/feed_inicio_datasource_local.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import 'metricas_comunidad.dart';
@@ -19,72 +21,103 @@ class RecuerdosComunidad extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final List<String> fotos;
+    int totalFotos = 0;
+    
     if (supabaseListo) {
       final rid = rutaId?.trim() ?? '';
       final lid = lugarId?.trim() ?? '';
-      final remotas =
+      List<ModeloPublicacionRemota> remotas =
           (rid.isNotEmpty
                   ? ref.watch(publicacionesPorRutaProvider(rid))
                   : ref.watch(publicacionesPorLugarProvider(lid)))
               .valueOrNull ??
           const [];
-      fotos = MetricasComunidad.calcularRemotas(
+      
+      // Ordenar por popularidad (Me Gustas)
+      remotas = List.of(remotas)..sort((a, b) => b.cantidadMeGusta.compareTo(a.cantidadMeGusta));
+      
+      final todas = MetricasComunidad.calcularRemotas(
         remotas,
         lugarId: lugarId,
         rutaId: rutaId,
       ).fotosUrls;
+      
+      totalFotos = todas.length;
+      fotos = todas.take(3).toList();
     } else {
-      fotos = MetricasComunidad.calcular(
-        ref.watch(almacenFeedProvider).publicaciones,
+      List<PublicacionFeed> feed = ref.watch(almacenFeedProvider).publicaciones;
+      // Ordenar por popularidad (Me Gustas)
+      feed = List.of(feed)..sort((a, b) => b.likes.compareTo(a.likes));
+      
+      final todas = MetricasComunidad.calcular(
+        feed,
         lugarId: lugarId,
         rutaId: rutaId,
       ).fotosUrls;
+      
+      totalFotos = todas.length;
+      fotos = todas.take(3).toList();
     }
+    
     if (fotos.isEmpty) return const SizedBox.shrink();
 
-    final subtitulo = rutaId != null
-        ? 'Fotos que dejó la comunidad en esta ruta'
-        : 'Fotos que dejó la comunidad en este lugar';
+    final extras = totalFotos - 3;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
         Text(
-          'Recuerdos',
+          'Galería',
           style: TipografiaHaku.titulo(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: PaletaRutas.piedra,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          subtitulo,
-          style: TipografiaHaku.interfaz(
-            fontSize: 12,
-            color: PaletaRutas.plomoClaro,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 96,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: fotos.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: ImagenHaku(
-                  url: fotos[i],
-                  width: 120,
-                  height: 96,
-                  fit: BoxFit.cover,
+        const SizedBox(height: 12),
+        Row(
+          children: List.generate(3, (i) {
+            if (i >= fotos.length) {
+              return Expanded(child: const SizedBox.shrink());
+            }
+            final esUltimo = i == 2 && extras > 0;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: i < 2 ? 8.0 : 0.0,
                 ),
-              );
-            },
-          ),
+                child: AspectRatio(
+                  aspectRatio: 1.0,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ImagenHaku(
+                          url: fotos[i],
+                          fit: BoxFit.cover,
+                        ),
+                        if (esUltimo)
+                          Container(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '+$extras',
+                              style: TipografiaHaku.titulo(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
         ),
       ],
     );

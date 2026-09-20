@@ -66,6 +66,7 @@ publicacion_guardada_por_mi
 
   Future<List<ModeloPublicacionRemota>> listarPublicas({
     int limite = 40,
+    int inicio = 0,
   }) async {
     if (!supabaseListo) return const [];
 
@@ -74,7 +75,7 @@ publicacion_guardada_por_mi
         .select(_selectFeed)
         .eq('estado', 'publico')
         .order('fecha_creacion', ascending: false)
-        .limit(limite);
+        .range(inicio, inicio + limite - 1);
 
     // Defensivo: evita duplicados si el embed devolviera filas repetidas.
     final vistos = <String>{};
@@ -94,6 +95,7 @@ publicacion_guardada_por_mi
   Future<List<ModeloPublicacionRemota>> listarDeUsuario(
     String usuarioId, {
     int limite = 80,
+    int inicio = 0,
   }) async {
     if (!supabaseListo) return const [];
     final uid = usuarioId.trim();
@@ -105,7 +107,7 @@ publicacion_guardada_por_mi
         .eq('usuario_id', uid)
         .neq('estado', 'eliminado')
         .order('fecha_creacion', ascending: false)
-        .limit(limite);
+        .range(inicio, inicio + limite - 1);
 
     final vistos = <String>{};
     final out = <ModeloPublicacionRemota>[];
@@ -139,6 +141,7 @@ publicacion_guardada_por_mi
   Future<List<ModeloPublicacionRemota>> listarPorLugar(
     String lugarId, {
     int limite = 40,
+    int inicio = 0,
   }) async {
     final id = int.tryParse(lugarId.trim());
     if (!supabaseListo || id == null) return const [];
@@ -152,13 +155,14 @@ publicacion:publicacion_id!inner (
         .eq('lugar_id', id)
         .eq('publicacion.estado', 'publico')
         .order('fecha_etiquetado', ascending: false)
-        .limit(limite);
+        .range(inicio, inicio + limite - 1);
     return _mapearVinculadas(rows);
   }
 
   Future<List<ModeloPublicacionRemota>> listarPorRuta(
     String rutaId, {
     int limite = 40,
+    int inicio = 0,
   }) async {
     final id = int.tryParse(rutaId.trim());
     if (!supabaseListo || id == null) return const [];
@@ -172,13 +176,14 @@ publicacion:publicacion_id!inner (
         .eq('ruta_id', id)
         .eq('publicacion.estado', 'publico')
         .order('fecha_etiquetado', ascending: false)
-        .limit(limite);
+        .range(inicio, inicio + limite - 1);
     return _mapearVinculadas(rows);
   }
 
   Future<List<ModeloPublicacionRemota>> listarPorComunidad(
     String comunidadId, {
     int limite = 40,
+    int inicio = 0,
   }) async {
     final id = int.tryParse(comunidadId.trim());
     if (!supabaseListo || id == null) return const [];
@@ -192,7 +197,7 @@ publicacion:publicacion_id!inner (
         .eq('comunidad_id', id)
         // No filtrar estado: RLS decide entre comunidad pública/privada.
         .order('fecha_etiquetado', ascending: false)
-        .limit(limite);
+        .range(inicio, inicio + limite - 1);
     return _mapearVinculadas(rows);
   }
 
@@ -382,6 +387,128 @@ publicacion:publicacion_id!inner (
             : e.message,
       );
     }
+  }
+
+  Future<ModeloPublicacionRemota> editarConImagen({
+    required String publicacionId,
+    required String userId,
+    Uint8List? bytes,
+    String? contentType,
+    String? extension,
+    required String contenido,
+    String estado = 'publico',
+    String? comunidadId,
+    String? lugarId,
+    String? rutaId,
+    String? salidaId,
+    bool eliminarImagenActual = false,
+    String? imagenUrlActual,
+  }) async {
+    String? nuevaUrl;
+    if (bytes != null && bytes.isNotEmpty) {
+      nuevaUrl = await subirImagen(
+        userId: userId,
+        bytes: bytes,
+        contentType: contentType ?? 'image/jpeg',
+        extension: extension ?? 'jpg',
+      );
+    }
+    
+    try {
+      final res = await editar(
+        publicacionId: publicacionId,
+        contenido: contenido,
+        estado: estado,
+        comunidadId: comunidadId,
+        lugarId: lugarId,
+        rutaId: rutaId,
+        salidaId: salidaId,
+        nuevaImagenUrl: nuevaUrl,
+        eliminarImagenActual: eliminarImagenActual,
+      );
+      
+      if ((eliminarImagenActual || nuevaUrl != null) && imagenUrlActual != null) {
+        await _eliminarImagenSubida(imagenUrlActual);
+      }
+      
+      return res;
+    } catch (_) {
+      if (nuevaUrl != null) await _eliminarImagenSubida(nuevaUrl);
+      rethrow;
+    }
+  }
+
+  Future<ModeloPublicacionRemota> editar({
+    required String publicacionId,
+    required String contenido,
+    String estado = 'publico',
+    String? comunidadId,
+    String? lugarId,
+    String? rutaId,
+    String? salidaId,
+    String? nuevaImagenUrl,
+    bool eliminarImagenActual = false,
+  }) async {
+    final idNum = int.tryParse(publicacionId);
+    if (idNum == null) throw const AuthException('ID inválido');
+    
+    final texto = contenido.trim();
+    if (texto.isEmpty) throw const AuthException('Escribe una descripción');
+    if (texto.length > maxLenContenido) throw const AuthException('El texto es demasiado largo');
+
+    await clienteSupabase.from('publicacion').update({
+      'contenido': texto,
+      'estado': estado == 'privado' ? 'privado' : 'publico',
+    }).eq('id', idNum);
+    
+    // Comunidad
+    await clienteSupabase.from('publicacion_etiqueta_comunidad').delete().eq('publicacion_id', idNum);
+    if (comunidadId != null && comunidadId.trim().isNotEmpty) {
+      await clienteSupabase.from('publicacion_etiqueta_comunidad').insert({
+        'publicacion_id': idNum,
+        'comunidad_id': int.parse(comunidadId),
+      });
+    }
+    // Lugar
+    await clienteSupabase.from('publicacion_lugar').delete().eq('publicacion_id', idNum);
+    if (lugarId != null && lugarId.trim().isNotEmpty) {
+      await clienteSupabase.from('publicacion_lugar').insert({
+        'publicacion_id': idNum,
+        'lugar_id': int.parse(lugarId),
+      });
+    }
+    // Ruta
+    await clienteSupabase.from('publicacion_ruta').delete().eq('publicacion_id', idNum);
+    if (rutaId != null && rutaId.trim().isNotEmpty) {
+      await clienteSupabase.from('publicacion_ruta').insert({
+        'publicacion_id': idNum,
+        'ruta_id': int.parse(rutaId),
+      });
+    }
+    // Salida
+    await clienteSupabase.from('publicacion_salida').delete().eq('publicacion_id', idNum);
+    if (salidaId != null && salidaId.trim().isNotEmpty) {
+      await clienteSupabase.from('publicacion_salida').insert({
+        'publicacion_id': idNum,
+        'salida_id': int.parse(salidaId),
+      });
+    }
+    
+    if (eliminarImagenActual || nuevaImagenUrl != null) {
+      await clienteSupabase.from('publicacion_multimedia').delete().eq('publicacion_id', idNum);
+    }
+    if (nuevaImagenUrl != null) {
+      await clienteSupabase.from('publicacion_multimedia').insert({
+        'publicacion_id': idNum,
+        'url_archivo': nuevaImagenUrl,
+        'tipo': 'imagen',
+        'orden': 1,
+      });
+    }
+    
+    final actualizada = await porId('$idNum');
+    if (actualizada == null) throw const AuthException('No se pudo recargar la publicación.');
+    return actualizada;
   }
 
   /// Soft-delete: `estado = eliminado` (no hard DELETE).
