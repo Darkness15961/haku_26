@@ -19,7 +19,6 @@ import '../../comunidad/dominio/modelo_salida.dart';
 import '../../comunidad/proveedores/proveedor_comunidad.dart';
 import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../comunidad/proveedores/proveedor_salidas.dart';
-import '../../comunidad/datos/servicio_video_publicacion.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/proveedores/proveedor_lugares.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
@@ -552,6 +551,9 @@ class _ChipContexto extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla principal unificada (A.1 — A.8)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -584,6 +586,10 @@ class _EstadoPantallaEditarPublicacion
   String? _fotoUrlActual;
   bool _fotoEliminada = false;
 
+  String? _videoUrlActual;
+  String? _videoMiniaturaActual;
+  bool _videoEliminada = false;
+
   // Privacidad (A.2)
   bool _esPrivado = false;
 
@@ -602,6 +608,8 @@ class _EstadoPantallaEditarPublicacion
     _texto.text = widget.publicacion.contenido;
     _esPrivado = widget.publicacion.estado == 'privado';
     _fotoUrlActual = widget.publicacion.imagenUrl;
+    _videoUrlActual = widget.publicacion.videoUrl;
+    _videoMiniaturaActual = widget.publicacion.videoMiniaturaUrl;
     
     Future.microtask(() {
       final lugares = ref.read(lugaresListaProvider);
@@ -681,15 +689,43 @@ class _EstadoPantallaEditarPublicacion
       final ds = ref.read(publicacionRemotoDataSourceProvider);
 
       if (_video != null) {
-        // ── Caso video ───────────────────────────────────────────────────
-        // FIXME: Al integrar Bunny Stream, ajustar esta lógica para actualizar 
-        // el registro en Supabase y subir el nuevo archivo, o eliminar el anterior.
-        mostrarSnackHaku(context, 'La edición de video estará disponible pronto');
-        setState(() {
-          _guardando = false;
-          _progresoVideo = null;
-        });
-        return;
+        // ── Caso video nuevo ─────────────────────────────────────────────
+        // 1. Borramos cualquier media existente en la BD primero (esto dispara el trigger)
+        await ds.editar(
+          publicacionId: widget.publicacion.id,
+          contenido: contenido,
+          estado: estado,
+          comunidadId: comunidadId,
+          lugarId: lugarId,
+          rutaId: rutaId,
+          salidaId: salidaId,
+          eliminarImagenActual: true,
+        );
+
+        // 2. Preparamos ticket Bunny (ya no hay media que bloquee)
+        final publicacionIdNum = int.tryParse(widget.publicacion.id);
+        if (publicacionIdNum == null) {
+          throw const ErrorVideoPublicacion('ID de publicación inválido.');
+        }
+
+        final servicio = ServicioVideoPublicacion();
+        try {
+          final ticket = await servicio.preparar(publicacionIdNum);
+          await servicio.subir(
+            archivo: _video!,
+            ticket: ticket,
+            alProgresar: (progreso) {
+              if (mounted) setState(() => _progresoVideo = progreso);
+            },
+          );
+        } catch (_) {
+          // Si falla Bunny, no hacemos soft-delete de la publicación entera
+          // porque es una edición. El usuario solo perdió el intento de video.
+          rethrow;
+        }
+        // Estado Bunny puede tardar
+        try { await servicio.consultarEstado(publicacionIdNum); } catch (_) {}
+
       } else if (_foto != null && _fotoBytes != null) {
         // ── Caso foto nueva ──────────────────────────────────────────────
         final nombre = _foto!.name.toLowerCase();
@@ -717,7 +753,10 @@ class _EstadoPantallaEditarPublicacion
         );
 
       } else {
-        // ── Caso solo texto (o mantiene foto actual, o eliminó foto) ────
+        // ── Caso solo texto (o mantiene media actual, o eliminó media) ────
+        // Si _fotoEliminada o _videoEliminada son verdaderos, entonces el usuario presionó la 'X'.
+        final seEliminoMedia = _fotoEliminada || _videoEliminada;
+        
         await ds.editar(
           publicacionId: widget.publicacion.id,
           contenido: contenido,
@@ -726,8 +765,8 @@ class _EstadoPantallaEditarPublicacion
           lugarId: lugarId,
           rutaId: rutaId,
           salidaId: salidaId,
-          nuevaImagenUrl: _fotoEliminada ? null : _fotoUrlActual,
-          eliminarImagenActual: _fotoEliminada,
+          nuevaImagenUrl: null, // NUNCA pasar URL aquí. Si se mantiene, no se toca. Si se elimina, se elimina.
+          eliminarImagenActual: seEliminoMedia,
         );
       }
 
@@ -735,10 +774,14 @@ class _EstadoPantallaEditarPublicacion
       if (!mounted) return;
       mostrarSnackHaku(
         context,
-        'Publicación actualizada',
+        _video == null 
+          ? 'Publicación actualizada' 
+          : 'Video subido. Bunny Stream lo está procesando.',
         destacado: true,
       );
       Navigator.of(context).pop(true);
+    } on ErrorVideoPublicacion catch (e) {
+      if (mounted) mostrarSnackHaku(context, e.mensaje);
     } on AuthException catch (e) {
       if (mounted) mostrarSnackHaku(context, e.message);
     } catch (_) {
@@ -772,7 +815,8 @@ class _EstadoPantallaEditarPublicacion
         _videoTamano = tamano;
         _foto = null;
         _fotoBytes = null;
-        _fotoEliminada = true; // Si elige video, eliminamos la foto actual
+        _fotoEliminada = true; 
+        _videoEliminada = true; // El video nuevo reemplaza al anterior
       });
     } on ErrorVideoPublicacion catch (error) {
       if (mounted) mostrarSnackHaku(context, error.mensaje);
@@ -794,7 +838,7 @@ class _EstadoPantallaEditarPublicacion
       _fotoEliminada = false;
       _video = null;
       _videoTamano = null;
-      // La foto nueva reemplazará a la actual
+      _videoEliminada = true; // La foto nueva reemplaza al video anterior
     });
   }
 
@@ -1133,7 +1177,7 @@ class _EstadoPantallaEditarPublicacion
                       const SizedBox(height: 16),
 
                       // A.3: Preview foto (nueva o actual)
-                      if ((_fotoBytes != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null) ...[
+                      if ((_fotoBytes != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null && (_videoUrlActual == null || _videoEliminada)) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Stack(
@@ -1177,7 +1221,7 @@ class _EstadoPantallaEditarPublicacion
                         const SizedBox(height: 16),
                       ],
 
-                      // A.3: Preview video
+                      // A.3: Preview video (nuevo)
                       if (_video != null) ...[
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -1256,7 +1300,57 @@ class _EstadoPantallaEditarPublicacion
                           ),
                         ],
                       ],
-                    ],
+
+                      // A.3: Preview video (actual)
+                      if (_videoUrlActual != null && !_videoEliminada && _video == null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: _videoMiniaturaActual ?? CatalogoImagenesHaku.respaldo,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                              // Capa oscura para que resalte el ícono de play
+                              Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: Colors.black.withValues(alpha: 0.3),
+                              ),
+                              const Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: Colors.white,
+                                size: 56,
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  onPressed: _guardando
+                                      ? null
+                                      : () => setState(() {
+                                          _videoEliminada = true;
+                                        }),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.black54,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      ],
+                    ),
                 ),
 
                 // ── BARRA INFERIOR PREMIUM ─────────────────────────────
@@ -1284,13 +1378,13 @@ class _EstadoPantallaEditarPublicacion
                       const Spacer(),
                       _BotonAdjuntoMini(
                         icono: Icons.image_outlined,
-                        activo: (_foto != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null,
+                        activo: (_foto != null || (_fotoUrlActual != null && !_fotoEliminada)) && _video == null && (_videoUrlActual == null || _videoEliminada),
                         onTap: _guardando ? null : _elegirFoto,
                       ),
                       const SizedBox(width: 16),
                       _BotonAdjuntoMini(
                         icono: Icons.video_library_outlined,
-                        activo: _video != null,
+                        activo: _video != null || (_videoUrlActual != null && !_videoEliminada),
                         onTap: _guardando ? null : _elegirVideo,
                       ),
                     ],

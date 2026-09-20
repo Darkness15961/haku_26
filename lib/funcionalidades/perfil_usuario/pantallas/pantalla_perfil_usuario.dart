@@ -8,6 +8,7 @@ import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../comunidad/dominio/modelo_publicacion.dart';
+import '../../comunidad/widgets/tarjeta_publicacion_remota.dart';
 import '../../comunidad/pantallas/pantalla_detalle_salida_remota.dart';
 import '../../favoritos/indice.dart';
 import '../../lugares/navegacion_lugar.dart';
@@ -1027,16 +1028,28 @@ class _CeldaPublicacionPerfil extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      decoration: BoxDecoration(
-                        color: PaletaRutas.plomoOscuro,
-                        borderRadius: BorderRadius.circular(2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(width: 40), // Balance visual para centrar el agarre
+                      Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 14, top: 8),
+                        decoration: BoxDecoration(
+                          color: PaletaRutas.plomoOscuro,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
+                      BotonOpcionesPub(
+                        publicacion: p,
+                        oscuro: true,
+                        onActionComplete: () {
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
                   ),
                   if (imagen.isNotEmpty) ...[
                     ClipRRect(

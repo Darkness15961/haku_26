@@ -109,7 +109,7 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  _BotonOpcionesPub(publicacion: p, oscuro: true),
+                  BotonOpcionesPub(publicacion: p, oscuro: true),
                 ],
               ),
             ),
@@ -590,10 +590,16 @@ class _ChipEtiqueta extends StatelessWidget {
   }
 }
 
-class _BotonOpcionesPub extends ConsumerWidget {
-  const _BotonOpcionesPub({required this.publicacion, this.oscuro = false});
+class BotonOpcionesPub extends ConsumerWidget {
+  const BotonOpcionesPub({
+    super.key,
+    required this.publicacion,
+    this.oscuro = false,
+    this.onActionComplete,
+  });
   final ModeloPublicacionRemota publicacion;
   final bool oscuro;
+  final VoidCallback? onActionComplete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -647,6 +653,7 @@ class _BotonOpcionesPub extends ConsumerWidget {
         ],
         onSelected: (val) async {
           if (val == 'editar') {
+            if (onActionComplete != null) onActionComplete!();
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => PantallaEditarPublicacion(publicacion: publicacion),
@@ -693,6 +700,7 @@ class _BotonOpcionesPub extends ConsumerWidget {
               notificarPublicacionesCambiaron(ref);
               if (context.mounted) {
                 mostrarSnackHaku(context, 'Publicación eliminada');
+                if (onActionComplete != null) onActionComplete!();
               }
             } catch (_) {
               if (context.mounted) {
