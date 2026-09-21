@@ -44,6 +44,9 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
   final _buscaMensajes = TextEditingController();
   String _queryMensajes = '';
 
+  int _filtroComunidades = 0;
+  int _filtroSalidas = 0;
+
   @override
   void dispose() {
     _buscaMensajes.dispose();
@@ -219,13 +222,78 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             if (pestania == 0) ..._sliverPostsRemotos(postsAsync, bottom),
-            if (pestania == 1) ..._sliverSalidasRemotas(salidasAsync, bottom),
-            if (pestania == 2)
+            if (pestania == 1) ...[
+              SliverToBoxAdapter(child: _barraFiltroSalidas()),
+              ..._sliverSalidasRemotas(salidasAsync, uidSesion, bottom),
+            ],
+            if (pestania == 2) ...[
+              SliverToBoxAdapter(child: _barraFiltroComunidades()),
               ..._sliverGruposRemotos(comunidadesAsync, uidSesion, bottom),
+            ],
             if (pestania == 3) ...[
               SliverToBoxAdapter(child: _barraBandejaMensajes()),
               ..._sliverMensajesRemotos(chatsAsync, uidSesion, bottom),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chipFiltroBasico(String label, int value, int current, ValueChanged<int> onSelected) {
+    final sel = current == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: sel,
+        onSelected: (_) => onSelected(value),
+        selectedColor: PaletaRutas.oro.withValues(alpha: 0.25),
+        checkmarkColor: PaletaRutas.oro,
+        labelStyle: TipografiaHaku.interfaz(
+          fontSize: 12,
+          fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+          color: sel ? PaletaRutas.oro : PaletaRutas.piedra,
+        ),
+        backgroundColor: PaletaRutas.carbon,
+        side: BorderSide(
+          color: sel
+              ? PaletaRutas.oro
+              : PaletaRutas.plomoOscuro.withValues(alpha: 0.5),
+        ),
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
+  Widget _barraFiltroComunidades() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _chipFiltroBasico('Todas', 0, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
+            _chipFiltroBasico('Públicas', 1, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
+            _chipFiltroBasico('Privadas', 2, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
+            _chipFiltroBasico('Mis creaciones', 3, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _barraFiltroSalidas() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _chipFiltroBasico('Todas', 0, _filtroSalidas, (v) => setState(() => _filtroSalidas = v)),
+            _chipFiltroBasico('Mis creaciones', 1, _filtroSalidas, (v) => setState(() => _filtroSalidas = v)),
           ],
         ),
       ),
@@ -410,6 +478,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
 
   List<Widget> _sliverSalidasRemotas(
     AsyncValue<List<ModeloSalidaRemota>> async,
+    String uidSesion,
     double bottom,
   ) {
     if (async.isLoading && !async.hasValue) {
@@ -434,7 +503,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       ];
     }
 
-    final salidas = async.value ?? const <ModeloSalidaRemota>[];
+    var salidas = async.value ?? const <ModeloSalidaRemota>[];
+
+    if (_filtroSalidas == 1) {
+      salidas = salidas.where((s) => s.organizadorId == uidSesion).toList();
+    }
+
     if (salidas.isEmpty) {
       return [
         SliverToBoxAdapter(
@@ -516,7 +590,16 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
       ];
     }
 
-    final comunidades = async.value ?? const <ComunidadHaku>[];
+    var comunidades = async.value ?? const <ComunidadHaku>[];
+
+    if (_filtroComunidades == 1) {
+      comunidades = comunidades.where((c) => !c.esPrivada).toList();
+    } else if (_filtroComunidades == 2) {
+      comunidades = comunidades.where((c) => c.esPrivada).toList();
+    } else if (_filtroComunidades == 3) {
+      comunidades = comunidades.where((c) => c.creadorId == uidSesion).toList();
+    }
+
     if (comunidades.isEmpty) {
       return [
         SliverToBoxAdapter(

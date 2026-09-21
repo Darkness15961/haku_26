@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/imagen_haku.dart';
+import '../../inicio/proveedores/proveedor_almacen_feed.dart';
+import '../../inicio/widgets/publicacion_estilo_threads.dart';
+import '../../lugares/datos/lugares_datasource_local.dart';
+import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
+import '../../rutas/pantallas/pantalla_rutas.dart';
+import '../../rutas/datos/rutas_datasource_local.dart';
+import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
+import '../../rutas/widgets/boton_primario_ruta.dart';
+import '../../rutas/widgets/estilos_rutas.dart';
+import '../../rutas/widgets/linea_encabezado_inca.dart';
+
+/// Guardados reales: rutas + publicaciones.
+class PantallaFavoritos extends ConsumerWidget {
+  const PantallaFavoritos({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(almacenFeedProvider);
+    final rutas = [
+      for (final id in store.favoritosRutaIds)
+        if (!id.startsWith('lugar_'))
+          if (RutasDataSourceLocal.obtenerPorId(id) != null)
+            RutasDataSourceLocal.obtenerPorId(id)!,
+    ];
+    final lugares = [
+      for (final id in store.favoritosRutaIds)
+        if (id.startsWith('lugar_'))
+          LugaresDataSourceLocal.instancia.porId(id.substring('lugar_'.length)),
+    ].whereType();
+    final posts = [
+      for (final p in store.publicaciones)
+        if (store.guardadosIds.contains(p.id)) p,
+    ];
+    final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
+    final vacio = rutas.isEmpty && lugares.isEmpty && posts.isEmpty;
+
+    return Scaffold(
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 16, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Guardados',
+                      style: TipografiaHaku.titulo(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: LineaEncabezadoInca(altura: 2),
+            ),
+            Expanded(
+              child: vacio
+                  ? ListView(
+                      padding: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
+                      children: [
+                        Text(
+                          'Todavía no hay nada',
+                          textAlign: TextAlign.center,
+                          style: TipografiaHaku.titulo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: PaletaRutas.piedra,
+                          ),
+                        ),
+                          const SizedBox(height: 16),
+                          BotonPrimarioRuta(
+                            texto: 'Rutas',
+                            icono: Icons.map_outlined,
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const PantallaRutas(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      )
+                  : ListView(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
+                      children: [
+                        if (lugares.isNotEmpty) ...[
+                          Text(
+                            'Lugares',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                            const SizedBox(height: 10),
+                            for (final l in lugares) ...[
+                              _TileRuta(
+                                titulo: l.nombre,
+                                imagen: l.imagenUrl,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => PantallaDetalleLugar(
+                                        lugarId: l.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                            const SizedBox(height: 12),
+                          ],
+                        if (rutas.isNotEmpty) ...[
+                          Text(
+                            'Rutas',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                            const SizedBox(height: 10),
+                            for (final r in rutas) ...[
+                              _TileRuta(
+                                titulo: r.titulo,
+                                imagen: r.imagenUrl,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          PantallaDetalleRuta(ruta: r),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                            const SizedBox(height: 12),
+                          ],
+                        if (posts.isNotEmpty) ...[
+                          Text(
+                            'Publicaciones',
+                            style: TipografiaHaku.titulo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: PaletaRutas.piedra,
+                            ),
+                          ),
+                            const SizedBox(height: 10),
+                            for (var i = 0; i < posts.length; i++) ...[
+                              PublicacionEstiloThreads(
+                                publicacion: posts[i],
+                                indice: i,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ],
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TileRuta extends StatelessWidget {
+  final String titulo;
+  final String imagen;
+  final VoidCallback onTap;
+
+  const _TileRuta({
+    required this.titulo,
+    required this.imagen,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: PaletaRutas.carbon,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: ImagenHaku(
+                  url: imagen,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.piedra,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: PaletaRutas.plomo,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

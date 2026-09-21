@@ -29,13 +29,22 @@ class TarjetaSalidaRemota extends StatelessWidget {
 
     Widget portada() {
       if (foto.isEmpty) {
-        return ColoredBox(
-          color: PaletaRutas.ink,
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                PaletaRutas.carbon,
+                PaletaRutas.ink,
+              ],
+            ),
+          ),
           child: Center(
             child: Icon(
-              Icons.hiking,
-              color: PaletaRutas.plomo.withValues(alpha: 0.85),
-              size: 28,
+              Icons.directions_walk_rounded,
+              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.6),
+              size: 36,
             ),
           ),
         );
@@ -57,9 +66,10 @@ class TarjetaSalidaRemota extends StatelessWidget {
                   maxLines: enRejilla ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
                   style: TipografiaHaku.titulo(
-                    fontSize: enRejilla ? 14 : 15,
+                    fontSize: enRejilla ? 14 : 16,
                     fontWeight: FontWeight.w800,
                     color: PaletaRutas.piedra,
+                    height: 1.1,
                   ),
                 ),
               ),
@@ -94,16 +104,24 @@ class TarjetaSalidaRemota extends StatelessWidget {
           ),
           if (salida.comunidadNombre != null &&
               salida.comunidadNombre!.trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              salida.comunidadNombre!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TipografiaHaku.interfaz(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: PaletaRutas.oro,
-              ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.groups_outlined, size: 14, color: PaletaRutas.oro),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    salida.comunidadNombre!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.oro,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -133,12 +151,12 @@ class TarjetaSalidaRemota extends StatelessWidget {
                 ],
               )
               : SizedBox(
-                  height: 96,
+                  height: 116,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const _FranjaSalida(),
-                      SizedBox(width: 96, child: portada()),
+                      SizedBox(width: 104, child: portada()),
                       Expanded(
                         child: Align(
                           alignment: Alignment.centerLeft,

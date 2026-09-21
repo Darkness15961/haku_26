@@ -33,6 +33,7 @@ class ModeloSalidaRemota {
   /// usuario_id con `estado_participante = confirmado`
   final List<String> participanteIds;
   final int? inscritosCantidad;
+  final bool inscripcionAbierta;
 
   const ModeloSalidaRemota({
     required this.id,
@@ -57,6 +58,7 @@ class ModeloSalidaRemota {
     this.estado = 'programada',
     this.participanteIds = const [],
     this.inscritosCantidad,
+    this.inscripcionAbierta = true,
   });
 
   int get inscritos => inscritosCantidad ?? participanteIds.length;
@@ -171,6 +173,7 @@ class ModeloSalidaRemota {
       estado: (m['estado'] as String?)?.trim() ?? 'programada',
       participanteIds: participanteIds,
       inscritosCantidad: (m['inscritos_count'] as num?)?.toInt(),
+      inscripcionAbierta: m['inscripcion_abierta'] as bool? ?? true,
     );
   }
 }

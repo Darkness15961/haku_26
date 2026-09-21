@@ -12,6 +12,8 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelo_comunidad.dart';
 import '../proveedores/proveedor_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
+import '../widgets/buscador_usuarios.dart';
+import '../../../nucleo/widgets/avatar_haku.dart';
 
 /// Alta remota de `public.comunidad`.
 /// Campos = columnas reales: nombre, descripcion?, tipo, foto_portada?.
@@ -32,6 +34,8 @@ class _EstadoPantallaCrearComunidadRemota
   Uint8List? _fotoBytes;
   String _tipo = 'publico';
   bool _guardando = false;
+
+  final List<Map<String, dynamic>> _miembrosSeleccionados = [];
 
   @override
   void dispose() {
@@ -75,7 +79,11 @@ class _EstadoPantallaCrearComunidadRemota
     try {
       final ds = ref.read(comunidadRemotoDataSourceProvider);
       final desc = _descCtrl.text.trim();
+      final idsExtra = _miembrosSeleccionados
+          .map((e) => e['id'] as String)
+          .toList();
       late final ComunidadHaku creada;
+
       if (_foto != null && _fotoBytes != null) {
         final name = _foto!.name.toLowerCase();
         final ext = name.endsWith('.png')
@@ -92,12 +100,14 @@ class _EstadoPantallaCrearComunidadRemota
           nombre: nombre,
           descripcion: desc.isEmpty ? null : desc,
           tipo: _tipo,
+          miembrosExtra: idsExtra,
         );
       } else {
         creada = await ds.crear(
           nombre: nombre,
           descripcion: desc.isEmpty ? null : desc,
           tipo: _tipo,
+          miembrosExtra: idsExtra,
         );
       }
 
@@ -318,6 +328,67 @@ class _EstadoPantallaCrearComunidadRemota
                     cursorColor: PaletaRutas.oro,
                     decoration: _deco('Descripción (opcional)'),
                   ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Invitar miembros (opcional)',
+                    style: TipografiaHaku.titulo(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.piedra,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  BuscadorUsuarios(
+                    usuariosExcluidos: [
+                      clienteSupabase.auth.currentUser?.id ?? '',
+                      ..._miembrosSeleccionados.map((e) => e['id'] as String),
+                    ],
+                    onSeleccionado: (u) {
+                      setState(() {
+                        _miembrosSeleccionados.add(u);
+                      });
+                    },
+                  ),
+                  if (_miembrosSeleccionados.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _miembrosSeleccionados.map((u) {
+                        return Chip(
+                          backgroundColor: PaletaRutas.carbon,
+                          side: BorderSide(
+                            color: PaletaRutas.plomo.withValues(alpha: 0.2),
+                          ),
+                          avatar: AvatarHaku(
+                            size: 24,
+                            url: u['foto_perfil'] as String?,
+                          ),
+                          label: Text(
+                            '@${u['nombre_nick']}',
+                            style: TipografiaHaku.interfaz(
+                              color: PaletaRutas.piedra,
+                              fontSize: 12,
+                            ),
+                          ),
+                          deleteIcon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: PaletaRutas.plomoClaro,
+                          ),
+                          onDeleted: _guardando
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _miembrosSeleccionados.removeWhere(
+                                      (e) => e['id'] == u['id'],
+                                    );
+                                  });
+                                },
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     height: 48,

@@ -20,6 +20,7 @@ import '../widgets/tarjeta_publicacion_remota.dart';
 import '../../chat/indice.dart';
 import '../../lugares/widgets/lista_experiencias_lugar.dart';
 import 'pantalla_salidas.dart';
+import 'pantalla_configuracion_comunidad.dart';
 
 class PantallaDetalleComunidad extends ConsumerStatefulWidget {
   final String comunidadId;
@@ -34,7 +35,6 @@ class PantallaDetalleComunidad extends ConsumerStatefulWidget {
 class _EstadoPantallaDetalleComunidad
     extends ConsumerState<PantallaDetalleComunidad> {
   bool _accionando = false;
-  String? _resolviendoUid;
 
   Future<bool> _confirmarAccion({
     required String titulo,
@@ -103,8 +103,36 @@ class _EstadoPantallaDetalleComunidad
           return;
         }
       } else {
+        if (c.esPrivada) {
+          final confirmado = await _confirmarAccion(
+            titulo: 'Solicitar unirse',
+            mensaje:
+                'Esta comunidad es privada. Para poder unirte se enviará una solicitud y deberás esperar a que el administrador la apruebe.',
+            confirmar: 'Enviar solicitud',
+          );
+          if (!confirmado || !mounted) {
+            if (mounted) setState(() => _accionando = false);
+            return;
+          }
+        } else {
+          final confirmado = await _confirmarAccion(
+            titulo: 'Normas de la Comunidad',
+            mensaje:
+                'Al unirte a esta comunidad, aceptas mantener el respeto hacia los demás miembros y cumplir con las normas de convivencia.',
+            confirmar: 'Aceptar y unirme',
+          );
+          if (!confirmado || !mounted) {
+            if (mounted) setState(() => _accionando = false);
+            return;
+          }
+        }
+        
         await ds.unirse(c.id, conocida: c);
         notificarComunidadesCambiaron(ref);
+        
+        if (mounted && c.esPrivada) {
+          mostrarSnackHaku(context, 'Solicitud enviada exitosamente', destacado: true);
+        }
       }
     } on AuthException catch (e) {
       if (mounted) mostrarSnackHaku(context, e.message);
@@ -114,50 +142,6 @@ class _EstadoPantallaDetalleComunidad
       }
     } finally {
       if (mounted) setState(() => _accionando = false);
-    }
-  }
-
-  Future<void> _resolverSolicitud({
-    required ComunidadHaku c,
-    required String usuarioId,
-    required bool aprobar,
-  }) async {
-    if (_resolviendoUid != null) return;
-    final ok = await asegurarSesion(context, ref);
-    if (!ok || !mounted) return;
-    if (!aprobar) {
-      final confirmado = await _confirmarAccion(
-        titulo: 'Rechazar solicitud',
-        mensaje: 'Esta persona tendrá que solicitar acceso nuevamente.',
-        confirmar: 'Rechazar',
-      );
-      if (!confirmado || !mounted) return;
-    }
-    setState(() => _resolviendoUid = usuarioId);
-    try {
-      await ref
-          .read(comunidadRemotoDataSourceProvider)
-          .resolverSolicitud(
-            comunidadId: c.id,
-            usuarioId: usuarioId,
-            aprobar: aprobar,
-          );
-      notificarComunidadesCambiaron(ref);
-      if (mounted) {
-        mostrarSnackHaku(
-          context,
-          aprobar ? 'Solicitud aprobada' : 'Solicitud rechazada',
-          destacado: aprobar,
-        );
-      }
-    } on AuthException catch (e) {
-      if (mounted) mostrarSnackHaku(context, e.message);
-    } catch (_) {
-      if (mounted) {
-        mostrarSnackHaku(context, 'No se pudo resolver la solicitud');
-      }
-    } finally {
-      if (mounted) setState(() => _resolviendoUid = null);
     }
   }
 
@@ -267,6 +251,7 @@ class _EstadoPantallaDetalleComunidad
     String textoBotonRemoto() {
       if (unida) return 'Salir de la comunidad';
       if (pendiente) return 'Cancelar solicitud';
+      if (!c.inscripcionAbierta) return 'Inscripciones cerradas';
       return 'Unirme';
     }
 
@@ -274,11 +259,89 @@ class _EstadoPantallaDetalleComunidad
       backgroundColor: PaletaRutas.ink,
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 220,
-              width: double.infinity,
-              child: Stack(
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            backgroundColor: PaletaRutas.ink,
+            iconTheme: const IconThemeData(color: PaletaRutas.piedra),
+            elevation: 0,
+            actions: [
+              IconButton(
+                tooltip: 'Salidas de la comunidad',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => PantallaSalidas(
+                        comunidadId: c.id,
+                        comunidadTitulo: c.nombre,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.hiking),
+              ),
+              if (c.remoto && (unida || c.creadorId == uid))
+                IconButton(
+                  tooltip: 'Chat de la comunidad',
+                  onPressed: () {
+                    abrirChatComunidad(
+                      context,
+                      ref,
+                      comunidadId: c.id,
+                      titulo: c.nombre,
+                    );
+                  },
+                  icon: const Icon(Icons.forum_outlined),
+                ),
+              if (c.remoto && soyAdmin) ...[
+                if (c.tipo == 'privado' &&
+                    (pendientesAsync.valueOrNull?.isNotEmpty ?? false))
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        tooltip: 'Solicitudes pendientes',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  PantallaConfiguracionComunidad(comunidad: c),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.notifications_none_rounded),
+                      ),
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD32F2F),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                IconButton(
+                  tooltip: 'Configuración',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            PantallaConfiguracionComunidad(comunidad: c),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
+              const SizedBox(width: 8),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
                 fit: StackFit.expand,
                 children: [
                   if (c.imagenUrl.trim().isEmpty)
@@ -300,66 +363,11 @@ class _EstadoPantallaDetalleComunidad
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          PaletaRutas.ink.withValues(alpha: 0.15),
-                          PaletaRutas.ink.withValues(alpha: 0.72),
+                          PaletaRutas.ink.withValues(alpha: 0.65),
+                          Colors.transparent,
+                          PaletaRutas.ink,
                         ],
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            tooltip: 'Volver',
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: IconButton.styleFrom(
-                              backgroundColor: PaletaRutas.ink.withValues(
-                                alpha: 0.68,
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              color: PaletaRutas.piedra,
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            tooltip: 'Salidas de la comunidad',
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => PantallaSalidas(
-                                    comunidadId: c.id,
-                                    comunidadTitulo: c.nombre,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.hiking,
-                              color: PaletaRutas.piedra,
-                            ),
-                          ),
-                          if (c.remoto && (unida || c.creadorId == uid))
-                            IconButton(
-                              tooltip: 'Chat de la comunidad',
-                              onPressed: () {
-                                abrirChatComunidad(
-                                  context,
-                                  ref,
-                                  comunidadId: c.id,
-                                  titulo: c.nombre,
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.forum_outlined,
-                                color: PaletaRutas.piedra,
-                              ),
-                            ),
-                        ],
+                        stops: const [0.0, 0.6, 1.0],
                       ),
                     ),
                   ),
@@ -462,34 +470,38 @@ class _EstadoPantallaDetalleComunidad
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (c.remoto && soyCreador)
-                    const _EtiquetaAdminComunidad()
-                  else
-                    BotonFondoTextil(
-                      texto: c.remoto
-                          ? (_accionando ? '…' : textoBotonRemoto())
-                          : (unida ? 'Salir de la comunidad' : 'Unirme'),
-                      icono: pendiente
-                          ? Icons.pending_actions_outlined
-                          : (unida
-                                ? Icons.logout_rounded
-                                : Icons.group_add_outlined),
-                      altura: 44,
-                      radius: 12,
-                      onPressed: _accionando
-                          ? null
-                          : () async {
-                              if (c.remoto) {
-                                await _unirseOSalir(c);
-                                return;
-                              }
-                              final ok = await asegurarSesion(context, ref);
-                              if (!ok) return;
-                              await ref
-                                  .read(almacenFeedProvider.notifier)
-                                  .toggleUnirseComunidad(c.id);
-                            },
-                    ),
+                  BotonFondoTextil(
+                    texto: c.remoto
+                        ? (_accionando ? '…' : textoBotonRemoto())
+                        : (unida ? 'Salir de la comunidad' : 'Unirme'),
+                    icono: pendiente
+                        ? Icons.pending_actions_outlined
+                        : (unida
+                              ? Icons.logout_rounded
+                              : (!c.inscripcionAbierta && c.remoto
+                                    ? Icons.lock_outline
+                                    : Icons.group_add_outlined)),
+                    altura: 44,
+                    radius: 12,
+                    onPressed:
+                        (_accionando ||
+                            (c.remoto &&
+                                !unida &&
+                                !pendiente &&
+                                !c.inscripcionAbierta))
+                        ? null
+                        : () async {
+                            if (c.remoto) {
+                              await _unirseOSalir(c);
+                              return;
+                            }
+                            final ok = await asegurarSesion(context, ref);
+                            if (!ok) return;
+                            await ref
+                                .read(almacenFeedProvider.notifier)
+                                .toggleUnirseComunidad(c.id);
+                          },
+                  ),
                   const SizedBox(height: 22),
                   if (c.remoto && (!c.esPrivada || unida)) ...[
                     Text(
@@ -535,62 +547,8 @@ class _EstadoPantallaDetalleComunidad
                     const SizedBox(height: 8),
                     const LineaEncabezadoInca(altura: 2),
                     const SizedBox(height: 14),
-                  ] else ...[
                     const LineaEncabezadoInca(altura: 2),
                     const SizedBox(height: 14),
-                  ],
-                  if (c.remoto && soyAdmin) ...[
-                    Text(
-                      'Solicitudes',
-                      style: TipografiaHaku.titulo(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: PaletaRutas.piedra,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (pendientesAsync.isLoading && !pendientesAsync.hasValue)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: PaletaRutas.oro,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      )
-                    else if (pendientesAsync.hasError &&
-                        !pendientesAsync.hasValue)
-                      _ErrorSeccion(
-                        texto: 'No pudimos cargar las solicitudes.',
-                        onReintentar: () => ref.invalidate(
-                          pendientesComunidadProvider(widget.comunidadId),
-                        ),
-                      )
-                    else if ((pendientesAsync.valueOrNull ?? const []).isEmpty)
-                      Text(
-                        'No hay solicitudes pendientes.',
-                        style: TipografiaHaku.interfaz(
-                          color: PaletaRutas.plomoClaro,
-                        ),
-                      )
-                    else
-                      for (final m in pendientesAsync.valueOrNull!)
-                        _FilaSolicitudPendiente(
-                          miembro: m,
-                          ocupado: _resolviendoUid == m.usuarioId,
-                          onAprobar: () => _resolverSolicitud(
-                            c: c,
-                            usuarioId: m.usuarioId,
-                            aprobar: true,
-                          ),
-                          onRechazar: () => _resolverSolicitud(
-                            c: c,
-                            usuarioId: m.usuarioId,
-                            aprobar: false,
-                          ),
-                        ),
-                    const SizedBox(height: 18),
                   ],
                   Text(
                     'Miembros',
@@ -700,36 +658,6 @@ class _EstadoPantallaDetalleComunidad
   }
 }
 
-class _EtiquetaAdminComunidad extends StatelessWidget {
-  const _EtiquetaAdminComunidad();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: PaletaRutas.carbon,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.verified_outlined, size: 19, color: PaletaRutas.oro),
-          const SizedBox(width: 8),
-          Text(
-            'Administras esta comunidad',
-            style: TipografiaHaku.interfaz(
-              fontWeight: FontWeight.w700,
-              color: PaletaRutas.piedra,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ErrorSeccion extends StatelessWidget {
   const _ErrorSeccion({required this.texto, required this.onReintentar});
 
@@ -748,70 +676,6 @@ class _ErrorSeccion extends StatelessWidget {
         ),
         TextButton(onPressed: onReintentar, child: const Text('Reintentar')),
       ],
-    );
-  }
-}
-
-class _FilaSolicitudPendiente extends StatelessWidget {
-  const _FilaSolicitudPendiente({
-    required this.miembro,
-    required this.ocupado,
-    required this.onAprobar,
-    required this.onRechazar,
-  });
-
-  final MiembroComunidadRemoto miembro;
-  final bool ocupado;
-  final VoidCallback onAprobar;
-  final VoidCallback onRechazar;
-
-  @override
-  Widget build(BuildContext context) {
-    final foto = miembro.fotoPerfil?.trim() ?? '';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: PaletaRutas.carbon,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          AvatarHaku(url: foto.isEmpty ? null : foto, size: 44),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              miembro.etiqueta,
-              style: TipografiaHaku.interfaz(
-                fontWeight: FontWeight.w700,
-                color: PaletaRutas.piedra,
-              ),
-            ),
-          ),
-          if (ocupado)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: PaletaRutas.oro,
-              ),
-            )
-          else ...[
-            IconButton(
-              tooltip: 'Rechazar',
-              onPressed: onRechazar,
-              icon: const Icon(Icons.close_rounded, color: PaletaRutas.plomo),
-            ),
-            IconButton(
-              tooltip: 'Aprobar',
-              onPressed: onAprobar,
-              icon: const Icon(Icons.check_rounded, color: PaletaRutas.oro),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -882,49 +746,49 @@ class _GaleriaPublicacionesComunidad extends StatelessWidget {
           height: MediaQuery.sizeOf(ctx).height * 0.9,
           child: Column(
             children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Publicaciones',
-                      style: TipografiaHaku.titulo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: PaletaRutas.piedra,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Publicaciones',
+                        style: TipografiaHaku.titulo(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: PaletaRutas.piedra,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: PaletaRutas.plomo,
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: PaletaRutas.plomo,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: LineaEncabezadoInca(altura: 2),
-            ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: publicaciones.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
-                itemBuilder: (context, i) {
-                  return TarjetaPublicacionRemota(
-                    publicacion: publicaciones[i],
-                    compacta: false,
-                    habilitarComunidad: false,
-                  );
-                },
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: LineaEncabezadoInca(altura: 2),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: publicaciones.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, i) {
+                    return TarjetaPublicacionRemota(
+                      publicacion: publicaciones[i],
+                      compacta: false,
+                      habilitarComunidad: false,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -964,7 +828,11 @@ class _GaleriaPublicacionesComunidad extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_rounded, color: PaletaRutas.oro, size: 16),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: PaletaRutas.oro,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),

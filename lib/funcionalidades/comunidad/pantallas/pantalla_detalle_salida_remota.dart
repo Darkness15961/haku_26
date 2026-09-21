@@ -14,6 +14,7 @@ import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../../lugares/navegacion_lugar.dart';
 import '../dominio/modelo_salida.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
+import '../pantallas/pantalla_configuracion_salida.dart';
 import '../proveedores/proveedor_salidas.dart';
 
 class PantallaDetalleSalidaRemota extends ConsumerStatefulWidget {
@@ -62,6 +63,46 @@ class _EstadoPantallaDetalleSalidaRemota
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Cancelar inscripción'),
+            ),
+          ],
+        ),
+      );
+      if (confirmar != true || !mounted) return;
+    } else {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: PaletaRutas.ink,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: PaletaRutas.oro.withValues(alpha: 0.3)),
+          ),
+          title: Text(
+            'Reglas de la Salida',
+            style: TipografiaHaku.titulo(
+              fontSize: 18,
+              color: PaletaRutas.piedra,
+            ),
+          ),
+          content: Text(
+            'Para unirte a esta salida debes comprometerte a respetar las normas de la comunidad, cuidar la naturaleza y mantener un comportamiento respetuoso con todos los exploradores. ¿Aceptas estas reglas?',
+            style: TipografiaHaku.interfaz(
+              fontSize: 14,
+              color: PaletaRutas.plomoClaro,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: PaletaRutas.oro),
+              child: const Text(
+                'Acepto',
+                style: TextStyle(color: PaletaRutas.ink, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -116,18 +157,35 @@ class _EstadoPantallaDetalleSalidaRemota
             data: (s) {
               if (s == null) return const SizedBox.shrink();
               final puedeChat = s.organizadorId == uid || s.inscrito(uid);
-              if (!puedeChat) return const SizedBox.shrink();
-              return IconButton(
-                tooltip: 'Chat de la salida',
-                onPressed: () {
-                  abrirChatSalida(
-                    context,
-                    ref,
-                    salidaId: s.id,
-                    titulo: s.titulo,
-                  );
-                },
-                icon: const Icon(Icons.forum_outlined),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (puedeChat)
+                    IconButton(
+                      tooltip: 'Chat de la salida',
+                      onPressed: () {
+                        abrirChatSalida(
+                          context,
+                          ref,
+                          salidaId: s.id,
+                          titulo: s.titulo,
+                        );
+                      },
+                      icon: const Icon(Icons.forum_outlined),
+                    ),
+                  if (s.organizadorId == uid)
+                    IconButton(
+                      tooltip: 'Configuración',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PantallaConfiguracionSalida(salida: s),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.settings_outlined),
+                    ),
+                ],
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -172,8 +230,8 @@ class _EstadoPantallaDetalleSalidaRemota
           final foto = s.lugarFotoPortada?.trim() ?? '';
           final inscrito = s.inscrito(uid);
           final esOrganizador = s.organizadorId == uid;
-          final puedeInscribir =
-              s.estado == 'programada' && (!s.llena || inscrito);
+          final puedeInscribir = s.estado == 'programada' &&
+              (inscrito || (s.inscripcionAbierta && !s.llena));
 
           return ListView(
             padding: EdgeInsets.fromLTRB(horizontal, 8, horizontal, bottom),
@@ -391,8 +449,10 @@ class _EstadoPantallaDetalleSalidaRemota
               else
                 Text(
                   s.llena && !inscrito
-                      ? 'Sin cupos.'
-                      : 'Inscripción no disponible (${s.estado}).',
+                      ? 'Sin cupos disponibles.'
+                      : (!s.inscripcionAbierta && !inscrito)
+                          ? 'Las inscripciones están cerradas.'
+                          : 'Inscripción no disponible (${s.estado}).',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
                 ),

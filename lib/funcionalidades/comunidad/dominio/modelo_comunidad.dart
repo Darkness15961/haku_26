@@ -34,6 +34,7 @@ class ComunidadHaku {
   /// usuario_id → rol (`admin`/`miembro`). Remoto.
   final Map<String, String> rolPorUsuario;
   final DateTime? fechaCreacion;
+  final bool inscripcionAbierta;
   final bool remoto;
 
   const ComunidadHaku({
@@ -51,6 +52,7 @@ class ComunidadHaku {
     this.estadoMembresiaPorUsuario = const {},
     this.rolPorUsuario = const {},
     this.fechaCreacion,
+    this.inscripcionAbierta = true,
     this.remoto = false,
   });
 
@@ -109,6 +111,7 @@ class ComunidadHaku {
           estadoMembresiaPorUsuario ?? this.estadoMembresiaPorUsuario,
       rolPorUsuario: rolPorUsuario ?? this.rolPorUsuario,
       fechaCreacion: fechaCreacion,
+      inscripcionAbierta: inscripcionAbierta,
       remoto: remoto,
     );
   }
@@ -168,6 +171,7 @@ class ComunidadHaku {
       estadoMembresiaPorUsuario: estados,
       rolPorUsuario: roles,
       fechaCreacion: DateTime.tryParse(m['fecha_creacion'] as String? ?? ''),
+      inscripcionAbierta: m['inscripcion_abierta'] as bool? ?? true,
       remoto: true,
     );
   }
@@ -195,6 +199,7 @@ class ComunidadHaku {
       categorias: cats,
       miembroIds: miembroIds,
       fechaCreacion: DateTime.tryParse(m['fecha_creacion'] as String? ?? ''),
+      inscripcionAbierta: m['inscripcion_abierta'] as bool? ?? true,
       remoto: false,
     );
   }
@@ -210,6 +215,7 @@ class ComunidadHaku {
     'tipo': tipo,
     'categoria_ids': categorias.map((c) => c.name).toList(),
     'fecha_creacion': (fechaCreacion ?? DateTime.now()).toIso8601String(),
+    'inscripcion_abierta': inscripcionAbierta,
   };
 
   static CategoriaLugar? _categoriaDe(String id) {

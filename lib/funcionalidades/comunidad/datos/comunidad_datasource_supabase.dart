@@ -18,6 +18,7 @@ foto_portada,
 usuario_creador_id,
 estado,
 tipo,
+inscripcion_abierta,
 fecha_creacion,
 comunidad_miembro (
   usuario_id,
@@ -106,7 +107,8 @@ usuario:usuario_id (
     required String extension,
     required String nombre,
     String? descripcion,
-    String tipo = 'publico',
+    required String tipo,
+    List<String> miembrosExtra = const [],
   }) async {
     final url = await subirFotoPortada(
       userId: userId,
@@ -120,14 +122,15 @@ usuario:usuario_id (
         descripcion: descripcion,
         tipo: tipo,
         fotoPortadaUrl: url,
+        miembrosExtra: miembrosExtra,
       );
     } catch (_) {
-      await _eliminarPortadaSubida(url);
+      await eliminarPortadaSubida(url);
       rethrow;
     }
   }
 
-  Future<void> _eliminarPortadaSubida(String publicUrl) async {
+  Future<void> eliminarPortadaSubida(String publicUrl) async {
     try {
       final segmentos = Uri.parse(publicUrl).pathSegments;
       final bucketIndex = segmentos.lastIndexOf(bucketMedia);
@@ -140,6 +143,106 @@ usuario:usuario_id (
     }
   }
 
+  Future<void> eliminarComunidad(String comunidadId) async {
+    if (!supabaseListo) throw const AuthException('No hay conexión.');
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) throw const AuthException('Inicia sesión.');
+
+    final idNum = int.tryParse(comunidadId.trim());
+    if (idNum == null) throw const AuthException('ID inválido.');
+
+    // Obtenemos la comunidad actual para verificar creador y foto
+    final c = await porId(comunidadId);
+    if (c == null) throw const AuthException('Comunidad no encontrada.');
+    if (c.creadorId != user.id) throw const AuthException('Permiso denegado.');
+
+    // Eliminar de base de datos (se asume ON DELETE CASCADE)
+    await clienteSupabase.from('comunidad').delete().eq('id', idNum);
+
+    // Si se eliminó de BD, limpiamos el storage
+    if (c.imagenUrl.isNotEmpty && c.imagenUrl.contains(bucketMedia)) {
+      await eliminarPortadaSubida(c.imagenUrl);
+    }
+  }
+
+  Future<void> editarComunidad({
+    required String comunidadId,
+    required String nombre,
+    String? descripcion,
+    String tipo = 'publico',
+    String? fotoPortadaUrl,
+  }) async {
+    if (!supabaseListo) throw const AuthException('No hay conexión.');
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) throw const AuthException('Inicia sesión.');
+
+    final idNum = int.tryParse(comunidadId.trim());
+    if (idNum == null) throw const AuthException('ID inválido.');
+
+    final c = await porId(comunidadId);
+    if (c == null) throw const AuthException('Comunidad no encontrada.');
+    if (c.creadorId != user.id) throw const AuthException('Permiso denegado.');
+
+    final nombreTrim = nombre.trim();
+    if (nombreTrim.isEmpty) {
+      throw const AuthException('El nombre es obligatorio.');
+    }
+    final tipoNorm = tipo.trim().toLowerCase() == 'privado'
+        ? 'privado'
+        : 'publico';
+    final desc = descripcion?.trim();
+
+    final updateData = <String, dynamic>{
+      'nombre': nombreTrim,
+      'descripcion': (desc == null || desc.isEmpty) ? null : desc,
+      'tipo': tipoNorm,
+    };
+    // Solo se actualiza la foto si se envió un valor (incluso vacío para borrarla)
+    if (fotoPortadaUrl != null) {
+      updateData['foto_portada'] = fotoPortadaUrl.isEmpty
+          ? null
+          : fotoPortadaUrl;
+    }
+
+    await clienteSupabase.from('comunidad').update(updateData).eq('id', idNum);
+  }
+
+  Future<void> editarComunidadConPortada({
+    required String comunidadId,
+    required String nombre,
+    String? descripcion,
+    required String tipo,
+    required Uint8List bytes,
+    required String contentType,
+    required String extension,
+    required String urlAnterior,
+  }) async {
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) throw const AuthException('Inicia sesión.');
+
+    final urlNueva = await subirFotoPortada(
+      userId: user.id,
+      bytes: bytes,
+      contentType: contentType,
+      extension: extension,
+    );
+    try {
+      await editarComunidad(
+        comunidadId: comunidadId,
+        nombre: nombre,
+        descripcion: descripcion,
+        tipo: tipo,
+        fotoPortadaUrl: urlNueva,
+      );
+      if (urlAnterior.isNotEmpty && urlAnterior.contains(bucketMedia)) {
+        await eliminarPortadaSubida(urlAnterior);
+      }
+    } catch (_) {
+      await eliminarPortadaSubida(urlNueva);
+      rethrow;
+    }
+  }
+
   /// Insert `comunidad` + fila admin en `comunidad_miembro`.
   /// [descripcion] vacía → NULL. [fotoPortadaUrl] null → NULL (sin inventar).
   Future<ComunidadHaku> crear({
@@ -147,6 +250,7 @@ usuario:usuario_id (
     String? descripcion,
     String tipo = 'publico',
     String? fotoPortadaUrl,
+    List<String> miembrosExtra = const [],
   }) async {
     if (!supabaseListo) {
       throw const AuthException('No hay conexión con el servidor.');
@@ -166,12 +270,13 @@ usuario:usuario_id (
     final foto = fotoPortadaUrl?.trim();
 
     final raw = await clienteSupabase.rpc(
-      'crear_comunidad_con_admin',
+      'crear_comunidad_con_admin_y_miembros',
       params: {
         'p_nombre': nombreTrim,
         'p_descripcion': (desc == null || desc.isEmpty) ? null : desc,
         'p_tipo': tipoNorm,
         'p_foto_portada': (foto == null || foto.isEmpty) ? null : foto,
+        'p_miembros_extra': miembrosExtra,
       },
     );
     final idNum = raw is int ? raw : int.tryParse('$raw');
@@ -371,5 +476,28 @@ usuario:usuario_id (
         'No se pudo resolver la solicitud. ¿Sos admin de la comunidad?',
       );
     }
+  }
+
+  Future<void> cambiarEstadoInscripcion(
+    String comunidadId,
+    bool abierta,
+  ) async {
+    if (!supabaseListo) {
+      throw const AuthException('No hay conexión con el servidor.');
+    }
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Inicia sesión.');
+    }
+    final idNum = int.tryParse(comunidadId.trim());
+    if (idNum == null) {
+      throw const AuthException('Comunidad inválida.');
+    }
+
+    // Actualizamos la columna (RLS verificará que sea admin)
+    await clienteSupabase
+        .from('comunidad')
+        .update({'inscripcion_abierta': abierta})
+        .eq('id', idNum);
   }
 }

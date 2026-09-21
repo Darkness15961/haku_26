@@ -21,6 +21,7 @@ tipo,
 cupos_totales,
 minimo_para_salir,
 estado,
+inscripcion_abierta,
 fecha_creacion,
 salida_participante (
   usuario_id,
@@ -318,6 +319,30 @@ organizador:usuario!organizador_id (
         .maybeSingle();
     if (row == null) {
       throw const AuthException('No se pudo cancelar la inscripción.');
+    }
+  }
+
+  Future<void> cambiarEstadoInscripcionSalida(String salidaId, bool abierta) async {
+    if (!supabaseListo) {
+      throw const AuthException('No hay conexión con el servidor.');
+    }
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Inicia sesión.');
+    }
+    final idNum = int.tryParse(salidaId.trim());
+    if (idNum == null) {
+      throw const AuthException('Salida inválida.');
+    }
+
+    try {
+      await clienteSupabase
+          .from('salida')
+          .update({'inscripcion_abierta': abierta})
+          .eq('id', idNum)
+          .eq('organizador_id', user.id);
+    } on PostgrestException catch (e) {
+      throw AuthException(e.message.trim());
     }
   }
 }
