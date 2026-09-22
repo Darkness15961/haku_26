@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -48,6 +47,7 @@ class MapaExploraLugares extends StatefulWidget {
 class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTickerProviderStateMixin {
   ml.MapLibreMapController? _controller;
   String? _firmaVista;
+  Offset? _pointerDownPos;
   var _mapaListo = false;
   final Set<String> _fotosInyectadas = {};
   AnimationController? _animController;
@@ -641,60 +641,91 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
             }
           },
           onMapClick: (point, latLng) async {
-            if (_controller == null) return;
-            
-            final features = await _controller!.queryRenderedFeatures(
-              point,
-              ["capa_pines_individuales", "capa_clusters"],
-              null,
-            );
-
-            if (features.isNotEmpty) {
-              Map<String, dynamic>? propsPinIndividual;
-              Map<String, dynamic>? propsCluster;
-
-              for (final f in features) {
-                if (f is! Map) continue;
-                final propsRaw = f['properties'];
-                Map<String, dynamic> p = {};
-                if (propsRaw is String) {
-                  try { p = jsonDecode(propsRaw); } catch (_) {}
-                } else if (propsRaw is Map) {
-                  p = Map<String, dynamic>.from(propsRaw);
-                }
-
-                if (p.containsKey('point_count')) {
-                  propsCluster = p; 
-                } else if (p.containsKey('id')) {
-                  propsPinIndividual = p; 
-                  break;
-                }
-              }
-
-              if (propsPinIndividual != null) {
-                HapticFeedback.selectionClick();
-                final id = propsPinIndividual['id'];
-                if (id != null) {
-                  ModeloLugar? lugar;
-                  try {
-                    lugar = widget.lugares.firstWhere((l) => l.id.toString() == id.toString());
-                  } catch (_) {}
-
-                  if (lugar != null) {
-                    widget.onLugarSeleccionado(lugar);
-                    _moverSeguro(LatLng(lugar.latitud, lugar.longitud), _controller!.cameraPosition?.zoom ?? 14.5);
-                  }
-                }
-              } else if (propsCluster != null) {
-                HapticFeedback.selectionClick();
-                final currentZoom = _controller!.cameraPosition?.zoom ?? 10;
-                _moverSeguro(LatLng(latLng.latitude, latLng.longitude), currentZoom + 2.0);
-              }
-            } else {
-              // Tocó fondo vacío -> Limpiar selección modal
-              widget.onLugarSeleccionado(null);
-            }
+            // Se delegó toda la lógica al Listener (Escudo Táctil Transparente) superior
+            // para evitar los bugs nativos de consumo de eventos táctiles.
           },
+        ),
+        
+        // 2. Escudo Táctil Transparente (Observador de toques global)
+        Positioned.fill(
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (e) => _pointerDownPos = e.localPosition,
+            onPointerUp: (e) async {
+              if (_pointerDownPos == null || _controller == null) return;
+              final moveDist = (e.localPosition - _pointerDownPos!).distance;
+              if (moveDist > 10.0) return; // Si movió el dedo más de 10px, fue un paneo, no un click.
+
+              // Convertimos píxeles a lat/lng usando el motor de MapLibre
+              final point = math.Point<num>(e.localPosition.dx, e.localPosition.dy);
+              LatLng latLng;
+              try {
+                final pos = await _controller!.toLatLng(point);
+                latLng = LatLng(pos.latitude, pos.longitude);
+              } catch (_) {
+                return;
+              }
+
+              // 1. Detectar si el usuario tocó un Cluster nativo primero
+              final rectCluster = Rect.fromCenter(
+                center: e.localPosition,
+                width: 60.0,
+                height: 60.0,
+              );
+
+              try {
+                final clusterFeatures = await _controller!.queryRenderedFeaturesInRect(
+                  rectCluster,
+                  ["capa_clusters"],
+                  null,
+                );
+
+                if (clusterFeatures.isNotEmpty) {
+                  HapticFeedback.selectionClick();
+                  final currentZoom = _controller!.cameraPosition?.zoom ?? 10;
+                  _moverSeguro(LatLng(latLng.latitude, latLng.longitude), currentZoom + 2.0);
+                  return; // Fin del hilo. Tocó un clúster.
+                }
+              } catch (_) {
+                // Ignoramos fallos nativos al leer el clúster.
+              }
+
+              // 2. Matemática Pura para los lugares
+              final tapPoint = LatLng(latLng.latitude, latLng.longitude);
+              final distanciaMath = const Distance();
+              final currentZoom = _controller!.cameraPosition?.zoom ?? 10.0;
+              
+              // Fórmula Web Mercator (metros por píxel en este zoom/latitud)
+              final metrosPorPixel = 156543.03392 * math.cos(latLng.latitude * math.pi / 180.0) / math.pow(2, currentZoom);
+              final radioToleranciaMetros = 40.0 * metrosPorPixel;
+
+              double menorDistancia = double.infinity;
+              ModeloLugar? lugarMasCercano;
+
+              for (final lugar in widget.lugares) {
+                final d = distanciaMath.distance(
+                  tapPoint, 
+                  LatLng(lugar.latitud, lugar.longitud),
+                );
+                if (d < menorDistancia) {
+                  menorDistancia = d;
+                  lugarMasCercano = lugar;
+                }
+              }
+
+              // 3. Evaluar resultado matemático
+              if (lugarMasCercano != null && menorDistancia <= radioToleranciaMetros) {
+                HapticFeedback.selectionClick();
+                widget.onLugarSeleccionado(lugarMasCercano);
+                _moverSeguro(
+                  LatLng(lugarMasCercano.latitud, lugarMasCercano.longitud), 
+                  _controller!.cameraPosition?.zoom ?? 14.5,
+                );
+              } else {
+                widget.onLugarSeleccionado(null); // Tocó fondo vacío
+              }
+            },
+          ),
         ),
         
         // FASE 5: Aquí colocaremos el Overlay (cajita) del pin seleccionado en el futuro.

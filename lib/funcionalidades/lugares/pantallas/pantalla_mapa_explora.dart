@@ -392,11 +392,24 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                 if (overlayCarga)
                   Positioned.fill(
                     child: IgnorePointer(
-                      child: ColoredBox(
-                        color: PaletaRutas.ink.withValues(alpha: 0.25),
-                        child: const Center(
-                          child: CircularProgressIndicator(
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: PaletaRutas.ink.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const CircularProgressIndicator(
                             color: PaletaRutas.oro,
+                            strokeWidth: 3,
                           ),
                         ),
                       ),
@@ -469,22 +482,24 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                     child: _construirBloqueInferior(),
                   ),
                 // Capa Modal (Foco absoluto)
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeOutBack,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.9, end: 1.0).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _lugarSeleccionado == null
-                      ? const SizedBox.shrink(key: ValueKey('vacio'))
-                      : _construirCapaModal(_lugarSeleccionado!),
+                Positioned.fill(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeOutBack,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.9, end: 1.0).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _lugarSeleccionado == null
+                        ? const SizedBox.shrink(key: ValueKey('vacio'))
+                        : _construirCapaModal(_lugarSeleccionado!),
+                  ),
                 ),
               ],
             ),
@@ -496,7 +511,7 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
   }
 
   Widget _construirCapaModal(ModeloLugar lugar) {
-    return Positioned.fill(
+    return SizedBox.expand(
       key: const ValueKey('modal_lugar'),
       child: GestureDetector(
         onTap: () => setState(() => _lugarSeleccionado = null), // Tocar el fondo oscuro cierra
