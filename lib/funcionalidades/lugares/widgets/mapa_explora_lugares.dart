@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,6 +49,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   ml.MapLibreMapController? _controller;
   String? _firmaVista;
   var _mapaListo = false;
+  final Set<String> _fotosInyectadas = {};
   AnimationController? _animController;
   Animation<double>? _radioAnimacion;
 
@@ -55,7 +58,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 1400),
     );
     _animController!.addListener(() {
       if (_controller != null && widget.mostrarRadioCerca && widget.ubicacionUsuario != null) {
@@ -90,30 +93,57 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   void didUpdateWidget(MapaExploraLugares oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final empezoMostrarRadio = widget.mostrarRadioCerca && !oldWidget.mostrarRadioCerca;
-    final cambioRadio = widget.mostrarRadioCerca && oldWidget.mostrarRadioCerca && widget.radioCercaM != oldWidget.radioCercaM;
-    
-    if (empezoMostrarRadio) {
-      _radioAnimacion = Tween<double>(begin: 0.0, end: widget.radioCercaM)
-          .animate(CurvedAnimation(parent: _animController!, curve: Curves.easeOutCirc));
-      _animController!.forward(from: 0.0);
-    } else if (cambioRadio) {
-      final radioActual = _radioAnimacion?.value ?? oldWidget.radioCercaM;
-      _radioAnimacion = Tween<double>(begin: radioActual, end: widget.radioCercaM)
-          .animate(CurvedAnimation(parent: _animController!, curve: Curves.easeOutCirc));
-      _animController!.forward(from: 0.0);
+    if (_controller == null || !_mapaListo) return;
+
+    if (widget.estiloMapa != oldWidget.estiloMapa) {
+      return; 
     }
 
-    final firma = _firmaActual();
-    if (firma != _firmaVista) {
-      _firmaVista = firma;
+    if (widget.mostrarRadioCerca != oldWidget.mostrarRadioCerca ||
+        widget.radioCercaM != oldWidget.radioCercaM ||
+        widget.preparandoRadar != oldWidget.preparandoRadar) {
+      if (widget.mostrarRadioCerca) {
+        _radioAnimacion = Tween<double>(begin: 0.0, end: widget.radioCercaM)
+            .animate(CurvedAnimation(parent: _animController!, curve: Curves.easeOutCirc));
+        _animController!.forward(from: 0.0);
+      }
+      _moverSeguro(_centroVista(), _zoomVista());
+    }
+
+    if (widget.ubicacionUsuario != oldWidget.ubicacionUsuario ||
+        widget.mostrarRadioCerca != oldWidget.mostrarRadioCerca ||
+        widget.preparandoRadar != oldWidget.preparandoRadar) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _moverSeguro(_centroVista(), _zoomVista());
-        if (_controller != null) {
-          _actualizarGeometria(_controller!);
-        }
+        if (!mounted || _controller == null) return;
+        _actualizarGeometria(_controller!);
       });
+    }
+
+    if (widget.lugares != oldWidget.lugares) {
+      _actualizarCapaLugares(_controller!);
+    }
+  }
+
+  Future<void> _actualizarCapaLugares(ml.MapLibreMapController controller) async {
+    await controller.setGeoJsonSource("fuente_lugares", _crearLugaresGeoJson(widget.lugares));
+
+    bool hayNuevos = false;
+    for (final l in widget.lugares) {
+      if (l.imagenUrl.isNotEmpty && !_fotosInyectadas.contains('foto_lugar_${l.id}')) {
+        final hueco = l.nivelExploracion == NivelExploracion.pocoExplorado ||
+                      l.nivelExploracion == NivelExploracion.nuevoEnHaku;
+        final bytes = await _crearPinConFoto(l.imagenUrl, hueco);
+        if (bytes != null) {
+          final nombreInyectado = 'foto_lugar_${l.id}';
+          await controller.addImage(nombreInyectado, bytes);
+          _fotosInyectadas.add(nombreInyectado);
+          hayNuevos = true;
+        }
+      }
+    }
+
+    if (hayNuevos) {
+      await controller.setGeoJsonSource("fuente_lugares", _crearLugaresGeoJson(widget.lugares));
     }
   }
 
@@ -147,12 +177,12 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
 
   double _zoomVista() {
     if (widget.preparandoRadar && widget.ubicacionUsuario != null) {
-      return 9.6; // Zoom óptimo para ver el radar de 50km entero al nacer
+      return 8.8; // Zoom panorámico radar 50km
     }
     if (widget.mostrarRadioCerca && widget.ubicacionUsuario != null) {
-      if (widget.radioCercaM <= 30000) return 10.6;
-      if (widget.radioCercaM <= 40000) return 10.4;
-      return 10.1;
+      if (widget.radioCercaM <= 30000) return 9.2;
+      if (widget.radioCercaM <= 40000) return 9.0;
+      return 8.8; // Panorámico
     }
     if (widget.lugares.length <= 1) return 11;
     if (widget.lugares.length <= 5) return 10;
@@ -350,6 +380,56 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     return byteData!.buffer.asUint8List();
   }
 
+  Future<ui.Image> _cargarUiImage(String url) async {
+    final Completer<ui.Image> completer = Completer();
+    final ImageStream stream = NetworkImage(url).resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener((ImageInfo info, bool _) {
+      if (!completer.isCompleted) completer.complete(info.image);
+      stream.removeListener(listener);
+    }, onError: (dynamic error, StackTrace? stackTrace) {
+      if (!completer.isCompleted) completer.completeError(error);
+      stream.removeListener(listener);
+    });
+    stream.addListener(listener);
+    return completer.future;
+  }
+
+  Future<Uint8List?> _crearPinConFoto(String url, bool hueco) async {
+    try {
+      final imagen = await _cargarUiImage(url);
+      final size = 120.0; 
+      
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+
+      final colorBorde = hueco ? PaletaRutas.oro : PaletaRutas.piedra;
+
+      final shadowPaint = Paint()
+        ..color = PaletaRutas.ink.withValues(alpha: 0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawCircle(Offset(size / 2, size / 2 + 6), size / 2 - 12, shadowPaint);
+
+      final paintBase = Paint()..color = colorBorde;
+      canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 6, paintBase);
+
+      final radioImg = size / 2 - 14; 
+      final path = ui.Path()..addOval(Rect.fromCircle(center: Offset(size / 2, size / 2), radius: radioImg));
+      canvas.clipPath(path);
+
+      final src = Rect.fromLTWH(0, 0, imagen.width.toDouble(), imagen.height.toDouble());
+      final dst = Rect.fromCircle(center: Offset(size / 2, size / 2), radius: radioImg);
+      canvas.drawImageRect(imagen, src, dst, Paint());
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(size.toInt(), size.toInt());
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      return null;
+    }
+  }
+
   Map<String, dynamic> _crearLugaresGeoJson(List<ModeloLugar> lugares) {
     return {
       "type": "FeatureCollection",
@@ -360,8 +440,8 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
           "type": "Feature",
           "id": l.id,
           "properties": {
-            "id": l.id,
-            "icono": hueco ? "pin_oro" : "pin_plomo",
+            "id": l.id.toString(),
+            "icono": _fotosInyectadas.contains("foto_lugar_${l.id}") ? "foto_lugar_${l.id}" : (hueco ? "pin_oro" : "pin_plomo"),
             "nombre": l.nombre
           },
           "geometry": {
@@ -380,6 +460,19 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     
     await controller.addImage("pin_oro", oroBytes);
     await controller.addImage("pin_plomo", plomoBytes);
+
+    for (final l in widget.lugares) {
+      if (l.imagenUrl.isNotEmpty) {
+        final hueco = l.nivelExploracion == NivelExploracion.pocoExplorado ||
+                      l.nivelExploracion == NivelExploracion.nuevoEnHaku;
+        final bytes = await _crearPinConFoto(l.imagenUrl, hueco);
+        if (bytes != null) {
+          final nombreInyectado = 'foto_lugar_${l.id}';
+          await controller.addImage(nombreInyectado, bytes);
+          _fotosInyectadas.add(nombreInyectado);
+        }
+      }
+    }
 
     // 2. Fuente de datos con Clustering Activado
     await controller.addSource(
@@ -430,10 +523,14 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
       "fuente_lugares",
       "capa_pines_individuales",
       ml.SymbolLayerProperties(
-        iconImage: '{icono}', // Lee de las properties (pin_oro o pin_plomo)
-        iconSize: 0.8,
+        iconImage: '{icono}', // Lee de las properties
+        iconSize: [
+          'interpolate', ['linear'], ['zoom'],
+          8, 0.5,   
+          15, 0.75  
+        ],
         iconAllowOverlap: true,
-        iconAnchor: 'bottom', // Para que la punta del pin apunte a la coordenada
+        iconAnchor: 'center', 
       ),
       filter: ['!', ['has', 'point_count']],
     );
@@ -545,31 +642,53 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
           },
           onMapClick: (point, latLng) async {
             if (_controller == null) return;
-            // Consultar si tocamos un pin interactivo
+            
             final features = await _controller!.queryRenderedFeatures(
               point,
-              ["capa_pines_individuales"],
+              ["capa_pines_individuales", "capa_clusters"],
               null,
             );
 
             if (features.isNotEmpty) {
-              final capaTocada = features.first['layer']['id'];
-              final props = features.first['properties'];
+              Map<String, dynamic>? propsPinIndividual;
+              Map<String, dynamic>? propsCluster;
 
-              if (capaTocada == "capa_pines_individuales") {
-                // Tocó un pin -> Seleccionar y mostrar modal Flutter
-                HapticFeedback.selectionClick();
-                final id = props['id'];
-                ModeloLugar? lugar;
-                try {
-                  lugar = widget.lugares.firstWhere((l) => l.id == id);
-                } catch (_) {}
-
-                if (lugar != null) {
-                  widget.onLugarSeleccionado(lugar);
-                  // Opcional: Centrar cámara
-                  _moverSeguro(LatLng(lugar.latitud, lugar.longitud), 14.5);
+              for (final f in features) {
+                if (f is! Map) continue;
+                final propsRaw = f['properties'];
+                Map<String, dynamic> p = {};
+                if (propsRaw is String) {
+                  try { p = jsonDecode(propsRaw); } catch (_) {}
+                } else if (propsRaw is Map) {
+                  p = Map<String, dynamic>.from(propsRaw);
                 }
+
+                if (p.containsKey('point_count')) {
+                  propsCluster = p; 
+                } else if (p.containsKey('id')) {
+                  propsPinIndividual = p; 
+                  break;
+                }
+              }
+
+              if (propsPinIndividual != null) {
+                HapticFeedback.selectionClick();
+                final id = propsPinIndividual['id'];
+                if (id != null) {
+                  ModeloLugar? lugar;
+                  try {
+                    lugar = widget.lugares.firstWhere((l) => l.id.toString() == id.toString());
+                  } catch (_) {}
+
+                  if (lugar != null) {
+                    widget.onLugarSeleccionado(lugar);
+                    _moverSeguro(LatLng(lugar.latitud, lugar.longitud), _controller!.cameraPosition?.zoom ?? 14.5);
+                  }
+                }
+              } else if (propsCluster != null) {
+                HapticFeedback.selectionClick();
+                final currentZoom = _controller!.cameraPosition?.zoom ?? 10;
+                _moverSeguro(LatLng(latLng.latitude, latLng.longitude), currentZoom + 2.0);
               }
             } else {
               // Tocó fondo vacío -> Limpiar selección modal
