@@ -191,7 +191,7 @@ class _EstadoPantallaConfiguracionSalida
                 else
                   Switch(
                     value: s.inscripcionAbierta,
-                    activeColor: PaletaRutas.oro,
+                    activeThumbColor: PaletaRutas.oro,
                     onChanged: (val) => _toggleInscripcion(s.inscripcionAbierta),
                   ),
               ],
