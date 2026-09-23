@@ -115,6 +115,10 @@ class ModeloRuta {
 
   final bool guardadoPorMi;
   final String? usuarioCreadorId;
+  final String? usuarioCreadorNombre;
+  final String? usuarioCreadorFoto;
+  final DateTime? publicadaEn;
+  final DateTime? updatedAt;
 
   const ModeloRuta({
     required this.id,
@@ -149,6 +153,10 @@ class ModeloRuta {
     this.provincia = 'Cusco',
     this.guardadoPorMi = false,
     this.usuarioCreadorId,
+    this.usuarioCreadorNombre,
+    this.usuarioCreadorFoto,
+    this.publicadaEn,
+    this.updatedAt,
   });
 
   factory ModeloRuta.fromJson(Map<String, dynamic> json) {
@@ -207,6 +215,10 @@ class ModeloRuta {
       provincia: json['provincia'] as String? ?? 'Cusco',
       guardadoPorMi: json['guardadoPorMi'] as bool? ?? false,
       usuarioCreadorId: json['usuarioCreadorId'] as String?,
+      usuarioCreadorNombre: json['usuarioCreadorNombre'] as String?,
+      usuarioCreadorFoto: json['usuarioCreadorFoto'] as String?,
+      publicadaEn: DateTime.tryParse('${json['publicadaEn'] ?? ''}'),
+      updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}'),
     );
   }
 
@@ -308,6 +320,8 @@ class ModeloRuta {
       tiempoCaminata: _duracion(duracionMin),
       mejorEpoca: _meses(meses),
       etiquetas: _listaTexto(json['etiquetas']),
+      calificacion: (json['valoracion_promedio'] as num?)?.toDouble() ?? 0,
+      cantidadResenas: (json['cantidad_valoraciones'] as num?)?.toInt() ?? 0,
       tipoSitio: (json['tipo'] as String?)?.trim(),
       puntos: paradas,
       trazado: trazado,
@@ -323,6 +337,10 @@ class ModeloRuta {
           : 'Cusco',
       guardadoPorMi: json['ruta_guardada_por_mi'] == true,
       usuarioCreadorId: json['usuario_creador_id']?.toString(),
+      usuarioCreadorNombre: _textoNulo(json['usuario_creador_nombre']),
+      usuarioCreadorFoto: _textoNulo(json['usuario_creador_foto']),
+      publicadaEn: DateTime.tryParse('${json['publicada_en'] ?? ''}'),
+      updatedAt: DateTime.tryParse('${json['updated_at'] ?? ''}'),
     );
   }
 
@@ -359,6 +377,10 @@ class ModeloRuta {
       'provincia': provincia,
       'guardadoPorMi': guardadoPorMi,
       'usuarioCreadorId': usuarioCreadorId,
+      'usuarioCreadorNombre': usuarioCreadorNombre,
+      'usuarioCreadorFoto': usuarioCreadorFoto,
+      'publicadaEn': publicadaEn?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -395,6 +417,10 @@ class ModeloRuta {
     String? provincia,
     bool? guardadoPorMi,
     String? usuarioCreadorId,
+    String? usuarioCreadorNombre,
+    String? usuarioCreadorFoto,
+    DateTime? publicadaEn,
+    DateTime? updatedAt,
   }) {
     return ModeloRuta(
       id: id ?? this.id,
@@ -429,8 +455,17 @@ class ModeloRuta {
       provincia: provincia ?? this.provincia,
       guardadoPorMi: guardadoPorMi ?? this.guardadoPorMi,
       usuarioCreadorId: usuarioCreadorId ?? this.usuarioCreadorId,
+      usuarioCreadorNombre: usuarioCreadorNombre ?? this.usuarioCreadorNombre,
+      usuarioCreadorFoto: usuarioCreadorFoto ?? this.usuarioCreadorFoto,
+      publicadaEn: publicadaEn ?? this.publicadaEn,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+String? _textoNulo(Object? raw) {
+  final texto = (raw as String?)?.trim();
+  return texto == null || texto.isEmpty ? null : texto;
 }
 
 List<String> _listaTexto(Object? raw) {

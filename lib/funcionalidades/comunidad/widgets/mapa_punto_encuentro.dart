@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../nucleo/mapas/mapa_marcador_haku.dart';
 import '../../lugares/datos/coordenadas_lugares_cusco.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/salidas_datasource_local.dart';
@@ -53,84 +53,45 @@ class MapaPuntoEncuentro extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: SizedBox(
         height: altura,
-        child: Stack(
-          children: [
-            FlutterMap(
-              options: MapOptions(
-                initialCenter: punto,
-                initialZoom: 15.2,
-                minZoom: 12,
-                maxZoom: 18,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        child: MapaMarcadorHaku(
+          punto: punto,
+          zoom: 15.2,
+          minZoom: 12,
+          maxZoom: 18,
+          color: const Color(0xFFE53935),
+          overlay: Positioned(
+            left: 10,
+            right: 10,
+            bottom: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: PaletaRutas.ink.withValues(alpha: 0.88),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: PaletaRutas.oro.withValues(alpha: 0.45),
                 ),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.haku.app',
-                  retinaMode: RetinaMode.isHighDensity(context),
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: punto,
-                      width: 48,
-                      height: 48,
-                      alignment: Alignment.topCenter,
-                      child: const Icon(
-                        Icons.location_on,
-                        size: 44,
-                        color: Color(0xFFE53935),
+              child: Row(
+                children: [
+                  const Icon(Icons.place, size: 16, color: Color(0xFFE53935)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Encuentro: ${salida.puntoEncuentro}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.piedra,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: PaletaRutas.ink.withValues(alpha: 0.88),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: PaletaRutas.oro.withValues(alpha: 0.45),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.place,
-                      size: 16,
-                      color: Color(0xFFE53935),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Encuentro: ${salida.puntoEncuentro}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TipografiaHaku.interfaz(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaletaRutas.piedra,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

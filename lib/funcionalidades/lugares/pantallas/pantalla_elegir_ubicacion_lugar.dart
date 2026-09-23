@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 
+import '../../../nucleo/mapas/estilos_mapa_haku.dart';
 import '../../rutas/widgets/boton_primario_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/geocodificador_lugar.dart';
@@ -28,7 +29,8 @@ class PantallaElegirUbicacionLugar extends StatefulWidget {
 class _EstadoPantallaElegirUbicacionLugar
     extends State<PantallaElegirUbicacionLugar> {
   final _busqueda = TextEditingController();
-  final _mapController = MapController();
+  ml.MapLibreMapController? _mapController;
+  bool _mapaListo = false;
 
   late LatLng _punto;
   var _tocoMapa = false;
@@ -38,7 +40,8 @@ class _EstadoPantallaElegirUbicacionLugar
   @override
   void initState() {
     super.initState();
-    _punto = widget.inicial ??
+    _punto =
+        widget.inicial ??
         const LatLng(
           LogicaUbicacionLugar.latCusco,
           LogicaUbicacionLugar.lonCusco,
@@ -51,8 +54,68 @@ class _EstadoPantallaElegirUbicacionLugar
   @override
   void dispose() {
     _busqueda.dispose();
-    _mapController.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _moverMapa(LatLng punto, double zoom) async {
+    if (!_mapaListo || _mapController == null) return;
+    await _mapController!.animateCamera(
+      ml.CameraUpdate.newCameraPosition(
+        ml.CameraPosition(target: _aMl(punto), zoom: zoom),
+      ),
+    );
+  }
+
+  Future<void> _cargarPuntoMapa(ml.MapLibreMapController controller) async {
+    try {
+      await controller.setGeoJsonSource('punto_lugar', _puntoGeoJson());
+      return;
+    } catch (_) {
+      // La fuente todavia no existe o el estilo fue recargado.
+    }
+
+    await controller.addGeoJsonSource('punto_lugar', _puntoGeoJson());
+    await controller.addCircleLayer(
+      'punto_lugar',
+      'punto_lugar_halo',
+      ml.CircleLayerProperties(
+        circleColor: _hex(PaletaRutas.oro),
+        circleOpacity: 0.22,
+        circleRadius: 20,
+      ),
+    );
+    await controller.addCircleLayer(
+      'punto_lugar',
+      'punto_lugar_centro',
+      ml.CircleLayerProperties(
+        circleColor: _hex(PaletaRutas.oro),
+        circleStrokeColor: _hex(PaletaRutas.ink),
+        circleStrokeWidth: 2,
+        circleRadius: 8,
+      ),
+    );
+  }
+
+  Future<void> _actualizarPuntoMapa() async {
+    if (!_mapaListo || _mapController == null) return;
+    await _mapController!.setGeoJsonSource('punto_lugar', _puntoGeoJson());
+  }
+
+  Map<String, dynamic> _puntoGeoJson() {
+    return {
+      'type': 'FeatureCollection',
+      'features': [
+        {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'Point',
+            'coordinates': [_punto.longitude, _punto.latitude],
+          },
+          'properties': {},
+        },
+      ],
+    };
   }
 
   Future<void> _intentarCentrarDistrito() async {
@@ -72,7 +135,8 @@ class _EstadoPantallaElegirUbicacionLugar
         _punto = punto;
         _tocoMapa = false;
       });
-      _mapController.move(punto, 13);
+      await _moverMapa(punto, 13);
+      await _actualizarPuntoMapa();
     } catch (e) {
       debugPrint('Centrar distrito: $e');
     } finally {
@@ -95,14 +159,18 @@ class _EstadoPantallaElegirUbicacionLugar
       );
       if (!mounted) return;
       if (punto == null) {
-        mostrarSnackHaku(context, 'No encontramos ese lugar. Prueba otro nombre.');
+        mostrarSnackHaku(
+          context,
+          'No encontramos ese lugar. Prueba otro nombre.',
+        );
         return;
       }
       setState(() {
         _punto = punto;
         _tocoMapa = true;
       });
-      _mapController.move(punto, 15);
+      await _moverMapa(punto, 15);
+      await _actualizarPuntoMapa();
     } catch (e) {
       debugPrint('Buscar mapa: $e');
       if (mounted) {
@@ -169,8 +237,8 @@ class _EstadoPantallaElegirUbicacionLugar
                   _centrandoTerritorio
                       ? 'Acercando al distrito…'
                       : (_tocoMapa
-                          ? 'Punto marcado. Puedes moverlo tocando otra vez.'
-                          : 'Busca un nombre o toca el mapa para fijar el punto.'),
+                            ? 'Punto marcado. Puedes moverlo tocando otra vez.'
+                            : 'Busca un nombre o toca el mapa para fijar el punto.'),
                   style: TipografiaHaku.interfaz(
                     fontSize: 13,
                     color: PaletaRutas.plomoClaro,
@@ -182,7 +250,9 @@ class _EstadoPantallaElegirUbicacionLugar
                     Expanded(
                       child: TextField(
                         controller: _busqueda,
-                        style: TipografiaHaku.interfaz(color: PaletaRutas.piedra),
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.piedra,
+                        ),
                         cursorColor: PaletaRutas.oro,
                         textInputAction: TextInputAction.search,
                         onSubmitted: (_) => _buscar(),
@@ -216,7 +286,9 @@ class _EstadoPantallaElegirUbicacionLugar
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: PaletaRutas.oro),
+                            borderSide: const BorderSide(
+                              color: PaletaRutas.oro,
+                            ),
                           ),
                         ),
                       ),
@@ -245,45 +317,39 @@ class _EstadoPantallaElegirUbicacionLugar
             ),
           ),
           Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _punto,
-                initialZoom: 12,
-                minZoom: 5,
-                maxZoom: 18,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                ),
-                onTap: (_, latLng) {
-                  setState(() {
-                    _punto = latLng;
-                    _tocoMapa = true;
-                  });
-                },
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.haku.app',
-                  retinaMode: RetinaMode.isHighDensity(context),
+                ml.MapLibreMap(
+                  styleString: EstilosMapaHaku.openFreeMapLiberty,
+                  initialCameraPosition: ml.CameraPosition(
+                    target: _aMl(_punto),
+                    zoom: 12,
+                  ),
+                  minMaxZoomPreference: const ml.MinMaxZoomPreference(5, 18),
+                  rotateGesturesEnabled: false,
+                  attributionButtonPosition:
+                      ml.AttributionButtonPosition.bottomLeft,
+                  onMapCreated: (controller) async {
+                    _mapController = controller;
+                    _mapaListo = true;
+                    await _cargarPuntoMapa(controller);
+                  },
+                  onStyleLoadedCallback: () async {
+                    if (!_mapaListo || _mapController == null) return;
+                    await _cargarPuntoMapa(_mapController!);
+                  },
+                  onMapClick: (_, punto) async {
+                    setState(() {
+                      _punto = LatLng(punto.latitude, punto.longitude);
+                      _tocoMapa = true;
+                    });
+                    await _actualizarPuntoMapa();
+                  },
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _punto,
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.topCenter,
-                      child: const Icon(
-                        Icons.location_on,
-                        color: PaletaRutas.oro,
-                        size: 40,
-                      ),
-                    ),
-                  ],
+                const Positioned(
+                  left: 8,
+                  bottom: 8,
+                  child: _AtribucionMapaSeleccion(),
                 ),
               ],
             ),
@@ -313,6 +379,36 @@ class _EstadoPantallaElegirUbicacionLugar
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+ml.LatLng _aMl(LatLng punto) => ml.LatLng(punto.latitude, punto.longitude);
+
+String _hex(Color color) {
+  return '#${color.toARGB32().toRadixString(16).substring(2, 8)}';
+}
+
+class _AtribucionMapaSeleccion extends StatelessWidget {
+  const _AtribucionMapaSeleccion();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: PaletaRutas.carbon.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '${EstilosMapaHaku.atribucionOpenStreetMap} · '
+        '${EstilosMapaHaku.atribucionOpenFreeMap}',
+        style: TipografiaHaku.interfaz(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: PaletaRutas.plomoClaro,
+        ),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../nucleo/mapas/mapa_marcador_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/contenido_chat_especial.dart';
 
@@ -36,38 +36,10 @@ class BurbujaUbicacionChat extends StatelessWidget {
             height: 240,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: punto,
-                  initialZoom: 15,
-                  interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
-                  ),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    userAgentPackageName: 'com.haku.app',
-                    retinaMode: RetinaMode.isHighDensity(ctx),
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: punto,
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(
-                          Icons.location_on,
-                          size: 36,
-                          color: Color(0xFFE53935),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              child: MapaMarcadorHaku(
+                punto: punto,
+                zoom: 15,
+                color: const Color(0xFFE53935),
               ),
             ),
           ),

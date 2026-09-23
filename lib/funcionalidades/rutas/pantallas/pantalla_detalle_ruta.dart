@@ -6,12 +6,7 @@ import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
-import '../../comunidad/dominio/modelo_publicacion.dart';
-import '../../comunidad/proveedores/proveedor_publicaciones.dart';
-import '../../inicio/proveedores/proveedor_almacen_feed.dart';
-import '../../lugares/widgets/fila_metricas_comunidad.dart';
 import '../../lugares/widgets/lista_experiencias_lugar.dart';
-import '../../lugares/widgets/metricas_comunidad.dart';
 import '../../lugares/widgets/recuerdos_comunidad.dart';
 import '../dominio/modelos/modelo_ruta.dart';
 import '../datos/rutas_datasource_supabase.dart';
@@ -22,6 +17,7 @@ import '../widgets/imagen_parallax_ruta.dart';
 import '../widgets/linea_encabezado_inca.dart';
 import '../widgets/menu_acciones_detalle.dart';
 import '../widgets/menu_acciones_flotante.dart';
+import 'pantalla_mapa_ruta.dart';
 
 /// Detalle de una ruta: hero + ficha + aporte a la comunidad.
 class PantallaDetalleRuta extends ConsumerStatefulWidget {
@@ -101,6 +97,12 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     mostrarSnackHaku(context, mensaje, destacado: true);
   }
 
+  void _abrirMapa(ModeloRuta ruta) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => PantallaMapaRuta(ruta: ruta)),
+    );
+  }
+
   Widget _rutaNoDisponible() {
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -157,7 +159,7 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     final horizontal = size.width > 804 ? (size.width - 760) / 2 : 22.0;
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    
+
     // Si la rutaProvider ya nos dio un dato fresco, y no estamos mutando,
     // sincronizamos la variable optimista.
     if (!_isMutatingGuardado) {
@@ -167,17 +169,6 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     final favorito = _guardadoOptimista;
     final uidActual = ref.watch(sesionProvider.select((s) => s.usuario?.id));
     final esAutor = uidActual != null && uidActual == ruta.usuarioCreadorId;
-    final publicaciones = ref.watch(almacenFeedProvider).publicaciones;
-    final publicacionesRemotas = supabaseListo
-        ? ref.watch(publicacionesPorRutaProvider(ruta.id)).valueOrNull ??
-              const <ModeloPublicacionRemota>[]
-        : const <ModeloPublicacionRemota>[];
-    final metricas = supabaseListo
-        ? MetricasComunidad.calcularRemotas(
-            publicacionesRemotas,
-            rutaId: ruta.id,
-          )
-        : MetricasComunidad.calcular(publicaciones, rutaId: ruta.id);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -292,8 +283,10 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                     ),
                                   ),
                                 ],
+                                const SizedBox(height: 12),
+                                _MetaAutorRuta(ruta: ruta),
                                 if (ruta.subtitulo.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 10),
                                   Text(
                                     ruta.subtitulo,
                                     textAlign: TextAlign.center,
@@ -304,25 +297,13 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                     ),
                                   ),
                                 ],
-                                if (metricas.calificacionMostrar(
-                                          ruta.calificacion,
-                                        ) >
-                                        0 ||
-                                    metricas.etiquetaFotos.isNotEmpty ||
-                                    metricas
-                                        .etiquetaExploradores
-                                        .isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  FilaMetricasComunidad(
-                                    metricas: metricas,
-                                    calificacionCatalogo: ruta.calificacion,
-                                    resenasCatalogo: ruta.cantidadResenas,
-                                    alineacion: MainAxisAlignment.center,
-                                    usarSpacer: false,
-                                    estrellaSize: 18,
-                                    notaSize: 14,
-                                  ),
-                                ],
+                                const SizedBox(height: 12),
+                                _ResumenValoracionRuta(ruta: ruta),
+                                const SizedBox(height: 12),
+                                _ValoracionRutaPanel(
+                                  rutaId: ruta.id,
+                                  esAutor: esAutor,
+                                ),
                                 if (ruta.tipoSitio != null) ...[
                                   const SizedBox(height: 10),
                                   Center(
@@ -380,7 +361,9 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                   ),
                                 ],
                                 const SizedBox(height: 22),
-                                if (ruta.comoLlegar.isNotEmpty) ...[
+                                if (ruta.comoLlegar.isNotEmpty ||
+                                    ruta.puntos.isNotEmpty ||
+                                    ruta.trazado.length >= 2) ...[
                                   Container(
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
@@ -405,15 +388,17 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                           ),
                                         ),
                                         const SizedBox(height: 6),
-                                        Text(
-                                          ruta.comoLlegar,
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TipografiaHaku.interfaz(
-                                            fontSize: 13,
-                                            color: PaletaRutas.plomoClaro,
+                                        if (ruta.comoLlegar.isNotEmpty) ...[
+                                          Text(
+                                            ruta.comoLlegar,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TipografiaHaku.interfaz(
+                                              fontSize: 13,
+                                              color: PaletaRutas.plomoClaro,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                         if (ruta.puntos.isNotEmpty) ...[
                                           const SizedBox(height: 8),
                                           Text(
@@ -422,6 +407,31 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               color: PaletaRutas.oro,
+                                            ),
+                                          ),
+                                        ],
+                                        if (ruta.puntos.isNotEmpty ||
+                                            ruta.trazado.length >= 2) ...[
+                                          const SizedBox(height: 12),
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: OutlinedButton.icon(
+                                              onPressed: () => _abrirMapa(ruta),
+                                              icon: const Icon(
+                                                Icons.route_rounded,
+                                                size: 18,
+                                              ),
+                                              label: const Text(
+                                                'Ver recorrido',
+                                              ),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    PaletaRutas.oro,
+                                                side: BorderSide(
+                                                  color: PaletaRutas.oro
+                                                      .withValues(alpha: 0.6),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -585,6 +595,214 @@ class _EstadoPantallaDetalleRuta extends ConsumerState<PantallaDetalleRuta> {
     if (t.contains('cult')) return Icons.museum_outlined;
     return Icons.explore_outlined;
   }
+}
+
+class _MetaAutorRuta extends StatelessWidget {
+  const _MetaAutorRuta({required this.ruta});
+
+  final ModeloRuta ruta;
+
+  @override
+  Widget build(BuildContext context) {
+    final autor = ruta.usuarioCreadorNombre == null
+        ? 'Autor de la comunidad'
+        : '@${ruta.usuarioCreadorNombre}';
+    final fechaBase = ruta.updatedAt ?? ruta.publicadaEn;
+    final etiquetaFecha = ruta.updatedAt != null ? 'Actualizada' : 'Publicada';
+    final fecha = fechaBase == null
+        ? 'Sin fecha reciente'
+        : '$etiquetaFecha ${_formatearFecha(fechaBase)}';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CircleAvatar(
+          radius: 14,
+          backgroundColor: PaletaRutas.carbon,
+          backgroundImage: ruta.usuarioCreadorFoto == null
+              ? null
+              : NetworkImage(ruta.usuarioCreadorFoto!),
+          child: ruta.usuarioCreadorFoto == null
+              ? const Icon(
+                  Icons.person_outline_rounded,
+                  size: 16,
+                  color: PaletaRutas.oro,
+                )
+              : null,
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            '$autor · $fecha',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TipografiaHaku.interfaz(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: PaletaRutas.plomoClaro,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResumenValoracionRuta extends StatelessWidget {
+  const _ResumenValoracionRuta({required this.ruta});
+
+  final ModeloRuta ruta;
+
+  @override
+  Widget build(BuildContext context) {
+    final hayValoraciones = ruta.cantidadResenas > 0 && ruta.calificacion > 0;
+    final texto = hayValoraciones
+        ? '${ruta.calificacion.toStringAsFixed(1)} (${ruta.cantidadResenas})'
+        : 'Sin valoraciones';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          hayValoraciones ? Icons.star_rounded : Icons.star_border_rounded,
+          color: PaletaRutas.oro,
+          size: 20,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          texto,
+          style: TipografiaHaku.interfaz(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: PaletaRutas.piedra,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ValoracionRutaPanel extends ConsumerStatefulWidget {
+  const _ValoracionRutaPanel({required this.rutaId, required this.esAutor});
+
+  final String rutaId;
+  final bool esAutor;
+
+  @override
+  ConsumerState<_ValoracionRutaPanel> createState() =>
+      _EstadoValoracionRutaPanel();
+}
+
+class _EstadoValoracionRutaPanel extends ConsumerState<_ValoracionRutaPanel> {
+  bool _guardando = false;
+
+  Future<void> _valorar(int puntuacion) async {
+    if (_guardando || widget.esAutor) return;
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+
+    setState(() => _guardando = true);
+    try {
+      await ref
+          .read(rutasDataSourceProvider)
+          .valorarRuta(widget.rutaId, puntuacion);
+      ref.invalidate(miValoracionRutaProvider(widget.rutaId));
+      ref.invalidate(rutaDetalleProvider(widget.rutaId));
+      notificarRutasCambiaron(ref);
+      if (mounted) {
+        mostrarSnackHaku(context, 'Valoracion guardada', destacado: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        mostrarSnackHaku(context, 'No se pudo valorar: $e', destacado: true);
+      }
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final valorAsync = ref.watch(miValoracionRutaProvider(widget.rutaId));
+    final valor = valorAsync.valueOrNull ?? 0;
+    final texto = widget.esAutor
+        ? 'Tu Ruta'
+        : valor > 0
+        ? 'Tu valoracion'
+        : 'Valorar Ruta';
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: PaletaRutas.carbon,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: PaletaRutas.plomoOscuro.withValues(alpha: 0.65),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              texto,
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: PaletaRutas.plomoClaro,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (_guardando || valorAsync.isLoading && !valorAsync.hasValue)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: PaletaRutas.oro,
+                ),
+              )
+            else
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(5, (i) {
+                  final puntuacion = i + 1;
+                  final activo = puntuacion <= valor;
+                  return Tooltip(
+                    message: '$puntuacion estrellas',
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 28,
+                        height: 28,
+                      ),
+                      onPressed: widget.esAutor
+                          ? null
+                          : () => _valorar(puntuacion),
+                      icon: Icon(
+                        activo ? Icons.star_rounded : Icons.star_border_rounded,
+                        size: 22,
+                        color: widget.esAutor
+                            ? PaletaRutas.plomo
+                            : PaletaRutas.oro,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatearFecha(DateTime fecha) {
+  final local = fecha.toLocal();
+  final dia = local.day.toString().padLeft(2, '0');
+  final mes = local.month.toString().padLeft(2, '0');
+  return '$dia/$mes/${local.year}';
 }
 
 class _GrillaInfo extends StatelessWidget {

@@ -44,6 +44,32 @@ final rutaDetalleProvider = FutureProvider.autoDispose
       return ref.read(rutasDataSourceProvider).detallePublicada(id);
     });
 
+final misRutasProvider = FutureProvider.autoDispose<List<ModeloRutaPropia>>((
+  ref,
+) async {
+  ref.watch(rutasVersionProvider);
+  if (!supabaseListo) return const [];
+  return ref.read(rutasDataSourceProvider).listarPropias();
+});
+
+final rutaPropiaDetalleProvider = FutureProvider.autoDispose
+    .family<ModeloRutaPropia?, String>((ref, id) async {
+      ref.watch(rutasVersionProvider);
+      if (!supabaseListo) return null;
+      return ref.read(rutasDataSourceProvider).detallePropia(id);
+    });
+
+final miValoracionRutaProvider = FutureProvider.autoDispose
+    .family<int?, String>((ref, id) async {
+      ref.watch(rutasVersionProvider);
+      if (!supabaseListo) return null;
+      return ref.read(rutasDataSourceProvider).miValoracionRuta(id);
+    });
+
+void notificarRutasCambiaron(WidgetRef ref) {
+  ref.read(rutasVersionProvider.notifier).state++;
+}
+
 class ProveedorRutas {
   final RepositorioRutas repositorio;
 

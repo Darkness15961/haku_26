@@ -634,13 +634,7 @@ class _ContenidoPerfil extends ConsumerWidget {
             horizontal: 10,
             vertical: 14,
           ),
-          decoration: BoxDecoration(
-            color: PaletaRutas.carbon,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: PaletaRutas.plomo.withValues(alpha: 0.28),
-            ),
-          ),
+          decoration: FondosDetalleHaku.tarjeta(indice: 1),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

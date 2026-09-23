@@ -4,10 +4,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_map/flutter_map.dart'; // Eliminado
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:latlong2/latlong.dart';
 
+import '../../../nucleo/mapas/estilos_mapa_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 
@@ -22,7 +22,7 @@ class MapaExploraLugares extends StatefulWidget {
     this.contornoCusco = const [],
     this.centroInicial,
     this.zoomInicial = 9.2,
-    this.estiloMapa = 'https://tiles.openfreemap.org/styles/liberty',
+    this.estiloMapa = EstilosMapaHaku.openFreeMapLiberty,
     this.preparandoRadar = false,
     required this.onLugarSeleccionado,
   });
@@ -44,11 +44,11 @@ class MapaExploraLugares extends StatefulWidget {
   State<MapaExploraLugares> createState() => MapaExploraLugaresState();
 }
 
-class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTickerProviderStateMixin {
+class MapaExploraLugaresState extends State<MapaExploraLugares>
+    with SingleTickerProviderStateMixin {
   ml.MapLibreMapController? _controller;
+  bool _mapaListo = false;
   String? _firmaVista;
-  Offset? _pointerDownPos;
-  var _mapaListo = false;
   final Set<String> _fotosInyectadas = {};
   AnimationController? _animController;
   Animation<double>? _radioAnimacion;
@@ -61,7 +61,9 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
       duration: const Duration(milliseconds: 1400),
     );
     _animController!.addListener(() {
-      if (_controller != null && widget.mostrarRadioCerca && widget.ubicacionUsuario != null) {
+      if (_controller != null &&
+          widget.mostrarRadioCerca &&
+          widget.ubicacionUsuario != null) {
         _actualizarCirculoGeoJson(_controller!);
       }
     });
@@ -96,7 +98,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     if (_controller == null || !_mapaListo) return;
 
     if (widget.estiloMapa != oldWidget.estiloMapa) {
-      return; 
+      return;
     }
 
     if (widget.mostrarRadioCerca != oldWidget.mostrarRadioCerca ||
@@ -104,7 +106,12 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
         widget.preparandoRadar != oldWidget.preparandoRadar) {
       if (widget.mostrarRadioCerca) {
         _radioAnimacion = Tween<double>(begin: 0.0, end: widget.radioCercaM)
-            .animate(CurvedAnimation(parent: _animController!, curve: Curves.easeOutCirc));
+            .animate(
+              CurvedAnimation(
+                parent: _animController!,
+                curve: Curves.easeOutCirc,
+              ),
+            );
         _animController!.forward(from: 0.0);
       }
       _moverSeguro(_centroVista(), _zoomVista());
@@ -124,14 +131,21 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     }
   }
 
-  Future<void> _actualizarCapaLugares(ml.MapLibreMapController controller) async {
-    await controller.setGeoJsonSource("fuente_lugares", _crearLugaresGeoJson(widget.lugares));
+  Future<void> _actualizarCapaLugares(
+    ml.MapLibreMapController controller,
+  ) async {
+    await controller.setGeoJsonSource(
+      "fuente_lugares",
+      _crearLugaresGeoJson(widget.lugares),
+    );
 
     bool hayNuevos = false;
     for (final l in widget.lugares) {
-      if (l.imagenUrl.isNotEmpty && !_fotosInyectadas.contains('foto_lugar_${l.id}')) {
-        final hueco = l.nivelExploracion == NivelExploracion.pocoExplorado ||
-                      l.nivelExploracion == NivelExploracion.nuevoEnHaku;
+      if (l.imagenUrl.isNotEmpty &&
+          !_fotosInyectadas.contains('foto_lugar_${l.id}')) {
+        final hueco =
+            l.nivelExploracion == NivelExploracion.pocoExplorado ||
+            l.nivelExploracion == NivelExploracion.nuevoEnHaku;
         final bytes = await _crearPinConFoto(l.imagenUrl, hueco);
         if (bytes != null) {
           final nombreInyectado = 'foto_lugar_${l.id}';
@@ -143,7 +157,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     }
 
     if (hayNuevos) {
-      await controller.setGeoJsonSource("fuente_lugares", _crearLugaresGeoJson(widget.lugares));
+      await controller.setGeoJsonSource(
+        "fuente_lugares",
+        _crearLugaresGeoJson(widget.lugares),
+      );
     }
   }
 
@@ -155,7 +172,8 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   }
 
   LatLng _centroVista() {
-    if ((widget.mostrarRadioCerca || widget.preparandoRadar) && widget.ubicacionUsuario != null) {
+    if ((widget.mostrarRadioCerca || widget.preparandoRadar) &&
+        widget.ubicacionUsuario != null) {
       return widget.ubicacionUsuario!;
     }
     if (widget.ubicacionUsuario != null && widget.lugares.isEmpty) {
@@ -168,10 +186,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     }
     final lat =
         widget.lugares.map((l) => l.latitud).reduce((a, b) => a + b) /
-            widget.lugares.length;
+        widget.lugares.length;
     final lng =
         widget.lugares.map((l) => l.longitud).reduce((a, b) => a + b) /
-            widget.lugares.length;
+        widget.lugares.length;
     return LatLng(lat, lng);
   }
 
@@ -192,12 +210,14 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   void _moverSeguro(LatLng centro, double zoom) {
     if (!_mapaListo || _controller == null) return;
     try {
-      _controller!.animateCamera(ml.CameraUpdate.newCameraPosition(
-        ml.CameraPosition(
-          target: ml.LatLng(centro.latitude, centro.longitude),
-          zoom: zoom,
+      _controller!.animateCamera(
+        ml.CameraUpdate.newCameraPosition(
+          ml.CameraPosition(
+            target: ml.LatLng(centro.latitude, centro.longitude),
+            zoom: zoom,
+          ),
         ),
-      ));
+      );
     } catch (_) {
       // Controlador no listo.
     }
@@ -216,8 +236,9 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   Map<String, dynamic> _crearPoligonoGeoJson(List<LatLng> puntos) {
     // GeoJSON exige que el polígono esté cerrado (primer y último punto iguales)
     final coordList = puntos.map((p) => [p.longitude, p.latitude]).toList();
-    if (coordList.isNotEmpty && 
-       (coordList.first[0] != coordList.last[0] || coordList.first[1] != coordList.last[1])) {
+    if (coordList.isNotEmpty &&
+        (coordList.first[0] != coordList.last[0] ||
+            coordList.first[1] != coordList.last[1])) {
       coordList.add(coordList.first);
     }
     return {
@@ -227,10 +248,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
           "type": "Feature",
           "geometry": {
             "type": "Polygon",
-            "coordinates": [coordList]
-          }
-        }
-      ]
+            "coordinates": [coordList],
+          },
+        },
+      ],
     };
   }
 
@@ -244,11 +265,16 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     List<List<double>> coordenadas = [];
     for (int i = 0; i <= puntos; i++) {
       final double brng = math.pi * 2 * i / puntos;
-      final double latRad = math.asin(math.sin(lat) * math.cos(d) +
-          math.cos(lat) * math.sin(d) * math.cos(brng));
-      final double lngRad = lng +
-          math.atan2(math.sin(brng) * math.sin(d) * math.cos(lat),
-              math.cos(d) - math.sin(lat) * math.sin(latRad));
+      final double latRad = math.asin(
+        math.sin(lat) * math.cos(d) +
+            math.cos(lat) * math.sin(d) * math.cos(brng),
+      );
+      final double lngRad =
+          lng +
+          math.atan2(
+            math.sin(brng) * math.sin(d) * math.cos(lat),
+            math.cos(d) - math.sin(lat) * math.sin(latRad),
+          );
       coordenadas.add([lngRad * 180.0 / math.pi, latRad * 180.0 / math.pi]);
     }
 
@@ -259,10 +285,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
           "type": "Feature",
           "geometry": {
             "type": "Polygon",
-            "coordinates": [coordenadas]
-          }
-        }
-      ]
+            "coordinates": [coordenadas],
+          },
+        },
+      ],
     };
   }
 
@@ -273,7 +299,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
         _crearPoligonoGeoJson(widget.contornoCusco),
       );
     }
-    
+
     final usuario = widget.ubicacionUsuario;
     if (widget.mostrarRadioCerca && usuario != null) {
       final r = _radioAnimacion?.value ?? widget.radioCercaM;
@@ -282,10 +308,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
         _crearCirculoGeoJson(usuario, r),
       );
     } else {
-      await controller.setGeoJsonSource(
-        "fuente_radio",
-        {"type": "FeatureCollection", "features": []},
-      );
+      await controller.setGeoJsonSource("fuente_radio", {
+        "type": "FeatureCollection",
+        "features": [],
+      });
     }
 
     // Actualizar marcadores si cambia la lista
@@ -296,25 +322,29 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
 
     // Actualizar marcador de usuario
     if (usuario != null) {
-      await controller.setGeoJsonSource(
-        "fuente_usuario",
-        {
-          "type": "FeatureCollection",
-          "features": [{
+      await controller.setGeoJsonSource("fuente_usuario", {
+        "type": "FeatureCollection",
+        "features": [
+          {
             "type": "Feature",
             "geometry": {
               "type": "Point",
-              "coordinates": [usuario.longitude, usuario.latitude]
-            }
-          }]
-        }
-      );
+              "coordinates": [usuario.longitude, usuario.latitude],
+            },
+          },
+        ],
+      });
     } else {
-      await controller.setGeoJsonSource("fuente_usuario", {"type": "FeatureCollection", "features": []});
+      await controller.setGeoJsonSource("fuente_usuario", {
+        "type": "FeatureCollection",
+        "features": [],
+      });
     }
   }
 
-  Future<void> _cargarCapasGeometria(ml.MapLibreMapController controller) async {
+  Future<void> _cargarCapasGeometria(
+    ml.MapLibreMapController controller,
+  ) async {
     final oro = PaletaRutas.oro;
     // MapLibre usa colores en formato Hex: #RRGGBB
     final colorOroHex = '#${oro.toARGB32().toRadixString(16).substring(2, 8)}';
@@ -323,8 +353,8 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     // Solo agregamos las fuentes y capas vacías o iniciales una vez.
     await controller.addGeoJsonSource(
       "fuente_cusco",
-      widget.contornoCusco.length >= 3 
-          ? _crearPoligonoGeoJson(widget.contornoCusco) 
+      widget.contornoCusco.length >= 3
+          ? _crearPoligonoGeoJson(widget.contornoCusco)
           : {"type": "FeatureCollection", "features": []},
     );
     await controller.addFillLayer(
@@ -335,7 +365,11 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     await controller.addLineLayer(
       "fuente_cusco",
       "capa_borde_cusco",
-      ml.LineLayerProperties(lineColor: colorOroHex, lineOpacity: 0.85, lineWidth: 2.4),
+      ml.LineLayerProperties(
+        lineColor: colorOroHex,
+        lineOpacity: 0.85,
+        lineWidth: 2.4,
+      ),
     );
 
     // 2. Círculo Usuario
@@ -354,7 +388,11 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     await controller.addLineLayer(
       "fuente_radio",
       "capa_borde_radio",
-      ml.LineLayerProperties(lineColor: colorOroHex, lineOpacity: 0.55, lineWidth: 1.6),
+      ml.LineLayerProperties(
+        lineColor: colorOroHex,
+        lineOpacity: 0.55,
+        lineWidth: 1.6,
+      ),
     );
   }
 
@@ -362,7 +400,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    
+
     textPainter.text = TextSpan(
       text: String.fromCharCode(iconData.codePoint),
       style: TextStyle(
@@ -373,7 +411,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     );
     textPainter.layout();
     textPainter.paint(canvas, const Offset(0.0, 0.0));
-    
+
     final picture = pictureRecorder.endRecording();
     final image = await picture.toImage(56, 56);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -382,15 +420,20 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
 
   Future<ui.Image> _cargarUiImage(String url) async {
     final Completer<ui.Image> completer = Completer();
-    final ImageStream stream = NetworkImage(url).resolve(ImageConfiguration.empty);
+    final ImageStream stream = NetworkImage(
+      url,
+    ).resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
-    listener = ImageStreamListener((ImageInfo info, bool _) {
-      if (!completer.isCompleted) completer.complete(info.image);
-      stream.removeListener(listener);
-    }, onError: (dynamic error, StackTrace? stackTrace) {
-      if (!completer.isCompleted) completer.completeError(error);
-      stream.removeListener(listener);
-    });
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        if (!completer.isCompleted) completer.complete(info.image);
+        stream.removeListener(listener);
+      },
+      onError: (dynamic error, StackTrace? stackTrace) {
+        if (!completer.isCompleted) completer.completeError(error);
+        stream.removeListener(listener);
+      },
+    );
     stream.addListener(listener);
     return completer.future;
   }
@@ -398,8 +441,8 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
   Future<Uint8List?> _crearPinConFoto(String url, bool hueco) async {
     try {
       final imagen = await _cargarUiImage(url);
-      final size = 120.0; 
-      
+      final size = 120.0;
+
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
 
@@ -408,17 +451,32 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
       final shadowPaint = Paint()
         ..color = PaletaRutas.ink.withValues(alpha: 0.5)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawCircle(Offset(size / 2, size / 2 + 6), size / 2 - 12, shadowPaint);
+      canvas.drawCircle(
+        Offset(size / 2, size / 2 + 6),
+        size / 2 - 12,
+        shadowPaint,
+      );
 
       final paintBase = Paint()..color = colorBorde;
       canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 6, paintBase);
 
-      final radioImg = size / 2 - 14; 
-      final path = ui.Path()..addOval(Rect.fromCircle(center: Offset(size / 2, size / 2), radius: radioImg));
+      final radioImg = size / 2 - 14;
+      final path = ui.Path()
+        ..addOval(
+          Rect.fromCircle(center: Offset(size / 2, size / 2), radius: radioImg),
+        );
       canvas.clipPath(path);
 
-      final src = Rect.fromLTWH(0, 0, imagen.width.toDouble(), imagen.height.toDouble());
-      final dst = Rect.fromCircle(center: Offset(size / 2, size / 2), radius: radioImg);
+      final src = Rect.fromLTWH(
+        0,
+        0,
+        imagen.width.toDouble(),
+        imagen.height.toDouble(),
+      );
+      final dst = Rect.fromCircle(
+        center: Offset(size / 2, size / 2),
+        radius: radioImg,
+      );
       canvas.drawImageRect(imagen, src, dst, Paint());
 
       final picture = recorder.endRecording();
@@ -434,37 +492,49 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     return {
       "type": "FeatureCollection",
       "features": lugares.map((l) {
-        final hueco = l.nivelExploracion == NivelExploracion.pocoExplorado ||
+        final hueco =
+            l.nivelExploracion == NivelExploracion.pocoExplorado ||
             l.nivelExploracion == NivelExploracion.nuevoEnHaku;
         return {
           "type": "Feature",
           "id": l.id,
           "properties": {
             "id": l.id.toString(),
-            "icono": _fotosInyectadas.contains("foto_lugar_${l.id}") ? "foto_lugar_${l.id}" : (hueco ? "pin_oro" : "pin_plomo"),
-            "nombre": l.nombre
+            "icono": _fotosInyectadas.contains("foto_lugar_${l.id}")
+                ? "foto_lugar_${l.id}"
+                : (hueco ? "pin_oro" : "pin_plomo"),
+            "nombre": l.nombre,
           },
           "geometry": {
             "type": "Point",
-            "coordinates": [l.longitud, l.latitud]
-          }
+            "coordinates": [l.longitud, l.latitud],
+          },
         };
-      }).toList()
+      }).toList(),
     };
   }
 
-  Future<void> _cargarMarcadoresClustering(ml.MapLibreMapController controller) async {
+  Future<void> _cargarMarcadoresClustering(
+    ml.MapLibreMapController controller,
+  ) async {
     // 1. Generar iconos y registrarlos en la tarjeta gráfica (Memoria)
-    final oroBytes = await _crearIconoMemoria(Icons.location_on, PaletaRutas.oro);
-    final plomoBytes = await _crearIconoMemoria(Icons.location_on, PaletaRutas.plomoOscuro);
-    
+    final oroBytes = await _crearIconoMemoria(
+      Icons.location_on,
+      PaletaRutas.oro,
+    );
+    final plomoBytes = await _crearIconoMemoria(
+      Icons.location_on,
+      PaletaRutas.plomoOscuro,
+    );
+
     await controller.addImage("pin_oro", oroBytes);
     await controller.addImage("pin_plomo", plomoBytes);
 
     for (final l in widget.lugares) {
       if (l.imagenUrl.isNotEmpty) {
-        final hueco = l.nivelExploracion == NivelExploracion.pocoExplorado ||
-                      l.nivelExploracion == NivelExploracion.nuevoEnHaku;
+        final hueco =
+            l.nivelExploracion == NivelExploracion.pocoExplorado ||
+            l.nivelExploracion == NivelExploracion.nuevoEnHaku;
         final bytes = await _crearPinConFoto(l.imagenUrl, hueco);
         if (bytes != null) {
           final nombreInyectado = 'foto_lugar_${l.id}';
@@ -486,17 +556,21 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     );
 
     // 3. Capa: Círculos de los clústeres
-    final colorOroHex = '#${PaletaRutas.oro.toARGB32().toRadixString(16).substring(2, 8)}';
+    final colorOroHex =
+        '#${PaletaRutas.oro.toARGB32().toRadixString(16).substring(2, 8)}';
     await controller.addCircleLayer(
       "fuente_lugares",
       "capa_clusters",
       ml.CircleLayerProperties(
         circleColor: colorOroHex,
         circleRadius: [
-          'step', ['get', 'point_count'],
-          20, 10, 
-          25, 50, 
-          30
+          'step',
+          ['get', 'point_count'],
+          20,
+          10,
+          25,
+          50,
+          30,
         ],
         circleOpacity: 0.85,
         circleStrokeWidth: 2,
@@ -525,21 +599,28 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
       ml.SymbolLayerProperties(
         iconImage: '{icono}', // Lee de las properties
         iconSize: [
-          'interpolate', ['linear'], ['zoom'],
-          8, 0.5,   
-          15, 0.75  
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          8,
+          0.5,
+          15,
+          0.75,
         ],
         iconAllowOverlap: true,
-        iconAnchor: 'center', 
+        iconAnchor: 'center',
       ),
-      filter: ['!', ['has', 'point_count']],
+      filter: [
+        '!',
+        ['has', 'point_count'],
+      ],
     );
   }
 
   Future<Uint8List> _crearMarcadorUsuarioMemoria() async {
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
-    
+
     final paintFondo = Paint()..color = PaletaRutas.oro.withValues(alpha: 0.22);
     canvas.drawCircle(const Offset(22, 22), 22, paintFondo);
 
@@ -576,37 +657,49 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
     return byteData!.buffer.asUint8List();
   }
 
-
-  Future<void> _cargarCapasInteractivas(ml.MapLibreMapController controller) async {
+  Future<void> _cargarCapasInteractivas(
+    ml.MapLibreMapController controller,
+  ) async {
     // Capa de Usuario
     final userBytes = await _crearMarcadorUsuarioMemoria();
     await controller.addImage("img_usuario", userBytes);
-    
+
     final usuario = widget.ubicacionUsuario;
-    await controller.addSource("fuente_usuario", ml.GeojsonSourceProperties(
-      data: (usuario != null) ? {
-        "type": "FeatureCollection",
-        "features": [{
-          "type": "Feature",
-          "geometry": {
-            "type": "Point",
-            "coordinates": [usuario.longitude, usuario.latitude]
-          }
-        }]
-      } : {"type": "FeatureCollection", "features": []}
-    ));
-    await controller.addSymbolLayer("fuente_usuario", "capa_usuario", ml.SymbolLayerProperties(
-      iconImage: "img_usuario",
-      iconSize: 1.0,
-      iconAllowOverlap: true,
-      symbolSortKey: 10, // Asegura que el usuario se dibuje encima de otros
-    ));
+    await controller.addSource(
+      "fuente_usuario",
+      ml.GeojsonSourceProperties(
+        data: (usuario != null)
+            ? {
+                "type": "FeatureCollection",
+                "features": [
+                  {
+                    "type": "Feature",
+                    "geometry": {
+                      "type": "Point",
+                      "coordinates": [usuario.longitude, usuario.latitude],
+                    },
+                  },
+                ],
+              }
+            : {"type": "FeatureCollection", "features": []},
+      ),
+    );
+    await controller.addSymbolLayer(
+      "fuente_usuario",
+      "capa_usuario",
+      ml.SymbolLayerProperties(
+        iconImage: "img_usuario",
+        iconSize: 1.0,
+        iconAllowOverlap: true,
+        symbolSortKey: 10, // Asegura que el usuario se dibuje encima de otros
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final centro = _centroVista();
-    
+
     return Stack(
       children: [
         ml.MapLibreMap(
@@ -620,10 +713,10 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
             _controller = controller;
             _mapaListo = true;
             _firmaVista ??= _firmaActual();
-            
+
             // FASE 3: Geometría
             await _cargarCapasGeometria(controller);
-            
+
             // FASE 4: Marcadores Clustering
             await _cargarMarcadoresClustering(controller);
 
@@ -645,19 +738,19 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
             // para evitar los bugs nativos de consumo de eventos táctiles.
           },
         ),
-        
-        // 2. Escudo Táctil Transparente (Observador de toques global)
+
+        // 2. Escudo Táctil Transparente (Detector Inteligente con Tolerancia a Dedos)
         Positioned.fill(
-          child: Listener(
+          child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onPointerDown: (e) => _pointerDownPos = e.localPosition,
-            onPointerUp: (e) async {
-              if (_pointerDownPos == null || _controller == null) return;
-              final moveDist = (e.localPosition - _pointerDownPos!).distance;
-              if (moveDist > 10.0) return; // Si movió el dedo más de 10px, fue un paneo, no un click.
+            onTapUp: (e) async {
+              if (_controller == null) return;
 
               // Convertimos píxeles a lat/lng usando el motor de MapLibre
-              final point = math.Point<num>(e.localPosition.dx, e.localPosition.dy);
+              final point = math.Point<num>(
+                e.localPosition.dx,
+                e.localPosition.dy,
+              );
               LatLng latLng;
               try {
                 final pos = await _controller!.toLatLng(point);
@@ -669,21 +762,23 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
               // 1. Detectar si el usuario tocó un Cluster nativo primero
               final rectCluster = Rect.fromCenter(
                 center: e.localPosition,
-                width: 60.0,
-                height: 60.0,
+                width: 70.0,
+                height: 70.0,
               );
 
               try {
-                final clusterFeatures = await _controller!.queryRenderedFeaturesInRect(
-                  rectCluster,
-                  ["capa_clusters"],
-                  null,
-                );
+                final clusterFeatures = await _controller!
+                    .queryRenderedFeaturesInRect(rectCluster, [
+                      "capa_clusters",
+                    ], null);
 
                 if (clusterFeatures.isNotEmpty) {
                   HapticFeedback.selectionClick();
                   final currentZoom = _controller!.cameraPosition?.zoom ?? 10;
-                  _moverSeguro(LatLng(latLng.latitude, latLng.longitude), currentZoom + 2.0);
+                  _moverSeguro(
+                    LatLng(latLng.latitude, latLng.longitude),
+                    currentZoom + 2.0,
+                  );
                   return; // Fin del hilo. Tocó un clúster.
                 }
               } catch (_) {
@@ -694,17 +789,22 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
               final tapPoint = LatLng(latLng.latitude, latLng.longitude);
               final distanciaMath = const Distance();
               final currentZoom = _controller!.cameraPosition?.zoom ?? 10.0;
-              
+
               // Fórmula Web Mercator (metros por píxel en este zoom/latitud)
-              final metrosPorPixel = 156543.03392 * math.cos(latLng.latitude * math.pi / 180.0) / math.pow(2, currentZoom);
-              final radioToleranciaMetros = 40.0 * metrosPorPixel;
+              final metrosPorPixel =
+                  156543.03392 *
+                  math.cos(latLng.latitude * math.pi / 180.0) /
+                  math.pow(2, currentZoom);
+
+              // Radio imán ampliado: 60 píxeles de tolerancia (120px de diámetro, enorme)
+              final radioToleranciaMetros = 60.0 * metrosPorPixel;
 
               double menorDistancia = double.infinity;
               ModeloLugar? lugarMasCercano;
 
               for (final lugar in widget.lugares) {
                 final d = distanciaMath.distance(
-                  tapPoint, 
+                  tapPoint,
                   LatLng(lugar.latitud, lugar.longitud),
                 );
                 if (d < menorDistancia) {
@@ -714,11 +814,12 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
               }
 
               // 3. Evaluar resultado matemático
-              if (lugarMasCercano != null && menorDistancia <= radioToleranciaMetros) {
+              if (lugarMasCercano != null &&
+                  menorDistancia <= radioToleranciaMetros) {
                 HapticFeedback.selectionClick();
                 widget.onLugarSeleccionado(lugarMasCercano);
                 _moverSeguro(
-                  LatLng(lugarMasCercano.latitud, lugarMasCercano.longitud), 
+                  LatLng(lugarMasCercano.latitud, lugarMasCercano.longitud),
                   _controller!.cameraPosition?.zoom ?? 14.5,
                 );
               } else {
@@ -727,7 +828,7 @@ class MapaExploraLugaresState extends State<MapaExploraLugares> with SingleTicke
             },
           ),
         ),
-        
+
         // FASE 5: Aquí colocaremos el Overlay (cajita) del pin seleccionado en el futuro.
       ],
     );

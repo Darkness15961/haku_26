@@ -69,7 +69,9 @@ class TarjetaRutaLego extends StatelessWidget {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              ruta.calificacion.toStringAsFixed(1),
+                              ruta.cantidadResenas > 0
+                                  ? '${ruta.calificacion.toStringAsFixed(1)} (${ruta.cantidadResenas})'
+                                  : ruta.calificacion.toStringAsFixed(1),
                               style: TipografiaHaku.interfaz(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,

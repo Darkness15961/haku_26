@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
+import '../../../nucleo/mapas/estilos_mapa_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../datos/contorno_departamento_cusco.dart';
 import '../dominio/modelos/modelo_lugar.dart';
@@ -214,19 +215,19 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
 
   bool get _mostrarMapa => _contornoListo;
 
-
   @override
   Widget build(BuildContext context) {
     final consulta = _consultaCerca;
     final cercaActivo = _modoActual == ModoMapaUX.cerca && consulta != null;
     final preparandoRadar = _modoActual == ModoMapaUX.cerca && consulta == null;
-    final cercaAsync =
-        cercaActivo ? ref.watch(lugaresCercaProvider(consulta)) : null;
+    final cercaAsync = cercaActivo
+        ? ref.watch(lugaresCercaProvider(consulta))
+        : null;
 
     List<ModeloLugar> pines;
     var cargandoCerca = false;
     String? errorCerca;
-    
+
     if (_modoActual == ModoMapaUX.limpio) {
       pines = const [];
     } else if (cercaActivo) {
@@ -253,259 +254,300 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
       },
       child: Scaffold(
         backgroundColor: PaletaRutas.ink,
-      appBar: AppBar(
-        backgroundColor: PaletaRutas.ink,
-        foregroundColor: PaletaRutas.piedra,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: widget.onVolver,
-        ),
-        title: Text(
-          CopyHaku.mapaTitulo,
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: PaletaRutas.piedra,
+        appBar: AppBar(
+          backgroundColor: PaletaRutas.ink,
+          foregroundColor: PaletaRutas.piedra,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: widget.onVolver,
           ),
-        ),
-        actions: [
-          const SizedBox(width: 12),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _subtitulo,
-                style: TipografiaHaku.interfaz(
-                  fontSize: 12,
-                  color: PaletaRutas.plomoClaro,
-                ),
-              ),
+          title: Text(
+            CopyHaku.mapaTitulo,
+            style: TipografiaHaku.titulo(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: PaletaRutas.piedra,
             ),
           ),
-          if (_modoActual == ModoMapaUX.cerca && !_ubicando && _puntoUsuario == null)
+          actions: [const SizedBox(width: 12)],
+        ),
+        body: Column(
+          children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Material(
-                color: PaletaRutas.carbon,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () => _resolverGps(forzarDialogos: true),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.my_location,
-                          color: PaletaRutas.oro,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            CopyHaku.mapaActivarUbicacionCta,
-                            style: TipografiaHaku.interfaz(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: PaletaRutas.piedra,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: PaletaRutas.plomo,
-                        ),
-                      ],
-                    ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _subtitulo,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    color: PaletaRutas.plomoClaro,
                   ),
                 ),
               ),
             ),
-          Expanded(
-            child: Stack(
-              children: [
-                if (!_contornoListo)
-                  const Center(
-                    child: CircularProgressIndicator(color: PaletaRutas.oro),
-                  )
-                else if (errorCerca != null)
-                  Center(
+            if (_modoActual == ModoMapaUX.cerca &&
+                !_ubicando &&
+                _puntoUsuario == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Material(
+                  color: PaletaRutas.carbon,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () => _resolverGps(forzarDialogos: true),
+                    borderRadius: BorderRadius.circular(12),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            CopyHaku.mapaCercaError,
-                            textAlign: TextAlign.center,
-                            style: TipografiaHaku.interfaz(
-                              color: PaletaRutas.piedra,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          const Icon(
+                            Icons.my_location,
+                            color: PaletaRutas.oro,
+                            size: 20,
                           ),
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () {
-                              final c = _consultaCerca;
-                              if (c != null) {
-                                ref.invalidate(lugaresCercaProvider(c));
-                              }
-                            },
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Text(
-                              'Reintentar',
+                              CopyHaku.mapaActivarUbicacionCta,
                               style: TipografiaHaku.interfaz(
-                                color: PaletaRutas.oro,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: PaletaRutas.piedra,
                               ),
                             ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: PaletaRutas.plomo,
                           ),
                         ],
                       ),
                     ),
-                  )
-                else
-                  MapaExploraLugares(
-                    key: _mapaKey,
-                    lugares: pines,
-                    ubicacionUsuario: _puntoUsuario,
-                    mostrarRadioCerca: cercaActivo,
-                    radioCercaM: (_distanciaRadarKm ?? 50) * 1000.0,
-                    contornoCusco: _contorno,
-                    preparandoRadar: preparandoRadar,
-                    onLugarSeleccionado: (lugar) {
-                      setState(() {
-                        _lugarSeleccionado = lugar;
-                      });
-                    },
-                    estiloMapa: _esEstiloLiberty
-                        ? 'https://tiles.openfreemap.org/styles/liberty'
-                        : 'https://tiles.openfreemap.org/styles/positron',
-                  ),
-                if (overlayCarga)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: PaletaRutas.ink.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const CircularProgressIndicator(
-                            color: PaletaRutas.oro,
-                            strokeWidth: 3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (mapaVisible)
-                  Positioned(
-                    right: 12,
-                    top: 20, // o centrado verticalmente
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          width: 48,
-                          decoration: BoxDecoration(
-                            color: PaletaRutas.ink.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.my_location, color: PaletaRutas.oro, size: 22),
-                                onPressed: () async {
-                                  if (_puntoUsuario == null) {
-                                    await _resolverGps(forzarDialogos: true);
-                                  } else {
-                                    _mapaKey.currentState?.recentrarEnUsuario();
-                                  }
-                                },
-                              ),
-                              Divider(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3), height: 1),
-                              IconButton(
-                                icon: const Icon(Icons.add, color: PaletaRutas.piedra, size: 22),
-                                onPressed: () {
-                                  _mapaKey.currentState?.zoomIn();
-                                },
-                              ),
-                              Divider(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3), height: 1),
-                              IconButton(
-                                icon: const Icon(Icons.remove, color: PaletaRutas.piedra, size: 22),
-                                onPressed: () {
-                                  _mapaKey.currentState?.zoomOut();
-                                },
-                              ),
-                              Divider(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3), height: 1),
-                              IconButton(
-                                icon: const Icon(Icons.layers_rounded, color: PaletaRutas.piedra, size: 22),
-                                onPressed: () {
-                                  setState(() {
-                                    _esEstiloLiberty = !_esEstiloLiberty;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (mapaVisible)
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16 + MediaQuery.paddingOf(context).bottom,
-                    child: _construirBloqueInferior(),
-                  ),
-                // Capa Modal (Foco absoluto)
-                Positioned.fill(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    switchInCurve: Curves.easeOutBack,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.9, end: 1.0).animate(animation),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: _lugarSeleccionado == null
-                        ? const SizedBox.shrink(key: ValueKey('vacio'))
-                        : _construirCapaModal(_lugarSeleccionado!),
                   ),
                 ),
-              ],
+              ),
+            Expanded(
+              child: Stack(
+                children: [
+                  if (!_contornoListo)
+                    const Center(
+                      child: CircularProgressIndicator(color: PaletaRutas.oro),
+                    )
+                  else if (errorCerca != null)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              CopyHaku.mapaCercaError,
+                              textAlign: TextAlign.center,
+                              style: TipografiaHaku.interfaz(
+                                color: PaletaRutas.piedra,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () {
+                                final c = _consultaCerca;
+                                if (c != null) {
+                                  ref.invalidate(lugaresCercaProvider(c));
+                                }
+                              },
+                              child: Text(
+                                'Reintentar',
+                                style: TipografiaHaku.interfaz(
+                                  color: PaletaRutas.oro,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    MapaExploraLugares(
+                      key: _mapaKey,
+                      lugares: pines,
+                      ubicacionUsuario: _puntoUsuario,
+                      mostrarRadioCerca: cercaActivo,
+                      radioCercaM: (_distanciaRadarKm ?? 50) * 1000.0,
+                      contornoCusco: _contorno,
+                      preparandoRadar: preparandoRadar,
+                      onLugarSeleccionado: (lugar) {
+                        setState(() {
+                          _lugarSeleccionado = lugar;
+                        });
+                      },
+                      estiloMapa: _esEstiloLiberty
+                          ? EstilosMapaHaku.openFreeMapLiberty
+                          : EstilosMapaHaku.openFreeMapPositron,
+                    ),
+                  if (overlayCarga)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: PaletaRutas.ink.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: PaletaRutas.plomoOscuro.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const CircularProgressIndicator(
+                              color: PaletaRutas.oro,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (mapaVisible)
+                    Positioned(
+                      right: 12,
+                      top: 20, // o centrado verticalmente
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            width: 48,
+                            decoration: BoxDecoration(
+                              color: PaletaRutas.ink.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: PaletaRutas.plomoOscuro.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.my_location,
+                                    color: PaletaRutas.oro,
+                                    size: 22,
+                                  ),
+                                  onPressed: () async {
+                                    if (_puntoUsuario == null) {
+                                      await _resolverGps(forzarDialogos: true);
+                                    } else {
+                                      _mapaKey.currentState
+                                          ?.recentrarEnUsuario();
+                                    }
+                                  },
+                                ),
+                                Divider(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  height: 1,
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: PaletaRutas.piedra,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    _mapaKey.currentState?.zoomIn();
+                                  },
+                                ),
+                                Divider(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  height: 1,
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove,
+                                    color: PaletaRutas.piedra,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    _mapaKey.currentState?.zoomOut();
+                                  },
+                                ),
+                                Divider(
+                                  color: PaletaRutas.plomoOscuro.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  height: 1,
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.layers_rounded,
+                                    color: PaletaRutas.piedra,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _esEstiloLiberty = !_esEstiloLiberty;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (mapaVisible)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 16 + MediaQuery.paddingOf(context).bottom,
+                      child: _construirBloqueInferior(),
+                    ),
+                  // Capa Modal (Foco absoluto)
+                  Positioned.fill(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.9,
+                              end: 1.0,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _lugarSeleccionado == null
+                          ? const SizedBox.shrink(key: ValueKey('vacio'))
+                          : _construirCapaModal(_lugarSeleccionado!),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -514,19 +556,22 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
     return SizedBox.expand(
       key: const ValueKey('modal_lugar'),
       child: GestureDetector(
-        onTap: () => setState(() => _lugarSeleccionado = null), // Tocar el fondo oscuro cierra
+        onTap: () => setState(
+          () => _lugarSeleccionado = null,
+        ), // Tocar el fondo oscuro cierra
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
             color: Colors.black.withValues(alpha: 0.35), // Sombreado
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: GestureDetector(
-            onTap: () {}, // Evita que los toques en la tarjeta cierren el modal
-            child: _construirTarjetaLugar(lugar),
+            child: GestureDetector(
+              onTap:
+                  () {}, // Evita que los toques en la tarjeta cierren el modal
+              child: _construirTarjetaLugar(lugar),
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -538,7 +583,10 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
       decoration: BoxDecoration(
         color: PaletaRutas.ink,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.4), width: 1.5), // Toque premium
+        border: Border.all(
+          color: PaletaRutas.oro.withValues(alpha: 0.4),
+          width: 1.5,
+        ), // Toque premium
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
@@ -557,7 +605,9 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
             child: Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(23)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(23),
+                  ),
                   child: lugar.imagenUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: lugar.imagenUrl,
@@ -579,7 +629,11 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                         color: PaletaRutas.ink.withValues(alpha: 0.7),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close_rounded, color: PaletaRutas.piedra, size: 20),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: PaletaRutas.piedra,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -594,7 +648,10 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
               children: [
                 Text(
                   lugar.nombre,
-                  style: TipografiaHaku.titulo(fontSize: 22, color: PaletaRutas.piedra),
+                  style: TipografiaHaku.titulo(
+                    fontSize: 22,
+                    color: PaletaRutas.piedra,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -604,12 +661,19 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.local_offer_rounded, color: PaletaRutas.oro, size: 14),
+                    const Icon(
+                      Icons.local_offer_rounded,
+                      color: PaletaRutas.oro,
+                      size: 14,
+                    ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
                         lugar.subtituloClasificacion,
-                        style: TipografiaHaku.interfaz(color: PaletaRutas.oro, fontWeight: FontWeight.w600),
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.oro,
+                          fontWeight: FontWeight.w600,
+                        ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -646,7 +710,11 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded, color: PaletaRutas.ink, size: 20),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: PaletaRutas.ink,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ),
@@ -663,7 +731,11 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
     return Container(
       color: PaletaRutas.carbon,
       child: const Center(
-        child: Icon(Icons.landscape_rounded, color: PaletaRutas.plomo, size: 64),
+        child: Icon(
+          Icons.landscape_rounded,
+          color: PaletaRutas.plomo,
+          size: 64,
+        ),
       ),
     );
   }
@@ -675,14 +747,17 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
       children: [
         // Botón Zen (toggle)
         GestureDetector(
-          onTap: () => setState(() => _panelInferiorOculto = !_panelInferiorOculto),
+          onTap: () =>
+              setState(() => _panelInferiorOculto = !_panelInferiorOculto),
           child: Container(
             margin: const EdgeInsets.only(bottom: 8, right: 8),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: PaletaRutas.ink.withValues(alpha: 0.85),
               shape: BoxShape.circle,
-              border: Border.all(color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: PaletaRutas.plomoOscuro.withValues(alpha: 0.3),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.3),
@@ -692,7 +767,9 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
               ],
             ),
             child: Icon(
-              _panelInferiorOculto ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+              _panelInferiorOculto
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
               color: PaletaRutas.piedra,
               size: 24,
             ),
@@ -791,7 +868,8 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                       setState(() {
                         _modoActual = ModoMapaUX.cerca;
                         if (_distanciaRadarKm != null) {
-                          _distanciaRadarKm = null; // Reiniciar para ver el nacimiento de la ola
+                          _distanciaRadarKm =
+                              null; // Reiniciar para ver el nacimiento de la ola
                         }
                       });
                     },
@@ -800,7 +878,8 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
                     icono: Icons.layers_clear_rounded,
                     texto: "Limpiar",
                     activo: _modoActual == ModoMapaUX.limpio,
-                    onTap: () => setState(() => _modoActual = ModoMapaUX.limpio),
+                    onTap: () =>
+                        setState(() => _modoActual = ModoMapaUX.limpio),
                   ),
                 ],
               ),
@@ -834,16 +913,18 @@ class _BotonPanel extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: activo ? PaletaRutas.oro.withValues(alpha: 0.15) : Colors.transparent,
+          color: activo
+              ? PaletaRutas.oro.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icono, 
-              color: activo ? PaletaRutas.oro : PaletaRutas.plomoClaro, 
-              size: 24
+              icono,
+              color: activo ? PaletaRutas.oro : PaletaRutas.plomoClaro,
+              size: 24,
             ),
             const SizedBox(height: 4),
             Text(

@@ -9,6 +9,9 @@ import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/lista_rutas_explora.dart';
+import '../../rutas/pantallas/pantalla_crear_ruta.dart';
+import '../../rutas/pantallas/pantalla_mis_rutas.dart';
+import '../../rutas/proveedores/proveedor_rutas.dart';
 import '../datos/provincias_datasource_local.dart';
 import '../dominio/modelos/modelo_lugar.dart';
 import '../proveedores/proveedor_explora_ui.dart';
@@ -57,8 +60,9 @@ class _EstadoPantallaExploraLugares
       pool = pool.where((l) => l.id != _ultimaSorpresaId).toList();
     }
     if (intereses.isNotEmpty) {
-      final filtrado =
-          pool.where((l) => intereses.any(l.tieneCategoria)).toList();
+      final filtrado = pool
+          .where((l) => intereses.any(l.tieneCategoria))
+          .toList();
       if (filtrado.isNotEmpty) pool = filtrado;
     }
     pool = [...pool]..shuffle();
@@ -83,6 +87,24 @@ class _EstadoPantallaExploraLugares
     await abrirRegistrarLugarFlow(context, ref, provincia: provincia);
   }
 
+  Future<void> _crearRuta() async {
+    final creada = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const PantallaCrearRuta()),
+    );
+    if (creada == true) {
+      notificarRutasCambiaron(ref);
+    }
+  }
+
+  Future<void> _abrirMisRutas() async {
+    final cambio = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const PantallaMisRutas()),
+    );
+    if (cambio == true) {
+      notificarRutasCambiaron(ref);
+    }
+  }
+
   Widget _vistaRutas() {
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -101,6 +123,18 @@ class _EstadoPantallaExploraLugares
             color: PaletaRutas.piedra,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Mis Rutas',
+            onPressed: _abrirMisRutas,
+            icon: const Icon(Icons.folder_copy_outlined),
+          ),
+          IconButton(
+            tooltip: 'Crear Ruta',
+            onPressed: _crearRuta,
+            icon: const Icon(Icons.add_road_rounded),
+          ),
+        ],
       ),
       body: ListaRutasExplora(
         bottomPadding: MediaQuery.paddingOf(context).bottom + 24,
@@ -109,10 +143,7 @@ class _EstadoPantallaExploraLugares
   }
 
   Widget _vistaMapa(List<ModeloLugar> todos) {
-    return PantallaMapaExplora(
-      lugaresTodos: todos,
-      onVolver: _volverAIslas,
-    );
+    return PantallaMapaExplora(lugaresTodos: todos, onVolver: _volverAIslas);
   }
 
   @override
@@ -153,9 +184,9 @@ class _EstadoPantallaExploraLugares
     }
     final totalFotos = indice.totalFotos();
     final fotosHero = MetricasComunidad.etiquetaFotos(totalFotos);
-    final nProvinciasConLugar = ProvinciasDataSourceLocal.construirIslas(todos)
-        .where((i) => i.lugares.isNotEmpty)
-        .length;
+    final nProvinciasConLugar = ProvinciasDataSourceLocal.construirIslas(
+      todos,
+    ).where((i) => i.lugares.isNotEmpty).length;
     final statsHero = [
       '$nProvinciasConLugar / ${ProvinciasDataSourceLocal.todas.length} provincias',
       CopyHaku.huecosSinNombre(huecos),
@@ -224,52 +255,51 @@ class _EstadoPantallaExploraLugares
                         ),
                       )
                     : error != null
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'No se pudieron cargar los lugares.',
-                                    textAlign: TextAlign.center,
-                                    style: TipografiaHaku.interfaz(
-                                      color: PaletaRutas.piedra,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextButton(
-                                    onPressed: () => ref
-                                        .invalidate(lugaresRemotosProvider),
-                                    child: Text(
-                                      'Reintentar',
-                                      style: TipografiaHaku.interfaz(
-                                        color: PaletaRutas.oro,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'No se pudieron cargar los lugares.',
+                                textAlign: TextAlign.center,
+                                style: TipografiaHaku.interfaz(
+                                  color: PaletaRutas.piedra,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                          )
-                        : Center(
-                            child: MapaIslasProvincias(
-                              lugares: todos,
-                              fotosPorLugar: indice.fotos,
-                              onTapLugar: (id) =>
-                                  abrirDetalleLugar(context, id),
-                              onRegistrarEnProvincia: (prov) =>
-                                  _registrar(provincia: prov),
-                              onProvinciaVisible: (nombre) {
-                                if (_provinciaVisible != nombre) {
-                                  setState(() => _provinciaVisible = nombre);
-                                }
-                              },
-                              altura: MediaQuery.sizeOf(context).height * 0.42,
-                            ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: () =>
+                                    ref.invalidate(lugaresRemotosProvider),
+                                child: Text(
+                                  'Reintentar',
+                                  style: TipografiaHaku.interfaz(
+                                    color: PaletaRutas.oro,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                      )
+                    : Center(
+                        child: MapaIslasProvincias(
+                          lugares: todos,
+                          fotosPorLugar: indice.fotos,
+                          onTapLugar: (id) => abrirDetalleLugar(context, id),
+                          onRegistrarEnProvincia: (prov) =>
+                              _registrar(provincia: prov),
+                          onProvinciaVisible: (nombre) {
+                            if (_provinciaVisible != nombre) {
+                              setState(() => _provinciaVisible = nombre);
+                            }
+                          },
+                          altura: MediaQuery.sizeOf(context).height * 0.42,
+                        ),
+                      ),
               ),
               _PanelInferiorIslas(
                 statsResumen: statsHero,
@@ -306,9 +336,7 @@ class _PanelInferiorIslas extends StatelessWidget {
       decoration: BoxDecoration(
         color: PaletaRutas.carbon,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-        border: Border.all(
-          color: PaletaRutas.plomo.withValues(alpha: 0.28),
-        ),
+        border: Border.all(color: PaletaRutas.plomo.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

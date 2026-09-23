@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'funcionalidades/carga_inicial/indice.dart';
 import 'funcionalidades/inicio/indice.dart';
 import 'funcionalidades/rutas/widgets/estilos_rutas.dart';

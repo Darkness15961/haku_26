@@ -99,7 +99,9 @@ class TarjetaRuta extends StatelessWidget {
                             Text(
                               [
                                 if (ruta.calificacion > 0)
-                                  '★ ${ruta.calificacion.toStringAsFixed(1)}',
+                                  ruta.cantidadResenas > 0
+                                      ? '${ruta.calificacion.toStringAsFixed(1)} (${ruta.cantidadResenas})'
+                                      : ruta.calificacion.toStringAsFixed(1),
                                 ruta.hilo == HiloCultura.camino
                                     ? '${ruta.cantidadLugares} lugares'
                                     : ruta.hilo.etiqueta,
@@ -135,8 +137,9 @@ class TarjetaRuta extends StatelessWidget {
                                         shape: BoxShape.circle,
                                         color: activo
                                             ? PaletaRutas.oro
-                                            : PaletaRutas.plomo
-                                                .withValues(alpha: 0.45),
+                                            : PaletaRutas.plomo.withValues(
+                                                alpha: 0.45,
+                                              ),
                                       ),
                                     );
                                   }),

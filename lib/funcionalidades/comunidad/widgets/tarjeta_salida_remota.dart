@@ -102,6 +102,32 @@ class TarjetaSalidaRemota extends StatelessWidget {
               color: PaletaRutas.plomoClaro,
             ),
           ),
+          if (salida.rutaNombre != null &&
+              salida.rutaNombre!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(
+                  Icons.route_outlined,
+                  size: 14,
+                  color: PaletaRutas.oro,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    salida.rutaNombre!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: PaletaRutas.oro,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (salida.comunidadNombre != null &&
               salida.comunidadNombre!.trim().isNotEmpty) ...[
             const SizedBox(height: 6),

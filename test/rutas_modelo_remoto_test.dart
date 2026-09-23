@@ -21,6 +21,12 @@ void main() {
       'requisitos': ['Agua'],
       'advertencias': ['Aclimatarse'],
       'cantidad_paradas': 2,
+      'valoracion_promedio': 4.5,
+      'cantidad_valoraciones': 8,
+      'usuario_creador_nombre': 'anaq',
+      'usuario_creador_foto': 'https://img.test/ana.jpg',
+      'publicada_en': '2026-09-22T10:00:00Z',
+      'updated_at': '2026-09-23T11:30:00Z',
       'paradas': [
         {
           'id': 1,
@@ -59,6 +65,12 @@ void main() {
     expect(ruta.trazado, hasLength(2));
     expect(ruta.trazado.first.lng, -71.9);
     expect(ruta.tips, ['Agua', 'Aclimatarse']);
+    expect(ruta.calificacion, 4.5);
+    expect(ruta.cantidadResenas, 8);
+    expect(ruta.usuarioCreadorNombre, 'anaq');
+    expect(ruta.usuarioCreadorFoto, 'https://img.test/ana.jpg');
+    expect(ruta.publicadaEn?.toUtc().year, 2026);
+    expect(ruta.updatedAt?.toUtc().day, 23);
   });
 
   test('no inventa trazado cuando backend no publica LineString', () {
