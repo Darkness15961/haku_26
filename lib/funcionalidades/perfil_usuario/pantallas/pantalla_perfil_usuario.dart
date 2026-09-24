@@ -12,10 +12,12 @@ import '../../comunidad/widgets/tarjeta_publicacion_remota.dart';
 import '../../comunidad/pantallas/pantalla_detalle_salida_remota.dart';
 import '../../favoritos/indice.dart';
 import '../../lugares/navegacion_lugar.dart';
-import '../../lugares/proveedores/proveedor_explora_ui.dart';
-import '../../rutas/datos/rutas_datasource_local.dart';
 import '../../rutas/dominio/modelos/modelo_ruta.dart';
+import '../../rutas/dominio/modelos/modelo_ruta_propia.dart';
+import '../../rutas/pantallas/pantalla_crear_ruta.dart';
 import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
+import '../../rutas/pantallas/pantalla_mis_rutas.dart';
+import '../../rutas/proveedores/proveedor_rutas.dart';
 import '../../rutas/widgets/decoracion_detalle_fondo.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
@@ -467,7 +469,8 @@ class _ContenidoPerfil extends ConsumerWidget {
     final nRutas = aportaciones.nRutas;
     final nLugares = aportaciones.nLugares;
     final nSalidas = aportaciones.nSalidas;
-    final hilos = RutasDataSourceLocal.obtenerCultura();
+    final rutasPropias = aportaciones.rutas;
+    final rutasCarrusel = rutasPropias.take(8).toList(growable: false);
     final insignias = _insigniasDesde(
       posts: nPosts,
       rutas: nRutas,
@@ -475,6 +478,49 @@ class _ContenidoPerfil extends ConsumerWidget {
       salidas: nSalidas,
       siguiendo: 0,
     );
+
+    Future<void> abrirRutaPropia(ModeloRutaPropia propia) async {
+      if (propia.publicada) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PantallaDetalleRuta(ruta: propia.ruta),
+          ),
+        );
+        return;
+      }
+
+      final actualizada = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => PantallaCrearRuta(rutaInicial: propia),
+        ),
+      );
+      if (actualizada == true) {
+        notificarRutasCambiaron(ref);
+        ref.invalidate(aportacionesPerfilProvider);
+      }
+    }
+
+    Future<void> abrirMisRutas() async {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const PantallaMisRutas(),
+        ),
+      );
+      notificarRutasCambiaron(ref);
+      ref.invalidate(aportacionesPerfilProvider);
+    }
+
+    Future<void> crearRuta() async {
+      final creada = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => const PantallaCrearRuta(),
+        ),
+      );
+      if (creada == true) {
+        notificarRutasCambiaron(ref);
+        ref.invalidate(aportacionesPerfilProvider);
+      }
+    }
 
     void sheetLugares() {
       mostrarSheetListaPerfil(
@@ -487,6 +533,8 @@ class _ContenidoPerfil extends ConsumerWidget {
             ItemListaPerfil(
               titulo: l.nombre,
               subtitulo: l.subtituloClasificacion,
+              imagenUrl: l.imagenUrl,
+              icono: Icons.place_outlined,
               onTap: () => abrirDetalleLugar(context, l.id),
             ),
         ],
@@ -496,11 +544,23 @@ class _ContenidoPerfil extends ConsumerWidget {
     void sheetRutas() {
       mostrarSheetListaPerfil(
         context,
-        titulo: 'Mis rutas',
-        vacio:
-            'Todavía no hay rutas propias en Haku. Pronto vas a poder crearlas acá.',
+        titulo: 'Mis rutas ($nRutas)',
+        vacio: 'Todavia no creaste rutas. Crea una desde Explora.',
         iconoVacio: Icons.route_outlined,
-        items: const [],
+        items: [
+          for (final r in rutasPropias)
+            ItemListaPerfil(
+              titulo: _tituloRutaPropia(r),
+              subtitulo: _subtituloRutaPropia(r),
+              imagenUrl: r.ruta.imagenUrl,
+              icono: _iconoEstadoRuta(r.estado),
+              etiqueta: r.estado.etiqueta,
+              etiquetaColor: _colorEstadoRuta(r.estado),
+              onTap: () {
+                abrirRutaPropia(r);
+              },
+            ),
+        ],
       );
     }
 
@@ -519,6 +579,9 @@ class _ContenidoPerfil extends ConsumerWidget {
                       ? '${p.contenido.substring(0, 80)}…'
                       : p.contenido),
               subtitulo: p.hace,
+              imagenUrl: p.imagenUrl,
+              icono: Icons.photo_camera_outlined,
+              onTap: () => _mostrarDetallePublicacionPerfil(context, p),
             ),
         ],
       );
@@ -535,6 +598,7 @@ class _ContenidoPerfil extends ConsumerWidget {
             ItemListaPerfil(
               titulo: s.etiquetaPrincipal,
               subtitulo: s.fechaHoraEtiqueta,
+              icono: Icons.hiking,
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -657,7 +721,7 @@ class _ContenidoPerfil extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Cultura',
+                'Rutas creadas',
                 style: TipografiaHaku.titulo(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -666,7 +730,9 @@ class _ContenidoPerfil extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () => irAExplora(ref, modo: ModoExplora.rutas),
+              onPressed: () {
+                abrirMisRutas();
+              },
               style: TextButton.styleFrom(
                 foregroundColor: PaletaRutas.oro,
                 padding: EdgeInsets.zero,
@@ -685,29 +751,161 @@ class _ContenidoPerfil extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 168,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: hilos.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, i) {
-              final r = hilos[i];
-              return _PedacitoCultura(
-                ruta: r,
-                indice: i,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => PantallaDetalleRuta(ruta: r),
-                    ),
-                  );
-                },
-              );
-            },
+        if (rutasCarrusel.isEmpty)
+          _VacioRutasPerfil(onCrear: crearRuta)
+        else
+          SizedBox(
+            height: 168,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: rutasCarrusel.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final r = rutasCarrusel[i];
+                return _PedacitoRutaPerfil(
+                  rutaPropia: r,
+                  indice: i,
+                  onTap: () {
+                    abrirRutaPropia(r);
+                  },
+                );
+              },
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+String _tituloRutaPropia(ModeloRutaPropia propia) {
+  final titulo = propia.ruta.titulo.trim();
+  return titulo.isEmpty ? 'Ruta sin nombre' : titulo;
+}
+
+String _subtituloRutaPropia(ModeloRutaPropia propia) {
+  final ruta = propia.ruta;
+  final tipo = _tipoPrincipalRuta(ruta);
+  final dificultad = ruta.dificultadTexto.trim();
+  final provincia = ruta.provincia.trim();
+  final partes = <String>[
+    if (tipo.isNotEmpty) tipo,
+    if (dificultad.isNotEmpty) dificultad,
+    if (provincia.isNotEmpty) provincia,
+  ];
+  return partes.isEmpty ? propia.estado.etiqueta : partes.join(' · ');
+}
+
+String _tipoPrincipalRuta(ModeloRuta ruta) {
+  final tipo = ruta.tipoSitio?.trim() ?? '';
+  return tipo.isEmpty ? ruta.hilo.etiqueta : tipo;
+}
+
+Color _colorEstadoRuta(EstadoEditorialRuta estado) {
+  switch (estado) {
+    case EstadoEditorialRuta.publicado:
+      return const Color(0xFF72B37E);
+    case EstadoEditorialRuta.archivado:
+      return const Color(0xFFD19A66);
+    case EstadoEditorialRuta.borrador:
+      return PaletaRutas.oro;
+  }
+}
+
+IconData _iconoEstadoRuta(EstadoEditorialRuta estado) {
+  switch (estado) {
+    case EstadoEditorialRuta.publicado:
+      return Icons.travel_explore_outlined;
+    case EstadoEditorialRuta.archivado:
+      return Icons.visibility_off_outlined;
+    case EstadoEditorialRuta.borrador:
+      return Icons.edit_note_outlined;
+  }
+}
+
+class _VacioRutasPerfil extends StatelessWidget {
+  const _VacioRutasPerfil({required this.onCrear});
+
+  final Future<void> Function() onCrear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 168,
+      padding: const EdgeInsets.all(16),
+      decoration: FondosDetalleHaku.tarjeta(indice: 0),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: PaletaRutas.oro.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: PaletaRutas.oro.withValues(alpha: 0.28),
+              ),
+            ),
+            child: const Icon(
+              Icons.route_outlined,
+              color: PaletaRutas.oro,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aun no creaste rutas',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.piedra,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Cuando guardes una ruta, aparecera aqui con su estado.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: PaletaRutas.plomoClaro,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      onCrear();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: PaletaRutas.oro,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(
+                      'Crear ruta',
+                      style: TipografiaHaku.interfaz(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -995,6 +1193,14 @@ class _ContenidoPublicaciones extends StatelessWidget {
   }
 }
 
+// Reutiliza el modal de detalle ya usado por las celdas del muro.
+void _mostrarDetallePublicacionPerfil(
+  BuildContext context,
+  ModeloPublicacionRemota publicacion,
+) {
+  _CeldaPublicacionPerfil(publicacion: publicacion)._abrirDetalle(context);
+}
+
 /// Celda tipo álbum: imagen o texto corto. Sin overflow.
 class _CeldaPublicacionPerfil extends StatelessWidget {
   const _CeldaPublicacionPerfil({required this.publicacion});
@@ -1101,16 +1307,49 @@ class _CeldaPublicacionPerfil extends StatelessWidget {
   }
 }
 
-class _PedacitoCultura extends StatelessWidget {
-  const _PedacitoCultura({
-    required this.ruta,
+class _ChipEstadoRutaPerfil extends StatelessWidget {
+  const _ChipEstadoRutaPerfil({required this.estado});
+
+  final EstadoEditorialRuta estado;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorEstadoRuta(estado);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: PaletaRutas.ink.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.46)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        child: Text(
+          estado.etiqueta,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TipografiaHaku.interfaz(
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PedacitoRutaPerfil extends StatelessWidget {
+  const _PedacitoRutaPerfil({
+    required this.rutaPropia,
     required this.indice,
     required this.onTap,
   });
 
-  final ModeloRuta ruta;
+  final ModeloRutaPropia rutaPropia;
   final int indice;
   final VoidCallback onTap;
+
+  ModeloRuta get ruta => rutaPropia.ruta;
 
   static final _sombra = [
     Shadow(
@@ -1170,6 +1409,11 @@ class _PedacitoCultura extends StatelessWidget {
                     ),
                   ),
                 ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _ChipEstadoRutaPerfil(estado: rutaPropia.estado),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Column(
@@ -1191,7 +1435,7 @@ class _PedacitoCultura extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              ruta.hilo.etiqueta,
+                              _tipoPrincipalRuta(ruta),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TipografiaHaku.interfaz(

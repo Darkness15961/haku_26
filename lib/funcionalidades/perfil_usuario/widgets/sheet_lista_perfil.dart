@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
 /// Fila simple para sheets del perfil.
 class ItemListaPerfil {
   final String titulo;
   final String? subtitulo;
+  final String? imagenUrl;
+  final IconData? icono;
+  final String? etiqueta;
+  final Color? etiquetaColor;
   final VoidCallback? onTap;
 
   const ItemListaPerfil({
     required this.titulo,
     this.subtitulo,
+    this.imagenUrl,
+    this.icono,
+    this.etiqueta,
+    this.etiquetaColor,
     this.onTap,
   });
 }
@@ -100,10 +109,44 @@ Future<void> mostrarSheetListaPerfil(
                       ),
                       itemBuilder: (context, i) {
                         final it = items[i];
+                        final imagen = it.imagenUrl?.trim() ?? '';
+                        final etiqueta = it.etiqueta?.trim() ?? '';
+                        final colorEtiqueta = it.etiquetaColor ??
+                            PaletaRutas.oro.withValues(alpha: 0.9);
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 2,
                           ),
+                          leading: imagen.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: ImagenHaku(
+                                    url: imagen,
+                                    width: 46,
+                                    height: 46,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : it.icono == null
+                                  ? null
+                                  : Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: PaletaRutas.ink
+                                            .withValues(alpha: 0.45),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: PaletaRutas.plomoOscuro
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        it.icono,
+                                        size: 20,
+                                        color: PaletaRutas.oro,
+                                      ),
+                                    ),
                           title: Text(
                             it.titulo,
                             maxLines: 2,
@@ -124,17 +167,32 @@ Future<void> mostrarSheetListaPerfil(
                                     color: PaletaRutas.plomoClaro,
                                   ),
                                 ),
-                          trailing: it.onTap == null
+                          trailing: etiqueta.isEmpty && it.onTap == null
                               ? null
-                              : const Icon(
-                                  Icons.chevron_right,
-                                  color: PaletaRutas.plomo,
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (etiqueta.isNotEmpty)
+                                      _EtiquetaListaPerfil(
+                                        texto: etiqueta,
+                                        color: colorEtiqueta,
+                                      ),
+                                    if (it.onTap != null) ...[
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: PaletaRutas.plomo,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                           onTap: it.onTap == null
                               ? null
                               : () {
+                                  final accion = it.onTap!;
                                   Navigator.pop(ctx);
-                                  it.onTap!();
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) => accion());
                                 },
                         );
                       },
@@ -147,4 +205,41 @@ Future<void> mostrarSheetListaPerfil(
       );
     },
   );
+}
+
+class _EtiquetaListaPerfil extends StatelessWidget {
+  const _EtiquetaListaPerfil({
+    required this.texto,
+    required this.color,
+  });
+
+  final String texto;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 104),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.42)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            texto,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TipografiaHaku.interfaz(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
