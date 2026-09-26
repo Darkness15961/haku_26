@@ -1,5 +1,4 @@
 /// Publicación remota alineada a `public.publicacion` + embeds.
-/// Sin likes/comentarios/música inventados (no hay tablas MVP).
 class ModeloPublicacionRemota {
   final String id;
   final String usuarioId;
@@ -25,6 +24,7 @@ class ModeloPublicacionRemota {
   final int cantidadMeGusta;
   final bool leDiMeGusta;
   final bool guardadoPorMi;
+  final int cantidadComentarios;
 
   const ModeloPublicacionRemota({
     required this.id,
@@ -49,7 +49,41 @@ class ModeloPublicacionRemota {
     this.cantidadMeGusta = 0,
     this.leDiMeGusta = false,
     this.guardadoPorMi = false,
+    this.cantidadComentarios = 0,
   });
+
+  ModeloPublicacionRemota copyWith({
+    int? cantidadMeGusta,
+    bool? leDiMeGusta,
+    bool? guardadoPorMi,
+    int? cantidadComentarios,
+  }) {
+    return ModeloPublicacionRemota(
+      id: id,
+      usuarioId: usuarioId,
+      autorNick: autorNick,
+      autorFotoPerfil: autorFotoPerfil,
+      contenido: contenido,
+      estado: estado,
+      fechaCreacion: fechaCreacion,
+      imagenUrl: imagenUrl,
+      videoUrl: videoUrl,
+      videoMiniaturaUrl: videoMiniaturaUrl,
+      videoEstado: videoEstado,
+      videoProveedorId: videoProveedorId,
+      comunidades: comunidades,
+      lugarId: lugarId,
+      lugarNombre: lugarNombre,
+      rutaId: rutaId,
+      rutaNombre: rutaNombre,
+      salidaId: salidaId,
+      salidaNombre: salidaNombre,
+      cantidadMeGusta: cantidadMeGusta ?? this.cantidadMeGusta,
+      leDiMeGusta: leDiMeGusta ?? this.leDiMeGusta,
+      guardadoPorMi: guardadoPorMi ?? this.guardadoPorMi,
+      cantidadComentarios: cantidadComentarios ?? this.cantidadComentarios,
+    );
+  }
 
   String get etiquetaAutor {
     final nick = autorNick.trim();
@@ -215,6 +249,21 @@ class ModeloPublicacionRemota {
     bool leDiMeGusta = m['le_di_me_gusta'] == true;
     bool guardadoPorMi = m['publicacion_guardada_por_mi'] == true;
 
+    int cantidadComentarios = 0;
+    if (m['cantidad_comentarios'] != null) {
+      cantidadComentarios = int.tryParse('${m['cantidad_comentarios']}') ?? 0;
+    } else if (m['publicacion_comentario'] is List) {
+      final lista = m['publicacion_comentario'] as List;
+      if (lista.isNotEmpty &&
+          lista.first is Map &&
+          (lista.first as Map)['count'] != null) {
+        cantidadComentarios =
+            int.tryParse('${(lista.first as Map)['count']}') ?? 0;
+      } else {
+        cantidadComentarios = lista.length;
+      }
+    }
+
     return ModeloPublicacionRemota(
       id: idRaw == null ? '' : '$idRaw',
       usuarioId: uidRaw == null ? '' : '$uidRaw'.trim(),
@@ -238,6 +287,7 @@ class ModeloPublicacionRemota {
       cantidadMeGusta: cantidadMeGusta,
       leDiMeGusta: leDiMeGusta,
       guardadoPorMi: guardadoPorMi,
+      cantidadComentarios: cantidadComentarios,
     );
   }
 }
@@ -250,4 +300,72 @@ class EtiquetaComunidadPublicacion {
     required this.comunidadId,
     required this.nombre,
   });
+}
+
+/// Comentario remoto de un nivel sobre una publicación.
+class ModeloComentarioPublicacion {
+  final String id;
+  final String publicacionId;
+  final String usuarioId;
+  final String autorNick;
+  final String? autorFotoPerfil;
+  final String texto;
+  final DateTime fechaCreacion;
+
+  const ModeloComentarioPublicacion({
+    required this.id,
+    required this.publicacionId,
+    required this.usuarioId,
+    this.autorNick = '',
+    this.autorFotoPerfil,
+    required this.texto,
+    required this.fechaCreacion,
+  });
+
+  String get etiquetaAutor {
+    final nick = autorNick.trim();
+    if (nick.isNotEmpty) return nick.startsWith('@') ? nick : '@$nick';
+    if (usuarioId.length >= 8) return usuarioId.substring(0, 8);
+    return usuarioId;
+  }
+
+  String get hace {
+    final diff = DateTime.now().difference(fechaCreacion);
+    if (diff.inMinutes < 1) return 'ahora';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    final d = fechaCreacion;
+    return '${d.day}/${d.month}';
+  }
+
+  factory ModeloComentarioPublicacion.desdeFilaRemota(Map<String, dynamic> m) {
+    String nick = '';
+    String? foto;
+    final u = m['usuario'];
+    if (u is Map) {
+      nick = (u['nombre_nick'] as String?)?.trim() ?? '';
+      final fp = (u['foto_perfil'] as String?)?.trim();
+      if (fp != null && fp.isNotEmpty) foto = fp;
+    }
+
+    DateTime fecha = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    final f = m['fecha_creacion'];
+    if (f is String) {
+      fecha = DateTime.tryParse(f) ?? fecha;
+    } else if (f is DateTime) {
+      fecha = f;
+    }
+
+    return ModeloComentarioPublicacion(
+      id: m['id'] == null ? '' : '${m['id']}',
+      publicacionId:
+          m['publicacion_id'] == null ? '' : '${m['publicacion_id']}',
+      usuarioId: m['usuario_id'] == null ? '' : '${m['usuario_id']}'.trim(),
+      autorNick: nick,
+      autorFotoPerfil: foto,
+      texto: (m['texto'] as String?)?.trim() ?? '',
+      fechaCreacion: fecha.toLocal(),
+    );
+  }
 }

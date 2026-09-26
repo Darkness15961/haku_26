@@ -32,6 +32,7 @@ class ModeloSalidaRemota {
 
   /// usuario_id con `estado_participante = confirmado`
   final List<String> participanteIds;
+  final List<ParticipanteSalidaRemoto> participantes;
   final int? inscritosCantidad;
   final bool inscripcionAbierta;
 
@@ -57,6 +58,7 @@ class ModeloSalidaRemota {
     this.minimoParaSalir = 1,
     this.estado = 'programada',
     this.participanteIds = const [],
+    this.participantes = const [],
     this.inscritosCantidad,
     this.inscripcionAbierta = true,
   });
@@ -129,6 +131,7 @@ class ModeloSalidaRemota {
     }
 
     final participanteIds = <String>[];
+    final participantes = <ParticipanteSalidaRemoto>[];
     final parts = m['salida_participante'];
     if (parts is List) {
       for (final raw in parts) {
@@ -139,9 +142,23 @@ class ModeloSalidaRemota {
         final uid = row['usuario_id'];
         if (uid == null) continue;
         final s = '$uid'.trim();
-        if (s.isNotEmpty && !participanteIds.contains(s)) {
-          participanteIds.add(s);
+        if (s.isEmpty || participanteIds.contains(s)) continue;
+        participanteIds.add(s);
+        String nick = '';
+        String? foto;
+        final u = row['usuario'];
+        if (u is Map) {
+          nick = (u['nombre_nick'] as String?)?.trim() ?? '';
+          final fp = (u['foto_perfil'] as String?)?.trim();
+          if (fp != null && fp.isNotEmpty) foto = fp;
         }
+        participantes.add(
+          ParticipanteSalidaRemoto(
+            usuarioId: s,
+            nombreNick: nick,
+            fotoPerfil: foto,
+          ),
+        );
       }
     }
 
@@ -172,8 +189,28 @@ class ModeloSalidaRemota {
       minimoParaSalir: (m['minimo_para_salir'] as num?)?.toInt() ?? 1,
       estado: (m['estado'] as String?)?.trim() ?? 'programada',
       participanteIds: participanteIds,
+      participantes: participantes,
       inscritosCantidad: (m['inscritos_count'] as num?)?.toInt(),
       inscripcionAbierta: m['inscripcion_abierta'] as bool? ?? true,
     );
+  }
+}
+
+class ParticipanteSalidaRemoto {
+  final String usuarioId;
+  final String nombreNick;
+  final String? fotoPerfil;
+
+  const ParticipanteSalidaRemoto({
+    required this.usuarioId,
+    this.nombreNick = '',
+    this.fotoPerfil,
+  });
+
+  String get etiqueta {
+    final nick = nombreNick.trim();
+    if (nick.isNotEmpty) return nick.startsWith('@') ? nick : '@$nick';
+    if (usuarioId.length >= 8) return usuarioId.substring(0, 8);
+    return usuarioId;
   }
 }

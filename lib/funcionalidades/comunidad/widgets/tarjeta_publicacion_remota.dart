@@ -5,17 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../lugares/navegacion_lugar.dart';
+import '../../rutas/dominio/modelos/modelo_ruta.dart';
+import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelo_publicacion.dart';
 import '../datos/publicacion_datasource_supabase.dart';
+import '../pantallas/pantalla_comentarios_publicacion_remota.dart';
 import '../pantallas/pantalla_detalle_comunidad.dart';
 import '../proveedores/proveedor_publicaciones.dart';
 import '../../autenticacion/proveedores/proveedor_sesion.dart';
 import '../../publicaciones/pantallas/pantalla_editar_publicacion.dart';
 import 'video_publicacion_haku.dart';
 
-/// Card remota con lenguaje visual del feed Threads (sin likes inventados).
-class TarjetaPublicacionRemota extends ConsumerWidget {
+/// Card remota del feed (likes, comentarios, compartir, guardar).
+class TarjetaPublicacionRemota extends ConsumerStatefulWidget {
   const TarjetaPublicacionRemota({
     super.key,
     required this.publicacion,
@@ -28,12 +31,95 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
   final bool habilitarComunidad;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final p = publicacion;
+  ConsumerState<TarjetaPublicacionRemota> createState() =>
+      _EstadoTarjetaPublicacionRemota();
+}
+
+class _EstadoTarjetaPublicacionRemota
+    extends ConsumerState<TarjetaPublicacionRemota> {
+  late int _nComentarios;
+
+  @override
+  void initState() {
+    super.initState();
+    _nComentarios = widget.publicacion.cantidadComentarios;
+  }
+
+  @override
+  void didUpdateWidget(covariant TarjetaPublicacionRemota oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.publicacion.id != widget.publicacion.id ||
+        oldWidget.publicacion.cantidadComentarios !=
+            widget.publicacion.cantidadComentarios) {
+      _nComentarios = widget.publicacion.cantidadComentarios;
+    }
+  }
+
+  Future<void> _abrirComentarios() async {
+    await abrirComentariosPublicacionRemota(
+      context,
+      publicacion: widget.publicacion,
+      onContadorCambiado: (n) {
+        if (mounted) setState(() => _nComentarios = n);
+      },
+    );
+  }
+
+  Future<void> _compartir() async {
+    final p = widget.publicacion;
+    final buffer = StringBuffer();
+    if (p.etiquetaAutor.isNotEmpty) buffer.writeln(p.etiquetaAutor);
+    if (p.contenido.trim().isNotEmpty) buffer.writeln(p.contenido.trim());
+    if (p.lugarNombre != null) buffer.writeln('Lugar: ${p.lugarNombre}');
+    if (p.rutaNombre != null) buffer.writeln('Ruta: ${p.rutaNombre}');
+    buffer.write('— HAKU');
+    await Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Texto copiado para compartir',
+          style: TipografiaHaku.interfaz(fontSize: 14, color: PaletaRutas.ink),
+        ),
+        backgroundColor: PaletaRutas.oro,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _abrirRuta() {
+    final p = widget.publicacion;
+    final rid = p.rutaId?.trim() ?? '';
+    final nombre = p.rutaNombre?.trim() ?? '';
+    if (rid.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PantallaDetalleRuta(
+          ruta: ModeloRuta(
+            id: rid,
+            titulo: nombre.isEmpty ? 'Ruta' : nombre,
+            subtitulo: '',
+            descripcion: '',
+            imagenUrl: '',
+            categoria: CategoriaRuta.recomendadas,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.publicacion;
     final imagen = p.imagenUrl?.trim() ?? '';
     final video = p.videoUrl?.trim() ?? '';
     final foto = p.autorFotoPerfil?.trim() ?? '';
     final uidActual = ref.watch(sesionProvider.select((s) => s.usuario?.id));
+    final compacta = widget.compacta;
+    final habilitarComunidad = widget.habilitarComunidad;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: compacta ? 0 : 16),
@@ -56,7 +142,6 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. HEADER (Autor, tiempo, privacidad) ──
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
               child: Row(
@@ -113,8 +198,6 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                 ],
               ),
             ),
-
-            // ── 2. CONTENIDO TEXTUAL ──
             if (p.contenido.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -127,8 +210,6 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   ),
                 ),
               ),
-
-            // ── 3. MEDIA (Foto/Video) ──
             if (video.isNotEmpty || imagen.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -136,8 +217,8 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.sizeOf(context).height * 0.4, // Nunca más del 40% de la pantalla
-                      minHeight: 200, // Altura mínima decente
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+                      minHeight: 200,
                     ),
                     child: SizedBox(
                       width: double.infinity,
@@ -153,8 +234,6 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   ),
                 ),
               ),
-
-            // ── 4. CALL TO ACTION Y ETIQUETAS ──
             if (p.lugarNombre != null ||
                 p.comunidades.isNotEmpty ||
                 p.rutaNombre != null ||
@@ -166,18 +245,16 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (p.rutaNombre != null && p.rutaNombre!.trim().isNotEmpty)
+                    if (p.rutaNombre != null &&
+                        p.rutaNombre!.trim().isNotEmpty)
                       _BotonAccionLlamativa(
                         icono: Icons.route_outlined,
                         texto: 'Explorar Ruta',
                         secundario: p.rutaNombre!,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Abrir ruta (Próximamente)')),
-                          );
-                        },
+                        onTap: _abrirRuta,
                       ),
-                    if (p.lugarNombre != null && p.lugarNombre!.trim().isNotEmpty)
+                    if (p.lugarNombre != null &&
+                        p.lugarNombre!.trim().isNotEmpty)
                       _BotonAccionLlamativa(
                         icono: Icons.place_outlined,
                         texto: 'Ver Lugar',
@@ -189,7 +266,8 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                           }
                         },
                       ),
-                    if (p.salidaNombre != null && p.salidaNombre!.trim().isNotEmpty)
+                    if (p.salidaNombre != null &&
+                        p.salidaNombre!.trim().isNotEmpty)
                       _ChipEtiqueta(
                         icono: Icons.hiking,
                         texto: p.salidaNombre!,
@@ -216,8 +294,6 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   ],
                 ),
               ),
-
-            // ── 5. BARRA SOCIAL ──
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
               child: Row(
@@ -226,11 +302,14 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
                   const SizedBox(width: 8),
                   _BotonSocial(
                     icono: Icons.chat_bubble_outline_rounded,
-                    onTap: () => _mostrarProximamente(context, 'Comentarios'),
+                    contador: _nComentarios > 0 ? _nComentarios : null,
+                    tooltip: 'Comentarios',
+                    onTap: _abrirComentarios,
                   ),
                   _BotonSocial(
                     icono: Icons.send_outlined,
-                    onTap: () => _mostrarProximamente(context, 'Compartir'),
+                    tooltip: 'Compartir',
+                    onTap: _compartir,
                   ),
                   const Spacer(),
                   if (uidActual != p.usuarioId)
@@ -243,33 +322,43 @@ class TarjetaPublicacionRemota extends ConsumerWidget {
       ),
     );
   }
-
-  void _mostrarProximamente(BuildContext context, String accion) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$accion próximamente',
-          style: TipografiaHaku.interfaz(fontSize: 14, color: PaletaRutas.ink),
-        ),
-        backgroundColor: PaletaRutas.oro,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 }
 
 class _BotonSocial extends StatelessWidget {
-  const _BotonSocial({required this.icono, required this.onTap, this.color = PaletaRutas.piedra});
+  const _BotonSocial({
+    required this.icono,
+    required this.onTap,
+    this.color = PaletaRutas.piedra,
+    this.contador,
+    this.tooltip,
+  });
   final IconData icono;
   final VoidCallback onTap;
   final Color color;
+  final int? contador;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icono, size: 24, color: color),
+      tooltip: tooltip,
+      icon: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 24, color: color),
+          if (contador != null) ...[
+            const SizedBox(width: 4),
+            Text(
+              '$contador',
+              style: TipografiaHaku.interfaz(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ],
+      ),
       onPressed: onTap,
       splashColor: PaletaRutas.oro.withValues(alpha: 0.2),
       highlightColor: PaletaRutas.oro.withValues(alpha: 0.1),

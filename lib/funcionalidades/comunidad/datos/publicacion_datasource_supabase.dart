@@ -5,11 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../dominio/modelo_publicacion.dart';
 
-/// CRUD de `public.publicacion` + etiquetas / multimedia / lugar.
-/// Sin likes (no hay tabla). Soft-delete vía `estado = eliminado`.
+/// CRUD de `public.publicacion` + etiquetas / multimedia / lugar / likes / comentarios.
 class PublicacionDataSourceSupabase {
   static const bucketMedia = 'haku-storage-produccion-2026';
   static const int maxLenContenido = 4000;
+  static const int maxLenComentario = 2000;
 
   static const _selectFeed = '''
 id,
@@ -60,8 +60,22 @@ publicacion_salida (
   )
 ),
 publicacion_me_gusta(count),
+publicacion_comentario(count),
 le_di_me_gusta,
 publicacion_guardada_por_mi
+''';
+
+  static const _selectComentario = '''
+id,
+publicacion_id,
+usuario_id,
+texto,
+fecha_creacion,
+usuario:usuario_id (
+  id,
+  nombre_nick,
+  foto_perfil
+)
 ''';
 
   Future<List<ModeloPublicacionRemota>> listarPublicas({
@@ -585,6 +599,91 @@ publicacion:publicacion_id!inner (
         .from('publicacion_me_gusta')
         .delete()
         .eq('publicacion_id', idNum)
+        .eq('usuario_id', user.id);
+  }
+
+  Future<List<ModeloComentarioPublicacion>> listarComentarios(
+    String publicacionId, {
+    int limite = 80,
+  }) async {
+    if (!supabaseListo) return const [];
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) return const [];
+
+    final rows = await clienteSupabase
+        .from('publicacion_comentario')
+        .select(_selectComentario)
+        .eq('publicacion_id', idNum)
+        .order('fecha_creacion', ascending: false)
+        .limit(limite);
+
+    return [
+      for (final e in rows as List<dynamic>)
+        ModeloComentarioPublicacion.desdeFilaRemota(
+          Map<String, dynamic>.from(e as Map),
+        ),
+    ].where((c) => c.id.isNotEmpty && c.texto.isNotEmpty).toList();
+  }
+
+  Future<ModeloComentarioPublicacion> crearComentario({
+    required String publicacionId,
+    required String texto,
+  }) async {
+    if (!supabaseListo) {
+      throw const AuthException('Supabase no está configurado');
+    }
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Debes iniciar sesión para comentar');
+    }
+
+    final idNum = int.tryParse(publicacionId.trim());
+    if (idNum == null) {
+      throw const AuthException('Publicación inválida');
+    }
+
+    final limpio = texto.trim();
+    if (limpio.isEmpty) {
+      throw const AuthException('Escribe un comentario');
+    }
+    if (limpio.length > maxLenComentario) {
+      throw AuthException(
+        'El comentario no puede pasar de $maxLenComentario caracteres',
+      );
+    }
+
+    try {
+      final row = await clienteSupabase
+          .from('publicacion_comentario')
+          .insert({
+            'publicacion_id': idNum,
+            'usuario_id': user.id,
+            'texto': limpio,
+          })
+          .select(_selectComentario)
+          .single();
+      return ModeloComentarioPublicacion.desdeFilaRemota(
+        Map<String, dynamic>.from(row),
+      );
+    } on PostgrestException catch (e) {
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo comentar' : e.message,
+      );
+    }
+  }
+
+  Future<void> eliminarComentario(String comentarioId) async {
+    if (!supabaseListo) return;
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return;
+
+    final idNum = int.tryParse(comentarioId.trim());
+    if (idNum == null) return;
+
+    await clienteSupabase
+        .from('publicacion_comentario')
+        .delete()
+        .eq('id', idNum)
         .eq('usuario_id', user.id);
   }
 

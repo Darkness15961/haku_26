@@ -147,7 +147,7 @@ abstract final class CopyHaku {
   static const perfilSinPublicacionesSub =
       'Cuando publiques un recuerdo, aparece acá como un mosaico.';
 
-  static const etiquetarCompanerosSub = 'Gente de acá en el demo';
+  static const etiquetarCompanerosSub = 'Gente de acá, de tu gente';
 
   static const insigniaVecinoMapa = 'Vecino del mapa';
   static const insigniaVecinoMapaDesc = 'Primeros pasos en el mapa';

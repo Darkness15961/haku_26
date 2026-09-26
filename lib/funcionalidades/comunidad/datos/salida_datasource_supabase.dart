@@ -25,7 +25,12 @@ inscripcion_abierta,
 fecha_creacion,
 salida_participante (
   usuario_id,
-  estado
+  estado,
+  usuario:usuario_id (
+    id,
+    nombre_nick,
+    foto_perfil
+  )
 ),
 lugar:punto_encuentro_lugar_id (
   id,
@@ -343,6 +348,99 @@ organizador:usuario!organizador_id (
           .eq('organizador_id', user.id);
     } on PostgrestException catch (e) {
       throw AuthException(e.message.trim());
+    }
+  }
+
+  /// Organizador: `programada` | `en_curso` | `finalizada` | `cancelada`.
+  Future<void> cambiarEstadoSalida(String salidaId, String estado) async {
+    if (!supabaseListo) {
+      throw const AuthException('No hay conexión con el servidor.');
+    }
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Inicia sesión.');
+    }
+    final idNum = int.tryParse(salidaId.trim());
+    if (idNum == null) {
+      throw const AuthException('Salida inválida.');
+    }
+    const permitidos = {'programada', 'en_curso', 'finalizada', 'cancelada'};
+    final est = estado.trim().toLowerCase();
+    if (!permitidos.contains(est)) {
+      throw const AuthException('Estado de salida inválido.');
+    }
+
+    try {
+      final row = await clienteSupabase
+          .from('salida')
+          .update({'estado': est})
+          .eq('id', idNum)
+          .eq('organizador_id', user.id)
+          .select('id')
+          .maybeSingle();
+      if (row == null) {
+        throw const AuthException('No se pudo actualizar el estado.');
+      }
+    } on PostgrestException catch (e) {
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo actualizar el estado.' : e.message,
+      );
+    }
+  }
+
+  /// Organizador edita campos básicos (sin mover punto de encuentro en v1).
+  Future<void> editarSalida({
+    required String salidaId,
+    required String titulo,
+    required DateTime fechaHoraInicio,
+    required int cuposTotales,
+    required int minimoParaSalir,
+    String? notasGrupales,
+  }) async {
+    if (!supabaseListo) {
+      throw const AuthException('No hay conexión con el servidor.');
+    }
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Inicia sesión.');
+    }
+    final idNum = int.tryParse(salidaId.trim());
+    if (idNum == null) {
+      throw const AuthException('Salida inválida.');
+    }
+    final tituloTrim = titulo.trim();
+    if (tituloTrim.isEmpty) {
+      throw const AuthException('El título es obligatorio.');
+    }
+    if (cuposTotales < 1) {
+      throw const AuthException('Cupos debe ser al menos 1.');
+    }
+    if (minimoParaSalir < 1 || minimoParaSalir > cuposTotales) {
+      throw const AuthException('Mínimo inválido respecto a cupos.');
+    }
+    final notas = notasGrupales?.trim();
+
+    try {
+      final row = await clienteSupabase
+          .from('salida')
+          .update({
+            'titulo': tituloTrim,
+            'fecha_hora_inicio': fechaHoraInicio.toUtc().toIso8601String(),
+            'cupos_totales': cuposTotales,
+            'minimo_para_salir': minimoParaSalir,
+            'notas_grupales': (notas == null || notas.isEmpty) ? null : notas,
+          })
+          .eq('id', idNum)
+          .eq('organizador_id', user.id)
+          .select('id')
+          .maybeSingle();
+      if (row == null) {
+        throw const AuthException('No se pudo guardar la salida.');
+      }
+    } on PostgrestException catch (e) {
+      throw AuthException(
+        e.message.trim().isEmpty ? 'No se pudo guardar la salida.' : e.message,
+      );
     }
   }
 }
