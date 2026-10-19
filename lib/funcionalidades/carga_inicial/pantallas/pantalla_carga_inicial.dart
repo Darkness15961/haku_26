@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../nucleo/demo/preferencias_demo_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
-import 'pantalla_onboarding_demo.dart';
 
-/// Splash — montaña andina + marca HAKU.
+/// Splash corto — entra directo al shell (sin onboarding).
 class PantallaCargaInicial extends StatefulWidget {
   final Widget siguientePantalla;
 
@@ -22,7 +20,7 @@ class PantallaCargaInicial extends StatefulWidget {
 
 class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     with SingleTickerProviderStateMixin {
-  static const _duracion = Duration(milliseconds: 2200);
+  static const _duracion = Duration(milliseconds: 900);
 
   Timer? _temporizador;
   bool _navegacionRealizada = false;
@@ -46,24 +44,17 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     _temporizador = Timer(_duracion, _continuar);
   }
 
-  Future<void> _continuar() async {
+  void _continuar() {
     if (!mounted || _navegacionRealizada) return;
     _navegacionRealizada = true;
 
-    final onboardingVisto = await PreferenciasDemoHaku.onboardingVisto();
-    if (!mounted) return;
-
-    final destino = onboardingVisto
-        ? widget.siguientePantalla
-        : PantallaOnboardingDemo(siguiente: widget.siguientePantalla);
-
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => destino,
+        pageBuilder: (_, __, ___) => widget.siguientePantalla,
         transitionsBuilder: (_, anim, __, child) {
           return FadeTransition(opacity: anim, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 550),
+        transitionDuration: const Duration(milliseconds: 350),
       ),
     );
   }
