@@ -77,7 +77,12 @@ class BarraNavegacionCurva extends StatelessWidget {
 
                   if (item.esCentral) {
                     return Expanded(
-                      child: GestureDetector(
+                      child: Semantics(
+                        button: true,
+                        label: item.etiqueta.trim().isEmpty
+                            ? 'Publicar'
+                            : item.etiqueta,
+                        child: GestureDetector(
                         onTap: () => onCambiar(index),
                         behavior: HitTestBehavior.opaque,
                         child: Column(
@@ -100,6 +105,7 @@ class BarraNavegacionCurva extends StatelessWidget {
                           ],
                         ),
                       ),
+                      ),
                     );
                   }
 
@@ -115,8 +121,16 @@ class BarraNavegacionCurva extends StatelessWidget {
                     ),
                   );
 
+                  final labelA11y = contador > 0
+                      ? '${item.etiqueta}, $contador'
+                      : item.etiqueta;
+
                   return Expanded(
-                    child: GestureDetector(
+                    child: Semantics(
+                      button: true,
+                      selected: esActivo,
+                      label: labelA11y,
+                      child: GestureDetector(
                       onTap: () => onCambiar(index),
                       behavior: HitTestBehavior.opaque,
                       child: Column(
@@ -149,6 +163,7 @@ class BarraNavegacionCurva extends StatelessWidget {
                             const SizedBox(height: 5),
                         ],
                       ),
+                    ),
                     ),
                   );
                 }),

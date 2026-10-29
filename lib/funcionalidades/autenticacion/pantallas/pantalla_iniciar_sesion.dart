@@ -111,6 +111,7 @@ class _EstadoPantallaIniciarSesion
                 child: Row(
                   children: [
                     IconButton(
+                      tooltip: 'Cerrar',
                       onPressed: () => Navigator.of(context).pop(false),
                       icon: const Icon(
                         Icons.close_rounded,
@@ -203,6 +204,9 @@ class _EstadoPantallaIniciarSesion
                         '••••••••',
                         icono: Icons.lock_outline_rounded,
                         suffix: IconButton(
+                          tooltip: _ocultarClave
+                              ? 'Mostrar contraseña'
+                              : 'Ocultar contraseña',
                           onPressed: () => setState(
                             () => _ocultarClave = !_ocultarClave,
                           ),

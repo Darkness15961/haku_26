@@ -47,7 +47,7 @@ class ServicioPerfilSupabase {
     final row = await _cliente
         .from('usuario')
         .select(
-          'id, nombres, apellidos, nombre_nick, correo, foto_perfil, nacionalidad_id',
+          'id, nombres, apellidos, nombre_nick, foto_perfil, nacionalidad_id',
         )
         .eq('id', userId)
         .maybeSingle();
@@ -66,12 +66,16 @@ class ServicioPerfilSupabase {
       }
     } catch (_) {}
 
+    final correoAuth = _cliente.auth.currentUser?.id == userId
+        ? (_cliente.auth.currentUser?.email?.trim() ?? '')
+        : '';
+
     return PerfilUsuarioDb(
       id: row['id'] as String,
       nombres: (row['nombres'] as String?)?.trim() ?? '',
       apellidos: (row['apellidos'] as String?)?.trim() ?? '',
       nombreNick: (row['nombre_nick'] as String?)?.trim() ?? '',
-      correo: (row['correo'] as String?)?.trim() ?? '',
+      correo: correoAuth,
       nacionalidadId: nacId,
       fotoPerfil: row['foto_perfil'] as String?,
       nacionalidad: nac,
