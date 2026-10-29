@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/configuracion/modo_ejecucion.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../datos/rutas_datasource_local.dart';
 import '../datos/rutas_datasource_supabase.dart';
@@ -15,7 +16,8 @@ final rutasVersionProvider = StateProvider<int>((ref) => 0);
 /// El catálogo local solo mantiene operable la demo sin configuración.
 final rutasPublicadasProvider = FutureProvider<List<ModeloRuta>>((ref) async {
   ref.watch(rutasVersionProvider);
-  if (!supabaseListo) return RutasDataSourceLocal.obtenerTodas();
+  if (ConfigEntornoHaku.esDemo) return RutasDataSourceLocal.obtenerTodas();
+  if (!supabaseListo) return const [];
   return ref.read(rutasDataSourceProvider).listarPublicadas();
 });
 
@@ -28,19 +30,23 @@ final rutasGuardadasProvider = FutureProvider.autoDispose
           .where((id) => id.isNotEmpty)
           .toSet();
       if (ids.isEmpty) return const [];
-      if (!supabaseListo) {
+      if (ConfigEntornoHaku.esDemo) {
         return ids
             .map(RutasDataSourceLocal.obtenerPorId)
             .whereType<ModeloRuta>()
             .toList(growable: false);
       }
+      if (!supabaseListo) return const [];
       return ref.read(rutasDataSourceProvider).listarPublicadasPorIds(ids);
     });
 
 final rutaDetalleProvider = FutureProvider.autoDispose
     .family<ModeloRuta?, String>((ref, id) async {
       ref.watch(rutasVersionProvider);
-      if (!supabaseListo) return RutasDataSourceLocal.obtenerPorId(id);
+      if (ConfigEntornoHaku.esDemo) {
+        return RutasDataSourceLocal.obtenerPorId(id);
+      }
+      if (!supabaseListo) return null;
       return ref.read(rutasDataSourceProvider).detallePublicada(id);
     });
 

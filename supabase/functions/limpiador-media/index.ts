@@ -1,7 +1,31 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 
 // Este es el bucket donde están almacenadas las fotos de Haku
 const BUCKET_MEDIA = 'haku-storage-produccion-2026'
+
+const respuestaJson = (body: Record<string, unknown>, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+const mensajeError = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
+
+const secretoValido = async (recibido: string, esperado: string) => {
+  if (!recibido || !esperado) return false
+
+  const encoder = new TextEncoder()
+  const [hashRecibido, hashEsperado] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(recibido)),
+    crypto.subtle.digest('SHA-256', encoder.encode(esperado)),
+  ])
+  const a = new Uint8Array(hashRecibido)
+  const b = new Uint8Array(hashEsperado)
+  let diferencia = 0
+  for (let i = 0; i < a.length; i += 1) diferencia |= a[i] ^ b[i]
+  return diferencia === 0
+}
 
 Deno.serve(async (req) => {
   // Aseguramos que solo puedan invocar esta función con el método POST
@@ -10,6 +34,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const cronSecret = Deno.env.get('LIMPIADOR_MEDIA_CRON_SECRET') ?? ''
+    const secretRecibido = req.headers.get('x-haku-cron-secret') ?? ''
+    if (!(await secretoValido(secretRecibido, cronSecret))) {
+      return respuestaJson({ error: 'No autorizado' }, 401)
+    }
+
     // Variables de Entorno Proporcionadas por Supabase y tu VPS
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -41,14 +71,11 @@ Deno.serve(async (req) => {
     }
 
     if (!cola || cola.length === 0) {
-      return new Response(JSON.stringify({ mensaje: 'No hay elementos para limpiar' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return respuestaJson({ mensaje: 'No hay elementos para limpiar' }, 200)
     }
 
     const eliminadosIds: number[] = []
-    const fallidos: { id: number; error: any }[] = []
+    const fallidos: { id: number; error: string }[] = []
 
     // =========================================================
     // 2. PROCESAR CADA ELEMENTO (S3 o BUNNY)
@@ -100,8 +127,8 @@ Deno.serve(async (req) => {
         // Si llegó hasta aquí sin lanzar error, significa que lo borró con éxito
         eliminadosIds.push(item.id)
 
-      } catch (err: any) {
-        fallidos.push({ id: item.id, error: err.message })
+      } catch (error: unknown) {
+        fallidos.push({ id: item.id, error: mensajeError(error) })
       }
     }
 
@@ -127,28 +154,31 @@ Deno.serve(async (req) => {
        // Al próximo barrido del pg_cron lo volverá a intentar.
        const target = cola.find(c => c.id === f.id)
        if (target) {
-         await supabaseAdmin
+         const { error: updateIntentosError } = await supabaseAdmin
            .from('cola_limpieza_media')
            .update({ intentos: target.intentos + 1 })
            .eq('id', f.id)
-           .catch(() => null)
+
+         if (updateIntentosError) {
+           console.error(
+             `No se pudo incrementar intentos para cola ${f.id}:`,
+             updateIntentosError,
+           )
+         }
        }
     }
 
-    return new Response(
-      JSON.stringify({
+    return respuestaJson(
+      {
         procesados: cola.length,
         eliminados: eliminadosIds.length,
         fallidos: fallidos.length,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      },
+      200,
     )
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error catastrófico en limpiador-media:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return respuestaJson({ error: mensajeError(error) }, 500)
   }
 })

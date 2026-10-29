@@ -4,28 +4,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'funcionalidades/carga_inicial/indice.dart';
 import 'funcionalidades/inicio/indice.dart';
 import 'funcionalidades/rutas/widgets/estilos_rutas.dart';
+import 'nucleo/configuracion/modo_ejecucion.dart';
 import 'nucleo/responsive/lienzo_haku.dart';
 import 'nucleo/supabase/cliente_supabase.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await inicializarSupabase();
-  } catch (e, st) {
-    debugPrint('Supabase init: $e');
-    debugPrint('$st');
-    if (kDebugMode) {
-      debugPrint(
-        'Revisa URL / anon key en lib/nucleo/supabase/config_supabase.dart '
-        'o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY',
-      );
+  Object? errorInicializacion;
+
+  if (!ConfigEntornoHaku.esDemo) {
+    try {
+      await inicializarSupabase();
+    } catch (e, st) {
+      errorInicializacion = e;
+      debugPrint('Supabase init: $e');
+      debugPrint('$st');
+      if (kDebugMode) {
+        debugPrint(
+          'Revisa URL / anon key en lib/nucleo/supabase/config_supabase.dart '
+          'o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY',
+        );
+      }
     }
   }
-  runApp(const ProviderScope(child: AplicacionHaku()));
+
+  runApp(
+    ProviderScope(
+      child: AplicacionHaku(errorInicializacion: errorInicializacion),
+    ),
+  );
 }
 
 class AplicacionHaku extends StatelessWidget {
-  const AplicacionHaku({super.key});
+  const AplicacionHaku({super.key, this.errorInicializacion});
+
+  final Object? errorInicializacion;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +80,43 @@ class AplicacionHaku extends StatelessWidget {
           child: contenido ?? const SizedBox.shrink(),
         );
       },
-      home: const PantallaCargaInicial(siguientePantalla: PantallaInicio()),
+      home: errorInicializacion == null
+          ? const PantallaCargaInicial(siguientePantalla: PantallaInicio())
+          : const _PantallaBackendNoDisponible(),
+    );
+  }
+}
+
+class _PantallaBackendNoDisponible extends StatelessWidget {
+  const _PantallaBackendNoDisponible();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off_outlined, size: 52),
+                SizedBox(height: 20),
+                Text(
+                  'No pudimos conectar con HAKU',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Revisa tu conexión e intenta abrir la aplicación de nuevo.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

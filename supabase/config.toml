@@ -31,9 +31,9 @@ enabled = false
 
 [db]
 # Port to use for the local database URL.
-port = 54322
+port = 54332
 # Port used by db diff command to initialize the shadow database.
-shadow_port = 54320
+shadow_port = 54330
 # Maximum amount of time to wait for health check when starting the local database.
 health_timeout = "2m"
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
@@ -380,6 +380,11 @@ policy = "per_worker"
 inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
+
+[functions.limpiador-media]
+# El gateway permite el secreto dedicado de cron; la funcion valida ese
+# secreto antes de crear el cliente interno con privilegios administrativos.
+verify_jwt = false
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"

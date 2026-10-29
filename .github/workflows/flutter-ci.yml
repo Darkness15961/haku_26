@@ -1,0 +1,86 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+      - jhon
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.6
+          channel: stable
+          cache: true
+
+      - name: Show toolchain
+        run: flutter --version
+
+      - name: Resolve locked dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  database:
+    name: Supabase migrations and security tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.122.0
+
+      - name: Configure disposable local cron secret
+        shell: bash
+        run: |
+          printf '%s\n' \
+            'LIMPIADOR_MEDIA_CRON_SECRET=haku-ci-disposable-cron-secret' \
+            > supabase/functions/.env
+
+      - name: Start isolated Supabase stack
+        run: >-
+          supabase start
+          --exclude studio,imgproxy,realtime,mailpit,postgres-meta,logflare,vector,supavisor
+
+      - name: Rebuild database from migrations
+        run: bash scripts/rebuild_supabase_local.sh
+
+      - name: Run pgTAP tests
+        run: supabase test db --local
+
+      - name: Test Edge Function authentication
+        env:
+          LIMPIADOR_MEDIA_CRON_SECRET: haku-ci-disposable-cron-secret
+        run: node supabase/tests/limpiador_media_edge_test.mjs
+
+      - name: Stop local stack
+        if: always()
+        run: supabase stop --no-backup
