@@ -14,11 +14,13 @@ class PortadaInicioCultura extends StatefulWidget {
   const PortadaInicioCultura({
     super.key,
     required this.rutas,
+    required this.mostrarFallback,
     this.onExplorar,
     this.onTapRuta,
   });
 
   final List<ModeloRuta> rutas;
+  final bool mostrarFallback;
   final VoidCallback? onExplorar;
   final ValueChanged<ModeloRuta>? onTapRuta;
 
@@ -33,6 +35,7 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
 
   List<ModeloRuta> get _slides {
     if (widget.rutas.isNotEmpty) return widget.rutas;
+    if (!widget.mostrarFallback) return const [];
     return const [
       ModeloRuta(
         id: 'fallback_mistico',
@@ -64,6 +67,20 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
   }
 
   @override
+  void didUpdateWidget(covariant PortadaInicioCultura oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final total = _slides.length;
+    if (total == 0) {
+      _pagina = 0;
+      return;
+    }
+    if (_pagina >= total) {
+      _pagina = 0;
+      if (_page.hasClients) _page.jumpToPage(0);
+    }
+  }
+
+  @override
   void dispose() {
     _auto?.cancel();
     _page.dispose();
@@ -73,6 +90,7 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
   @override
   Widget build(BuildContext context) {
     final slides = _slides;
+    if (slides.isEmpty) return const SizedBox.shrink();
     final actual = slides[_pagina.clamp(0, slides.length - 1)];
 
     return Padding(
@@ -186,8 +204,9 @@ class _EstadoPortadaInicioCultura extends State<PortadaInicioCultura> {
                                 decoration: BoxDecoration(
                                   color: activo
                                       ? PaletaRutas.oro
-                                      : PaletaRutas.piedra
-                                          .withValues(alpha: 0.35),
+                                      : PaletaRutas.piedra.withValues(
+                                          alpha: 0.35,
+                                        ),
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               );

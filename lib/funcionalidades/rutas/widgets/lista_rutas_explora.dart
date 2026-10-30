@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/navegacion/abrir_pantalla_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/responsive/rejilla_lego_haku.dart';
@@ -53,9 +54,7 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora> {
     final cols = RejillaLegoHaku.columnas(context);
 
     if (rutasAsync.isLoading && !rutasAsync.hasValue) {
-      return const Center(
-        child: CircularProgressIndicator(color: PaletaRutas.oro),
-      );
+      return const CargadorHaku.contenido(mensaje: 'Descubriendo rutas…');
     }
     if (rutasAsync.hasError && !rutasAsync.hasValue) {
       return _ErrorRutas(
@@ -178,9 +177,8 @@ class _EstadoListaRutasExplora extends ConsumerState<ListaRutasExplora> {
                       (zona) => _ChipFiltroRuta(
                         texto: zona,
                         activo: _zona == zona,
-                        onTap: () => setState(
-                          () => _zona = _zona == zona ? null : zona,
-                        ),
+                        onTap: () =>
+                            setState(() => _zona = _zona == zona ? null : zona),
                       ),
                     ),
                   ],
@@ -485,11 +483,12 @@ String _tipoDe(ModeloRuta ruta) {
     'urbana' => 'Urbana',
     'naturaleza' => 'Naturaleza',
     '' => 'Ruta',
-    _ => raw
-        .split(RegExp(r'[_\s-]+'))
-        .where((p) => p.isNotEmpty)
-        .map((p) => '${p[0].toUpperCase()}${p.substring(1)}')
-        .join(' '),
+    _ =>
+      raw
+          .split(RegExp(r'[_\s-]+'))
+          .where((p) => p.isNotEmpty)
+          .map((p) => '${p[0].toUpperCase()}${p.substring(1)}')
+          .join(' '),
   };
 }
 

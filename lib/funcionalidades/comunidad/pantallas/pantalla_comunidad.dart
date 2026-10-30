@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../../nucleo/responsive/rejilla_lego_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
@@ -240,7 +241,12 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
     );
   }
 
-  Widget _chipFiltroBasico(String label, int value, int current, ValueChanged<int> onSelected) {
+  Widget _chipFiltroBasico(
+    String label,
+    int value,
+    int current,
+    ValueChanged<int> onSelected,
+  ) {
     final sel = current == value;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -275,10 +281,30 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _chipFiltroBasico('Todas', 0, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
-            _chipFiltroBasico('Públicas', 1, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
-            _chipFiltroBasico('Privadas', 2, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
-            _chipFiltroBasico('Mis creaciones', 3, _filtroComunidades, (v) => setState(() => _filtroComunidades = v)),
+            _chipFiltroBasico(
+              'Todas',
+              0,
+              _filtroComunidades,
+              (v) => setState(() => _filtroComunidades = v),
+            ),
+            _chipFiltroBasico(
+              'Públicas',
+              1,
+              _filtroComunidades,
+              (v) => setState(() => _filtroComunidades = v),
+            ),
+            _chipFiltroBasico(
+              'Privadas',
+              2,
+              _filtroComunidades,
+              (v) => setState(() => _filtroComunidades = v),
+            ),
+            _chipFiltroBasico(
+              'Mis creaciones',
+              3,
+              _filtroComunidades,
+              (v) => setState(() => _filtroComunidades = v),
+            ),
           ],
         ),
       ),
@@ -292,8 +318,18 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _chipFiltroBasico('Todas', 0, _filtroSalidas, (v) => setState(() => _filtroSalidas = v)),
-            _chipFiltroBasico('Mis creaciones', 1, _filtroSalidas, (v) => setState(() => _filtroSalidas = v)),
+            _chipFiltroBasico(
+              'Todas',
+              0,
+              _filtroSalidas,
+              (v) => setState(() => _filtroSalidas = v),
+            ),
+            _chipFiltroBasico(
+              'Mis creaciones',
+              1,
+              _filtroSalidas,
+              (v) => setState(() => _filtroSalidas = v),
+            ),
           ],
         ),
       ),
@@ -408,9 +444,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(top: 48),
-            child: Center(
-              child: CircularProgressIndicator(color: PaletaRutas.oro),
-            ),
+            child: CargadorHaku.contenido(mensaje: 'Cargando publicaciones…'),
           ),
         ),
       ];
@@ -486,9 +520,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
-            child: const Center(
-              child: CircularProgressIndicator(color: PaletaRutas.oro),
-            ),
+            child: const CargadorHaku.contenido(mensaje: 'Buscando salidas…'),
           ),
         ),
       ];
@@ -573,8 +605,8 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(24, 48, 24, bottom),
-            child: const Center(
-              child: CircularProgressIndicator(color: PaletaRutas.oro),
+            child: const CargadorHaku.contenido(
+              mensaje: 'Cargando comunidades…',
             ),
           ),
         ),
@@ -686,9 +718,7 @@ class _EstadoPantallaComunidad extends ConsumerState<PantallaComunidad> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(top: 48),
-            child: Center(
-              child: CircularProgressIndicator(color: PaletaRutas.oro),
-            ),
+            child: CargadorHaku.contenido(mensaje: 'Cargando mensajes…'),
           ),
         ),
       ];

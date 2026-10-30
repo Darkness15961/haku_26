@@ -5,14 +5,27 @@ import 'package:flutter/services.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
 /// Splash corto — entra directo al shell (sin onboarding).
 class PantallaCargaInicial extends StatefulWidget {
   final Widget siguientePantalla;
+  final Future<void>? preparacion;
+  final Future<void> Function()? preparar;
+  final Widget? pantallaError;
 
-  const PantallaCargaInicial({required this.siguientePantalla, super.key});
+  const PantallaCargaInicial({
+    required this.siguientePantalla,
+    this.preparacion,
+    this.preparar,
+    this.pantallaError,
+    super.key,
+  }) : assert(
+         preparacion == null || preparar == null,
+         'Usa preparacion o preparar, no ambos.',
+       );
 
   @override
   State<PantallaCargaInicial> createState() => _EstadoPantallaCargaInicial();
@@ -21,9 +34,14 @@ class PantallaCargaInicial extends StatefulWidget {
 class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     with SingleTickerProviderStateMixin {
   static const _duracion = Duration(milliseconds: 900);
+  static const _margenPrimerFrame = Duration(milliseconds: 200);
 
   Timer? _temporizador;
+  Timer? _temporizadorPreparacion;
   bool _navegacionRealizada = false;
+  bool _esperaMinimaCumplida = false;
+  bool _preparacionCompleta = false;
+  Object? _errorPreparacion;
   late final AnimationController _entrada;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
@@ -41,11 +59,48 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entrada, curve: Curves.easeOutCubic));
     _entrada.forward();
-    _temporizador = Timer(_duracion, _continuar);
+    _preparacionCompleta =
+        widget.preparacion == null && widget.preparar == null;
+    final preparacion = widget.preparacion;
+    if (preparacion != null) {
+      _observarPreparacion(preparacion);
+    } else if (widget.preparar != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _temporizadorPreparacion = Timer(_margenPrimerFrame, () {
+          if (!mounted) return;
+          _observarPreparacion(widget.preparar!());
+        });
+      });
+    }
+    _temporizador = Timer(_duracion, () {
+      _esperaMinimaCumplida = true;
+      _intentarContinuar();
+    });
   }
 
-  void _continuar() {
-    if (!mounted || _navegacionRealizada) return;
+  void _observarPreparacion(Future<void> preparacion) {
+    preparacion.then<void>(
+      (_) {
+        if (!mounted) return;
+        _preparacionCompleta = true;
+        _intentarContinuar();
+      },
+      onError: (Object error, StackTrace _) {
+        if (!mounted) return;
+        setState(() => _errorPreparacion = error);
+      },
+    );
+  }
+
+  void _intentarContinuar() {
+    if (!mounted ||
+        _navegacionRealizada ||
+        !_esperaMinimaCumplida ||
+        !_preparacionCompleta ||
+        _errorPreparacion != null) {
+      return;
+    }
     _navegacionRealizada = true;
 
     Navigator.of(context).pushReplacement(
@@ -62,12 +117,17 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
   @override
   void dispose() {
     _temporizador?.cancel();
+    _temporizadorPreparacion?.cancel();
     _entrada.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_errorPreparacion != null && widget.pantallaError != null) {
+      return widget.pantallaError!;
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -123,6 +183,12 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
                             borderRadius: BorderRadius.circular(1),
                           ),
                         ),
+                        const SizedBox(height: 22),
+                        const CargadorHaku(
+                          mensaje: null,
+                          tamano: 112,
+                          centrado: false,
+                        ),
                       ],
                     ),
                   ),
@@ -150,7 +216,7 @@ class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
-                onTap: _continuar,
+                onTap: _intentarContinuar,
               ),
             ),
           ],

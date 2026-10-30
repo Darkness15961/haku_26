@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
@@ -102,9 +104,7 @@ class _EstadoPerfilParticipanteChat
               future: _perfil,
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: PaletaRutas.oro),
-                  );
+                  return const CargadorHaku.pagina(mensaje: 'Cargando perfil…');
                 }
                 final perfil = snap.data;
                 if (perfil == null) {

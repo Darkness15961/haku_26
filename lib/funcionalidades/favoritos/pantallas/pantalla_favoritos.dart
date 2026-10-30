@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../comunidad/widgets/tarjeta_publicacion_remota.dart';
@@ -41,7 +42,8 @@ class PantallaFavoritos extends ConsumerWidget {
     final bool estaCargando =
         rutasAsync.isLoading || lugaresAsync.isLoading || pubsAsync.isLoading;
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
-    final vacio = rutas.isEmpty && lugares.isEmpty && posts.isEmpty && !estaCargando;
+    final vacio =
+        rutas.isEmpty && lugares.isEmpty && posts.isEmpty && !estaCargando;
 
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
@@ -102,10 +104,10 @@ class PantallaFavoritos extends ConsumerWidget {
                       ],
                     )
                   : estaCargando && vacio
-                      ? const Center(
-                          child: CircularProgressIndicator(color: PaletaRutas.oro),
-                        )
-                      : ListView(
+                  ? const CargadorHaku.pagina(
+                      mensaje: 'Reuniendo tus favoritos…',
+                    )
+                  : ListView(
                       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
                       children: [
                         if (lugares.isNotEmpty) ...[
@@ -173,9 +175,7 @@ class PantallaFavoritos extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
                           for (var i = 0; i < posts.length; i++) ...[
-                            _TilePublicacionGuardada(
-                              publicacion: posts[i],
-                            ),
+                            _TilePublicacionGuardada(publicacion: posts[i]),
                             const SizedBox(height: 10),
                           ],
                         ],
@@ -194,11 +194,7 @@ class _TileRuta extends StatelessWidget {
   final String? imagen;
   final VoidCallback? onTap;
 
-  const _TileRuta({
-    required this.titulo,
-    this.imagen,
-    this.onTap,
-  });
+  const _TileRuta({required this.titulo, this.imagen, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +350,9 @@ class _TilePublicacionGuardada extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TipografiaHaku.interfaz(
                         fontSize: 13,
-                        color: sinTexto ? PaletaRutas.plomo : PaletaRutas.plomoClaro,
+                        color: sinTexto
+                            ? PaletaRutas.plomo
+                            : PaletaRutas.plomoClaro,
                       ),
                     ),
                   ],

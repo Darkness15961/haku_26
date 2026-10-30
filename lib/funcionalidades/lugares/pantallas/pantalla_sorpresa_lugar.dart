@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../publicaciones/pantallas/pantalla_crear_publicacion.dart';
@@ -76,9 +77,7 @@ class PantallaSorpresaLugar extends ConsumerWidget {
           backgroundColor: PaletaRutas.ink,
           foregroundColor: PaletaRutas.piedra,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(color: PaletaRutas.oro),
-        ),
+        body: const CargadorHaku.pagina(mensaje: 'Preparando tu sorpresa…'),
       ),
       error: (_, __) => Scaffold(
         backgroundColor: PaletaRutas.ink,
@@ -125,8 +124,9 @@ class PantallaSorpresaLugar extends ConsumerWidget {
       publicaciones,
       lugarId: lugar.id,
     );
-    final calificacionMostrar =
-        metricas.calificacionMostrar(lugar.calificacion);
+    final calificacionMostrar = metricas.calificacionMostrar(
+      lugar.calificacion,
+    );
     final frase = mensajeDestinoSorpresa(lugar);
     final eco = subtituloDestino(lugar);
 
@@ -297,9 +297,7 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: PaletaRutas.carbon,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: PaletaRutas.plomoOscuro,
-                          ),
+                          border: Border.all(color: PaletaRutas.plomoOscuro),
                         ),
                         child: Text(
                           lugar.nivelExploracion.etiqueta,
@@ -326,12 +324,8 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-
                       if (lugar.altitud.isNotEmpty)
-                        _ChipOscuro(
-                          Icons.landscape_outlined,
-                          lugar.altitud,
-                        ),
+                        _ChipOscuro(Icons.landscape_outlined, lugar.altitud),
                       if (lugar.provincia.isNotEmpty)
                         _ChipOscuro(Icons.map_outlined, lugar.provincia),
                     ],
@@ -343,9 +337,8 @@ class PantallaSorpresaLugar extends ConsumerWidget {
                       if (!ok || !context.mounted) return;
                       await Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => PantallaCrearPublicacion(
-                            lugarInicial: lugar,
-                          ),
+                          builder: (_) =>
+                              PantallaCrearPublicacion(lugarInicial: lugar),
                         ),
                       );
                     },

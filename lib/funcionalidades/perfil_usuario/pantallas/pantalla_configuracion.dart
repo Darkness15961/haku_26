@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -650,10 +652,8 @@ class _EstadoPantallaConfiguracion
               ),
               Expanded(
                 child: _cargando
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: PaletaRutas.oro,
-                        ),
+                    ? const CargadorHaku.pagina(
+                        mensaje: 'Cargando configuración…',
                       )
                     : ListView(
                         padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),

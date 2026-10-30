@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
@@ -40,7 +41,8 @@ class PantallaPerfilUsuario extends ConsumerStatefulWidget {
       _EstadoPantallaPerfilUsuario();
 }
 
-class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> {
+class _EstadoPantallaPerfilUsuario
+    extends ConsumerState<PantallaPerfilUsuario> {
   static const _avatarUrl = CatalogoImagenesHaku.avatar;
 
   _SeccionPerfil _seccion = _SeccionPerfil.perfil;
@@ -163,13 +165,15 @@ class _EstadoPantallaPerfilUsuario extends ConsumerState<PantallaPerfilUsuario> 
                             ? _ContenidoPerfil(
                                 key: const ValueKey('perfil'),
                                 aportaciones: aportaciones,
-                                cargando: aportacionesAsync.isLoading &&
+                                cargando:
+                                    aportacionesAsync.isLoading &&
                                     !aportacionesAsync.hasValue,
                               )
                             : _ContenidoPublicaciones(
                                 key: const ValueKey('contenido'),
                                 publicaciones: misPosts,
-                                cargando: aportacionesAsync.isLoading &&
+                                cargando:
+                                    aportacionesAsync.isLoading &&
                                     !aportacionesAsync.hasValue,
                               ),
                       ),
@@ -287,8 +291,9 @@ class _PortadaPerfil extends StatelessWidget {
     );
 
     final info = Column(
-      crossAxisAlignment:
-          horizontal ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment: horizontal
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
         Text(
           nombre,
@@ -314,9 +319,7 @@ class _PortadaPerfil extends StatelessWidget {
           decoration: BoxDecoration(
             color: PaletaRutas.oro.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: PaletaRutas.oro.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: PaletaRutas.oro.withValues(alpha: 0.35)),
           ),
           child: Text(
             '$posts publicaciones · Cusco',
@@ -420,9 +423,7 @@ class _IconoSeccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = seleccionado
-        ? PaletaRutas.oro
-        : PaletaRutas.plomoClaro;
+    final color = seleccionado ? PaletaRutas.oro : PaletaRutas.plomoClaro;
 
     return Tooltip(
       message: tooltip,
@@ -440,9 +441,7 @@ class _IconoSeccion extends StatelessWidget {
               height: 2.5,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: seleccionado
-                    ? PaletaRutas.oro
-                    : Colors.transparent,
+                color: seleccionado ? PaletaRutas.oro : Colors.transparent,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -501,20 +500,16 @@ class _ContenidoPerfil extends ConsumerWidget {
     }
 
     Future<void> abrirMisRutas() async {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const PantallaMisRutas(),
-        ),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const PantallaMisRutas()));
       notificarRutasCambiaron(ref);
       ref.invalidate(aportacionesPerfilProvider);
     }
 
     Future<void> crearRuta() async {
       final creada = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (_) => const PantallaCrearRuta(),
-        ),
+        MaterialPageRoute<bool>(builder: (_) => const PantallaCrearRuta()),
       );
       if (creada == true) {
         notificarRutasCambiaron(ref);
@@ -576,8 +571,8 @@ class _ContenidoPerfil extends ConsumerWidget {
               titulo: p.contenido.trim().isEmpty
                   ? 'Publicación'
                   : (p.contenido.length > 80
-                      ? '${p.contenido.substring(0, 80)}…'
-                      : p.contenido),
+                        ? '${p.contenido.substring(0, 80)}…'
+                        : p.contenido),
               subtitulo: p.hace,
               imagenUrl: p.imagenUrl,
               icono: Icons.photo_camera_outlined,
@@ -602,8 +597,7 @@ class _ContenidoPerfil extends ConsumerWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) =>
-                        PantallaDetalleSalidaRemota(salidaId: s.id),
+                    builder: (_) => PantallaDetalleSalidaRemota(salidaId: s.id),
                   ),
                 );
               },
@@ -694,10 +688,7 @@ class _ContenidoPerfil extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 14,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           decoration: FondosDetalleHaku.tarjeta(indice: 1),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,10 +836,7 @@ class _VacioRutasPerfil extends StatelessWidget {
                 color: PaletaRutas.oro.withValues(alpha: 0.28),
               ),
             ),
-            child: const Icon(
-              Icons.route_outlined,
-              color: PaletaRutas.oro,
-            ),
+            child: const Icon(Icons.route_outlined, color: PaletaRutas.oro),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1130,10 +1118,8 @@ class _ContenidoPublicaciones extends StatelessWidget {
   Widget build(BuildContext context) {
     if (cargando && publicaciones.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: CircularProgressIndicator(color: PaletaRutas.oro),
-        ),
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: CargadorHaku.contenido(mensaje: 'Cargando publicaciones…'),
       );
     }
 
@@ -1186,8 +1172,7 @@ class _ContenidoPublicaciones extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final p in publicaciones)
-          _CeldaPublicacionPerfil(publicacion: p),
+        for (final p in publicaciones) _CeldaPublicacionPerfil(publicacion: p),
       ],
     );
   }
@@ -1232,7 +1217,9 @@ class _CeldaPublicacionPerfil extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(width: 40), // Balance visual para centrar el agarre
+                      const SizedBox(
+                        width: 40,
+                      ), // Balance visual para centrar el agarre
                       Container(
                         width: 36,
                         height: 4,
@@ -1397,9 +1384,7 @@ class _PedacitoRutaPerfil extends StatelessWidget {
                   errorBuilder: (_, __, ___) =>
                       const ColoredBox(color: PaletaRutas.carbon),
                 ),
-                ColoredBox(
-                  color: PaletaRutas.ink.withValues(alpha: 0.48),
-                ),
+                ColoredBox(color: PaletaRutas.ink.withValues(alpha: 0.48)),
                 // Contorno suave, mismo lenguaje que las stats.
                 DecoratedBox(
                   decoration: BoxDecoration(

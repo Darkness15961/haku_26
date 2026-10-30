@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../chat/indice.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 
@@ -20,7 +21,8 @@ class PantallaChatComunidad extends ConsumerStatefulWidget {
       _EstadoPantallaChatComunidad();
 }
 
-class _EstadoPantallaChatComunidad extends ConsumerState<PantallaChatComunidad> {
+class _EstadoPantallaChatComunidad
+    extends ConsumerState<PantallaChatComunidad> {
   @override
   void initState() {
     super.initState();
@@ -41,9 +43,7 @@ class _EstadoPantallaChatComunidad extends ConsumerState<PantallaChatComunidad> 
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: PaletaRutas.ink,
-      body: const Center(
-        child: CircularProgressIndicator(color: PaletaRutas.oro),
-      ),
+      body: const CargadorHaku.pagina(mensaje: 'Abriendo el chat…'),
     );
   }
 }

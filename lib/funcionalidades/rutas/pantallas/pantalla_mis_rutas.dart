@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../dominio/modelos/modelo_ruta_propia.dart';
 import '../proveedores/proveedor_rutas.dart';
@@ -246,9 +247,7 @@ class _EstadoPantallaMisRutas extends ConsumerState<PantallaMisRutas>
         ),
       ),
       body: async.isLoading && !async.hasValue
-          ? const Center(
-              child: CircularProgressIndicator(color: PaletaRutas.oro),
-            )
+          ? const CargadorHaku.pagina(mensaje: 'Cargando tus rutas…')
           : async.hasError && !async.hasValue
           ? _EstadoVacioMisRutas(
               titulo: 'No pudimos cargar tus Rutas',
@@ -340,7 +339,9 @@ class _ListaMisRutas extends StatelessWidget {
           onEliminar: onEliminar == null || procesando
               ? null
               : () => onEliminar!(propia),
-          onAbrir: onAbrir == null || procesando ? null : () => onAbrir!(propia),
+          onAbrir: onAbrir == null || procesando
+              ? null
+              : () => onAbrir!(propia),
         );
       },
     );

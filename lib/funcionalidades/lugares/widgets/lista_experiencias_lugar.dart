@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/avatar_haku.dart';
@@ -43,12 +44,7 @@ class ListaExperienciasLugar extends ConsumerWidget {
     if (async.isLoading && !async.hasValue) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 18),
-        child: Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: PaletaRutas.oro,
-          ),
-        ),
+        child: CargadorHaku.contenido(mensaje: 'Cargando experiencias…'),
       );
     }
     if (async.hasError && !async.hasValue) {
@@ -86,10 +82,7 @@ class ListaExperienciasLugar extends ConsumerWidget {
             onTap: () async {
               final ok = await asegurarSesion(context, ref);
               if (!ok || !context.mounted) return;
-              await abrirComentariosPublicacionRemota(
-                context,
-                publicacion: p,
-              );
+              await abrirComentariosPublicacionRemota(context, publicacion: p);
             },
           ),
       ],
@@ -110,10 +103,11 @@ class TarjetaExperienciaLugarRemota extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine if it's group
-    final esGrupo = publicacion.salidaId != null && publicacion.salidaId!.isNotEmpty;
+    final esGrupo =
+        publicacion.salidaId != null && publicacion.salidaId!.isNotEmpty;
     final grupo = publicacion.salidaNombre?.trim() ?? '';
     final imagen = publicacion.imagenUrl?.trim();
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -137,14 +131,18 @@ class TarjetaExperienciaLugarRemota extends StatelessWidget {
                       fit: BoxFit.cover,
                     ),
                   ),
-                if (imagen != null && imagen.isNotEmpty) const SizedBox(width: 12),
+                if (imagen != null && imagen.isNotEmpty)
+                  const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          AvatarHaku(url: publicacion.autorFotoPerfil, size: 28),
+                          AvatarHaku(
+                            url: publicacion.autorFotoPerfil,
+                            size: 28,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -182,13 +180,17 @@ class TarjetaExperienciaLugarRemota extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              publicacion.contenido.isEmpty ? 'Publicación visual' : publicacion.contenido,
+                              publicacion.contenido.isEmpty
+                                  ? 'Publicación visual'
+                                  : publicacion.contenido,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TipografiaHaku.interfaz(
                                 fontSize: 13,
                                 height: 1.35,
-                                color: publicacion.contenido.isEmpty ? PaletaRutas.plomo : PaletaRutas.plomoClaro,
+                                color: publicacion.contenido.isEmpty
+                                    ? PaletaRutas.plomo
+                                    : PaletaRutas.plomoClaro,
                               ),
                             ),
                           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../../nucleo/widgets/imagen_haku.dart';
@@ -42,10 +43,9 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
   void _toggleMenu() => setState(() => _menuAbierto = !_menuAbierto);
 
   void _avisar(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(mensaje),
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje), behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _toggleFavorito(ModeloLugar lugar) async {
@@ -89,9 +89,7 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
           backgroundColor: PaletaRutas.ink,
           foregroundColor: PaletaRutas.piedra,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(color: PaletaRutas.oro),
-        ),
+        body: const CargadorHaku.pagina(mensaje: 'Preparando este lugar…'),
       ),
       error: (_, __) => Scaffold(
         backgroundColor: PaletaRutas.ink,
@@ -178,7 +176,9 @@ class _EstadoPantallaDetalleLugar extends ConsumerState<PantallaDetalleLugar> {
                   if (!esAutor)
                     IconButton(
                       icon: Icon(
-                        _guardadoOptimista ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        _guardadoOptimista
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         color: _guardadoOptimista ? PaletaRutas.oro : null,
                       ),
                       onPressed: () => _toggleFavorito(lugar),
@@ -429,8 +429,6 @@ class _ChipClasificacion extends StatelessWidget {
   }
 }
 
-
-
 class _FilaDato extends StatelessWidget {
   const _FilaDato(this.icono, this.etiqueta, this.valor);
 
@@ -473,4 +471,3 @@ class _FilaDato extends StatelessWidget {
 }
 
 // abrirDetalleLugar vive en ../navegacion_lugar.dart (exportado arriba).
-

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/widgets/imagen_haku.dart';
@@ -101,7 +103,10 @@ class _EstadoPantallaDetalleSalidaRemota
               style: FilledButton.styleFrom(backgroundColor: PaletaRutas.oro),
               child: const Text(
                 'Acepto',
-                style: TextStyle(color: PaletaRutas.ink, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: PaletaRutas.ink,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -179,7 +184,8 @@ class _EstadoPantallaDetalleSalidaRemota
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => PantallaConfiguracionSalida(salida: s),
+                            builder: (_) =>
+                                PantallaConfiguracionSalida(salida: s),
                           ),
                         );
                       },
@@ -193,9 +199,8 @@ class _EstadoPantallaDetalleSalidaRemota
         ],
       ),
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: PaletaRutas.oro),
-        ),
+        loading: () =>
+            const CargadorHaku.pagina(mensaje: 'Preparando la salida…'),
         error: (_, __) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -230,7 +235,8 @@ class _EstadoPantallaDetalleSalidaRemota
           final foto = s.lugarFotoPortada?.trim() ?? '';
           final inscrito = s.inscrito(uid);
           final esOrganizador = s.organizadorId == uid;
-          final puedeInscribir = s.estado == 'programada' &&
+          final puedeInscribir =
+              s.estado == 'programada' &&
               (inscrito || (s.inscripcionAbierta && !s.llena));
 
           return ListView(
@@ -451,8 +457,8 @@ class _EstadoPantallaDetalleSalidaRemota
                   s.llena && !inscrito
                       ? 'Sin cupos disponibles.'
                       : (!s.inscripcionAbierta && !inscrito)
-                          ? 'Las inscripciones están cerradas.'
-                          : 'Inscripción no disponible (${s.estado}).',
+                      ? 'Las inscripciones están cerradas.'
+                      : 'Inscripción no disponible (${s.estado}).',
                   textAlign: TextAlign.center,
                   style: TipografiaHaku.interfaz(color: PaletaRutas.plomoClaro),
                 ),

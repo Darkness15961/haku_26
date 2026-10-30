@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/supabase/cliente_supabase.dart';
@@ -126,12 +128,16 @@ class _EstadoPantallaDetalleComunidad
             return;
           }
         }
-        
+
         await ds.unirse(c.id, conocida: c);
         notificarComunidadesCambiaron(ref);
-        
+
         if (mounted && c.esPrivada) {
-          mostrarSnackHaku(context, 'Solicitud enviada exitosamente', destacado: true);
+          mostrarSnackHaku(
+            context,
+            'Solicitud enviada exitosamente',
+            destacado: true,
+          );
         }
       }
     } on AuthException catch (e) {
@@ -183,9 +189,7 @@ class _EstadoPantallaDetalleComunidad
           foregroundColor: PaletaRutas.piedra,
           elevation: 0,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(color: PaletaRutas.oro),
-        ),
+        body: const CargadorHaku.pagina(mensaje: 'Preparando la comunidad…'),
       );
     }
 
@@ -517,11 +521,8 @@ class _EstadoPantallaDetalleComunidad
                         !publicacionesAsync.hasValue)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: PaletaRutas.oro,
-                            strokeWidth: 2,
-                          ),
+                        child: CargadorHaku.contenido(
+                          mensaje: 'Cargando publicaciones…',
                         ),
                       )
                     else if (publicacionesAsync.hasError &&
@@ -563,11 +564,8 @@ class _EstadoPantallaDetalleComunidad
                     if (miembrosAsync.isLoading && !miembrosAsync.hasValue)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: PaletaRutas.oro,
-                            strokeWidth: 2,
-                          ),
+                        child: CargadorHaku.contenido(
+                          mensaje: 'Cargando miembros…',
                         ),
                       )
                     else if (miembrosAsync.hasError && !miembrosAsync.hasValue)

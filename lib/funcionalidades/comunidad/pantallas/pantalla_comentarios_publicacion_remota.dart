@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -92,9 +94,9 @@ class _EstadoComentariosPublicacionRemota
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _enviando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _enviando = false);
@@ -111,10 +113,7 @@ class _EstadoComentariosPublicacionRemota
         backgroundColor: PaletaRutas.carbon,
         title: Text(
           'Borrar comentario',
-          style: TipografiaHaku.titulo(
-            fontSize: 18,
-            color: PaletaRutas.piedra,
-          ),
+          style: TipografiaHaku.titulo(fontSize: 18, color: PaletaRutas.piedra),
         ),
         content: Text(
           '¿Lo quitas de esta publicación?',
@@ -153,9 +152,9 @@ class _EstadoComentariosPublicacionRemota
       notificarPublicacionesCambiaron(ref);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo borrar')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No se pudo borrar')));
     }
   }
 
@@ -213,146 +212,134 @@ class _EstadoComentariosPublicacionRemota
                 ),
                 Expanded(
                   child: _cargando
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: PaletaRutas.oro,
-                            strokeWidth: 2,
-                          ),
+                      ? const CargadorHaku.contenido(
+                          mensaje: 'Cargando comentarios…',
                         )
                       : _error != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _error!,
-                                      textAlign: TextAlign.center,
-                                      style: TipografiaHaku.interfaz(
-                                        color: PaletaRutas.plomoClaro,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextButton(
-                                      onPressed: _cargar,
-                                      child: Text(
-                                        'Reintentar',
-                                        style: TipografiaHaku.interfaz(
-                                          fontWeight: FontWeight.w700,
-                                          color: PaletaRutas.oro,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: TipografiaHaku.interfaz(
+                                    color: PaletaRutas.plomoClaro,
+                                  ),
                                 ),
-                              ),
-                            )
-                          : _comentarios.isEmpty
-                              ? Center(
+                                const SizedBox(height: 12),
+                                TextButton(
+                                  onPressed: _cargar,
                                   child: Text(
-                                    'Sé el primero en comentar.',
+                                    'Reintentar',
                                     style: TipografiaHaku.interfaz(
-                                      color: PaletaRutas.plomoClaro,
+                                      fontWeight: FontWeight.w700,
+                                      color: PaletaRutas.oro,
                                     ),
                                   ),
-                                )
-                              : ListView.separated(
-                                  controller: scroll,
-                                  padding:
-                                      const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                                  itemCount: _comentarios.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, i) {
-                                    final c = _comentarios[i];
-                                    final esMio = uid != null &&
-                                        uid == c.usuarioId;
-                                    final foto =
-                                        c.autorFotoPerfil?.trim() ?? '';
-                                    return Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (foto.isEmpty)
-                                          CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: PaletaRutas.ink,
-                                            child: Text(
-                                              c.etiquetaAutor.isNotEmpty
-                                                  ? c.etiquetaAutor
-                                                      .replaceAll('@', '')
-                                                      .substring(0, 1)
-                                                      .toUpperCase()
-                                                  : '?',
-                                              style: TipografiaHaku.interfaz(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                color: PaletaRutas.oro,
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          AvatarHaku(url: foto, size: 32),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              RichText(
-                                                text: TextSpan(
-                                                  children: [
-                                                    TextSpan(
-                                                      text: c.etiquetaAutor,
-                                                      style: TipografiaHaku
-                                                          .interfaz(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color:
-                                                            PaletaRutas.piedra,
-                                                      ),
-                                                    ),
-                                                    TextSpan(
-                                                      text: '  ${c.hace}',
-                                                      style: TipografiaHaku
-                                                          .interfaz(
-                                                        fontSize: 11,
-                                                        color:
-                                                            PaletaRutas.plomo,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                c.texto,
-                                                style: TipografiaHaku.interfaz(
-                                                  height: 1.35,
-                                                  color: PaletaRutas.piedra,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (esMio)
-                                          IconButton(
-                                            tooltip: 'Borrar',
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            onPressed: () => _borrar(c),
-                                            icon: Icon(
-                                              Icons.delete_outline_rounded,
-                                              size: 18,
-                                              color: PaletaRutas.plomo
-                                                  .withValues(alpha: 0.9),
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  },
                                 ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : _comentarios.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Sé el primero en comentar.',
+                            style: TipografiaHaku.interfaz(
+                              color: PaletaRutas.plomoClaro,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scroll,
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                          itemCount: _comentarios.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, i) {
+                            final c = _comentarios[i];
+                            final esMio = uid != null && uid == c.usuarioId;
+                            final foto = c.autorFotoPerfil?.trim() ?? '';
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (foto.isEmpty)
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: PaletaRutas.ink,
+                                    child: Text(
+                                      c.etiquetaAutor.isNotEmpty
+                                          ? c.etiquetaAutor
+                                                .replaceAll('@', '')
+                                                .substring(0, 1)
+                                                .toUpperCase()
+                                          : '?',
+                                      style: TipografiaHaku.interfaz(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: PaletaRutas.oro,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  AvatarHaku(url: foto, size: 32),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: c.etiquetaAutor,
+                                              style: TipografiaHaku.interfaz(
+                                                fontWeight: FontWeight.w700,
+                                                color: PaletaRutas.piedra,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: '  ${c.hace}',
+                                              style: TipografiaHaku.interfaz(
+                                                fontSize: 11,
+                                                color: PaletaRutas.plomo,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        c.texto,
+                                        style: TipografiaHaku.interfaz(
+                                          height: 1.35,
+                                          color: PaletaRutas.piedra,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (esMio)
+                                  IconButton(
+                                    tooltip: 'Borrar',
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => _borrar(c),
+                                    icon: Icon(
+                                      Icons.delete_outline_rounded,
+                                      size: 18,
+                                      color: PaletaRutas.plomo.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
                 SafeArea(
                   top: false,

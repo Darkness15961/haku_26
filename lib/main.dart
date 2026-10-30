@@ -8,36 +8,44 @@ import 'nucleo/configuracion/modo_ejecucion.dart';
 import 'nucleo/responsive/lienzo_haku.dart';
 import 'nucleo/supabase/cliente_supabase.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  Object? errorInicializacion;
-
-  if (!ConfigEntornoHaku.esDemo) {
-    try {
-      await inicializarSupabase();
-    } catch (e, st) {
-      errorInicializacion = e;
-      debugPrint('Supabase init: $e');
-      debugPrint('$st');
-      if (kDebugMode) {
-        debugPrint(
-          'Revisa URL / anon key en lib/nucleo/supabase/config_supabase.dart '
-          'o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY',
-        );
-      }
-    }
-  }
-
   runApp(
-    ProviderScope(
-      child: AplicacionHaku(errorInicializacion: errorInicializacion),
-    ),
+    ProviderScope(child: AplicacionHaku(prepararBackend: _prepararBackend)),
   );
 }
 
-class AplicacionHaku extends StatelessWidget {
-  const AplicacionHaku({super.key, this.errorInicializacion});
+Future<void> _prepararBackend() async {
+  if (ConfigEntornoHaku.esDemo) return;
 
+  try {
+    await inicializarSupabase();
+  } catch (e, st) {
+    debugPrint('Supabase init: $e');
+    debugPrint('$st');
+    if (kDebugMode) {
+      debugPrint(
+        'Revisa URL / anon key en lib/nucleo/supabase/config_supabase.dart '
+        'o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY',
+      );
+    }
+    rethrow;
+  }
+}
+
+class AplicacionHaku extends StatelessWidget {
+  const AplicacionHaku({
+    super.key,
+    this.preparacion,
+    this.prepararBackend,
+    this.errorInicializacion,
+  }) : assert(
+         preparacion == null || prepararBackend == null,
+         'Usa preparacion o prepararBackend, no ambos.',
+       );
+
+  final Future<void>? preparacion;
+  final Future<void> Function()? prepararBackend;
   final Object? errorInicializacion;
 
   @override
@@ -81,7 +89,12 @@ class AplicacionHaku extends StatelessWidget {
         );
       },
       home: errorInicializacion == null
-          ? const PantallaCargaInicial(siguientePantalla: PantallaInicio())
+          ? PantallaCargaInicial(
+              preparacion: preparacion,
+              preparar: prepararBackend,
+              pantallaError: const _PantallaBackendNoDisponible(),
+              siguientePantalla: const PantallaInicio(),
+            )
           : const _PantallaBackendNoDisponible(),
     );
   }

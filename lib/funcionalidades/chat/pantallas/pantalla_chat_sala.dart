@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -1047,9 +1049,7 @@ class _EstadoPantallaChatSala extends ConsumerState<PantallaChatSala>
 
   Widget _cuerpo(String uid, AsyncValue<List<ModeloMensajeChat>> async) {
     if (async.isLoading && !async.hasValue) {
-      return const Center(
-        child: CircularProgressIndicator(color: PaletaRutas.oro),
-      );
+      return const CargadorHaku.pagina(mensaje: 'Cargando conversación…');
     }
     if (async.hasError && !async.hasValue) {
       return Center(

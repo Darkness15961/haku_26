@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/widgets/avatar_haku.dart';
@@ -335,9 +337,7 @@ class _EstadoGestionParticipantesChat
             ),
           Expanded(
             child: _cargando
-                ? const Center(
-                    child: CircularProgressIndicator(color: PaletaRutas.oro),
-                  )
+                ? const CargadorHaku.pagina(mensaje: 'Cargando participantes…')
                 : _error != null
                 ? Center(
                     child: Padding(

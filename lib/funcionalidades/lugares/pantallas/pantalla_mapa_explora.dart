@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
@@ -334,9 +336,7 @@ class _EstadoPantallaMapaExplora extends ConsumerState<PantallaMapaExplora> {
               child: Stack(
                 children: [
                   if (!_contornoListo)
-                    const Center(
-                      child: CircularProgressIndicator(color: PaletaRutas.oro),
-                    )
+                    const CargadorHaku.pagina(mensaje: 'Preparando el mapa…')
                   else if (errorCerca != null)
                     Center(
                       child: Padding(

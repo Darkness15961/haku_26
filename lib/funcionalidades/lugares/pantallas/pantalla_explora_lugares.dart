@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../nucleo/widgets/cargador_haku.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
@@ -249,10 +251,8 @@ class _EstadoPantallaExploraLugares
               ),
               Expanded(
                 child: cargando
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: PaletaRutas.oro,
-                        ),
+                    ? const CargadorHaku.pagina(
+                        mensaje: 'Descubriendo lugares…',
                       )
                     : error != null
                     ? Center(

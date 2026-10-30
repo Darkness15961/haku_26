@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../dominio/modelo_salida.dart';
@@ -83,9 +84,7 @@ class PantallaSalidas extends ConsumerWidget {
       ),
       body: () {
         if (async.isLoading && !async.hasValue) {
-          return const Center(
-            child: CircularProgressIndicator(color: PaletaRutas.oro),
-          );
+          return const CargadorHaku.pagina(mensaje: 'Buscando salidas…');
         }
         if (async.hasError && !async.hasValue) {
           return Center(

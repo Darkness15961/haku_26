@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
-import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
+import '../../../nucleo/widgets/cargador_haku.dart';
 import '../../chat/proveedores/proveedor_chat.dart';
-import '../../lugares/datos/lugares_datasource_local.dart';
 import '../../lugares/dominio/modelos/modelo_lugar.dart';
 import '../../lugares/pantallas/pantalla_detalle_lugar.dart';
 import '../../lugares/proveedores/proveedor_lugares.dart';
@@ -19,8 +18,10 @@ import '../../rutas/pantallas/pantalla_detalle_ruta.dart';
 import '../../rutas/proveedores/proveedor_rutas.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
 import '../../inicio/proveedores/proveedor_navegacion_inicio.dart';
+import '../datos/feed_inicio_datasource_local.dart';
 import '../proveedores/proveedor_comunidad_ui.dart';
 import '../proveedores/proveedor_almacen_feed.dart';
+import '../proveedores/proveedor_datos_inicio_hoy.dart';
 import '../widgets/card_escapada_comunidad.dart';
 import '../widgets/carrusel_rutas_recomendadas.dart';
 import '../widgets/portada_inicio_cultura.dart';
@@ -209,21 +210,32 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
 
   @override
   Widget build(BuildContext context) {
+    final datosAsync = ref.watch(datosInicioHoyProvider);
+    final datos = datosAsync.valueOrNull;
+
+    if (datos == null) {
+      if (datosAsync.hasError) {
+        return _EstadoErrorInicioHoy(onReintentar: _reintentarCarga);
+      }
+      return const _CargaInicioHoy();
+    }
+
     final bottomPad = EspacioHaku.bottomNavClearance(context);
     final mensajesNoLeidos = ref.watch(totalNoLeidosChatProvider);
-    final publicacionesLocales = ref.watch(almacenFeedProvider).publicaciones;
-    final indice = supabaseListo
+    final publicacionesLocales = datos.esDemo
+        ? ref.watch(almacenFeedProvider).publicaciones
+        : const <PublicacionFeed>[];
+    final indice = datos.esDemo
+        ? MetricasComunidad.indiceLugares(publicacionesLocales)
         // El feed remoto está paginado: no presentar una página como total.
-        ? IndiceMetricasLugares.vacio
-        : MetricasComunidad.indiceLugares(publicacionesLocales);
-    final indiceRutas = supabaseListo
+        : IndiceMetricasLugares.vacio;
+    final indiceRutas = datos.esDemo
+        ? MetricasComunidad.indiceRutas(publicacionesLocales)
         // Aún no existe una valoración remota de rutas: no inventar puntajes.
-        ? IndiceMetricasRutas.vacio
-        : MetricasComunidad.indiceRutas(publicacionesLocales);
+        : IndiceMetricasRutas.vacio;
     final exploradoresPorLugar = indice.exploradores;
     final calificacionPorLugar = indice.calificaciones;
-    final catalogoRutas =
-        ref.watch(rutasPublicadasProvider).valueOrNull ?? const <ModeloRuta>[];
+    final catalogoRutas = datos.rutas;
     final todasRutas = MetricasComunidad.enriquecerRutas(
       catalogoRutas,
       indiceRutas,
@@ -237,10 +249,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     final caminos = todasRutas
         .where((r) => r.categoria != CategoriaRuta.cultura)
         .toList();
-    final lugares = supabaseListo
-        ? (ref.watch(lugaresRemotosProvider).valueOrNull ??
-              const <ModeloLugar>[])
-        : LugaresDataSourceLocal.instancia.todos();
+    final lugares = datos.lugares;
 
     // Carrusel hero: solo lo mágico / misterioso / místico
     final cuscoMagico =
@@ -538,6 +547,7 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 rutas: heroMagico.isNotEmpty
                     ? heroMagico
                     : (culturales.isNotEmpty ? culturales : caminos),
+                mostrarFallback: datos.esDemo,
                 onExplorar: () {
                   final ctx = _keys['aventura']?.currentContext;
                   if (ctx != null) {
@@ -598,6 +608,91 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _reintentarCarga() {
+    ref.invalidate(rutasPublicadasProvider);
+    ref.invalidate(lugaresRemotosProvider);
+    ref.invalidate(datosInicioHoyProvider);
+  }
+}
+
+class _CargaInicioHoy extends StatelessWidget {
+  const _CargaInicioHoy();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: const ValueKey('inicio-hoy-cargando'),
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: EspacioHaku.bottomNavClearance(context),
+          ),
+          child: const CargadorHaku.pagina(
+            mensaje: 'Descubriendo experiencias para ti…',
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EstadoErrorInicioHoy extends StatelessWidget {
+  const _EstadoErrorInicioHoy({required this.onReintentar});
+
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: const ValueKey('inicio-hoy-error'),
+      backgroundColor: PaletaRutas.ink,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 46,
+                  color: PaletaRutas.plomoClaro,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No pudimos cargar Hoy',
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.titulo(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                    color: PaletaRutas.piedra,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Revisa tu conexión e inténtalo nuevamente.',
+                  textAlign: TextAlign.center,
+                  style: TipografiaHaku.interfaz(
+                    fontSize: 13,
+                    color: PaletaRutas.plomoClaro,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: onReintentar,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
