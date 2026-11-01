@@ -5,6 +5,7 @@ import '../datos/lugar_datasource_supabase.dart';
 import '../datos/lugares_datasource_local.dart';
 import '../datos/territorio_datasource_supabase.dart';
 import '../dominio/modelos/modelo_lugar.dart';
+import '../dominio/modelos/modelo_lugar_propio.dart';
 import '../dominio/modelos/modelo_territorio.dart';
 
 /// Catálogo local (legacy / demos; Explora ya no lo usa para listar).
@@ -12,7 +13,9 @@ final lugaresDataSourceProvider = Provider<LugaresDataSourceLocal>((ref) {
   return LugaresDataSourceLocal.instancia;
 });
 
-final territorioDataSourceProvider = Provider<TerritorioDataSourceSupabase>((ref) {
+final territorioDataSourceProvider = Provider<TerritorioDataSourceSupabase>((
+  ref,
+) {
   return TerritorioDataSourceSupabase();
 });
 
@@ -23,35 +26,49 @@ final lugarRemotoDataSourceProvider = Provider<LugarDataSourceSupabase>((ref) {
 /// Tick para forzar refresh tras mutaciones.
 final lugaresVersionProvider = StateProvider<int>((ref) => 0);
 
-final interesesUsuarioProvider =
-    StateProvider<Set<CategoriaLugar>>((ref) => {});
+final interesesUsuarioProvider = StateProvider<Set<CategoriaLugar>>(
+  (ref) => {},
+);
 
 /// Provincias Cusco remotas (códigos alineados a assets).
-final provinciasRemotasProvider =
-    FutureProvider<List<ModeloProvinciaDb>>((ref) async {
+final provinciasRemotasProvider = FutureProvider<List<ModeloProvinciaDb>>((
+  ref,
+) async {
   if (!supabaseListo) return const [];
   return ref.read(territorioDataSourceProvider).listarProvinciasCusco();
 });
 
-final categoriasLugarRemotasProvider =
-    FutureProvider<List<ModeloCategoriaDb>>((ref) async {
+final categoriasLugarRemotasProvider = FutureProvider<List<ModeloCategoriaDb>>((
+  ref,
+) async {
   if (!supabaseListo) return const [];
   return ref.read(territorioDataSourceProvider).listarCategoriasLugar();
 });
 
 final distritosPorProvinciaProvider =
-    FutureProvider.family<List<ModeloDistritoDb>, int>((ref, provinciaId) async {
-  if (!supabaseListo || provinciaId <= 0) return const [];
-  return ref
-      .read(territorioDataSourceProvider)
-      .listarDistritos(provinciaId: provinciaId);
-});
+    FutureProvider.family<List<ModeloDistritoDb>, int>((
+      ref,
+      provinciaId,
+    ) async {
+      if (!supabaseListo || provinciaId <= 0) return const [];
+      return ref
+          .read(territorioDataSourceProvider)
+          .listarDistritos(provinciaId: provinciaId);
+    });
 
 /// Fuente de verdad Explora: solo Supabase (vacío honesto si no hay filas).
 final lugaresRemotosProvider = FutureProvider<List<ModeloLugar>>((ref) async {
   ref.watch(lugaresVersionProvider);
   if (!supabaseListo) return const [];
   return ref.read(lugarRemotoDataSourceProvider).listarActivos();
+});
+
+final misLugaresProvider = FutureProvider.autoDispose<List<ModeloLugarPropio>>((
+  ref,
+) async {
+  ref.watch(lugaresVersionProvider);
+  if (!supabaseListo) return const [];
+  return ref.read(lugarRemotoDataSourceProvider).listarPropios();
 });
 
 final lugaresListaProvider = Provider<List<ModeloLugar>>((ref) {
@@ -71,8 +88,10 @@ final lugaresErrorProvider = Provider<Object?>((ref) {
   return async.whenOrNull(error: (e, _) => e);
 });
 
-final lugarDetalleProvider =
-    FutureProvider.family<ModeloLugar?, String>((ref, id) async {
+final lugarDetalleProvider = FutureProvider.family<ModeloLugar?, String>((
+  ref,
+  id,
+) async {
   final lista = ref.watch(lugaresListaProvider);
   for (final l in lista) {
     if (l.id == id) return l;
@@ -109,16 +128,20 @@ class ConsultaCercaLugares {
 }
 
 final lugaresCercaProvider =
-    FutureProvider.family<List<ModeloLugar>, ConsultaCercaLugares>(
-        (ref, q) async {
-  ref.watch(lugaresVersionProvider);
-  if (!supabaseListo) return const [];
-  return ref.read(lugarRemotoDataSourceProvider).listarCerca(
-        latitud: q.latitud,
-        longitud: q.longitud,
-        radioM: q.radioM,
-      );
-});
+    FutureProvider.family<List<ModeloLugar>, ConsultaCercaLugares>((
+      ref,
+      q,
+    ) async {
+      ref.watch(lugaresVersionProvider);
+      if (!supabaseListo) return const [];
+      return ref
+          .read(lugarRemotoDataSourceProvider)
+          .listarCerca(
+            latitud: q.latitud,
+            longitud: q.longitud,
+            radioM: q.radioM,
+          );
+    });
 
 void notificarLugaresCambiaron(WidgetRef ref) {
   ref.read(lugaresVersionProvider.notifier).state++;

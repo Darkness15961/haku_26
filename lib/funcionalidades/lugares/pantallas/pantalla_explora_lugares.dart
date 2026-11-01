@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../nucleo/recursos/copy_haku.dart';
 import '../../../nucleo/supabase/cliente_supabase.dart';
+import '../../autenticacion/navegacion_auth.dart';
 import '../../comunidad/proveedores/proveedor_publicaciones.dart';
 import '../../inicio/proveedores/proveedor_almacen_feed.dart';
 import '../../rutas/widgets/estilos_rutas.dart';
@@ -22,6 +23,7 @@ import '../widgets/mapa_islas_provincias.dart';
 import '../widgets/metricas_comunidad.dart';
 import 'pantalla_detalle_lugar.dart';
 import 'pantalla_mapa_explora.dart';
+import 'pantalla_mis_lugares.dart';
 import 'pantalla_registrar_lugar.dart';
 import 'pantalla_sorpresa_lugar.dart';
 
@@ -105,6 +107,14 @@ class _EstadoPantallaExploraLugares
     if (cambio == true) {
       notificarRutasCambiaron(ref);
     }
+  }
+
+  Future<void> _abrirMisLugares() async {
+    final ok = await asegurarSesion(context, ref);
+    if (!ok || !mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const PantallaMisLugares()),
+    );
   }
 
   Widget _vistaRutas() {
@@ -243,6 +253,14 @@ class _EstadoPantallaExploraLugares
                       onPressed: _abrirRutas,
                       icon: const Icon(
                         Icons.route_rounded,
+                        color: PaletaRutas.oro,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Mis lugares',
+                      onPressed: _abrirMisLugares,
+                      icon: const Icon(
+                        Icons.add_location_alt_outlined,
                         color: PaletaRutas.oro,
                       ),
                     ),

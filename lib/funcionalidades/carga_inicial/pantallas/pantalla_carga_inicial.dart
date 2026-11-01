@@ -33,7 +33,7 @@ class PantallaCargaInicial extends StatefulWidget {
 
 class _EstadoPantallaCargaInicial extends State<PantallaCargaInicial>
     with SingleTickerProviderStateMixin {
-  static const _duracion = Duration(milliseconds: 900);
+  static const _duracion = Duration(milliseconds: 8800);
   static const _margenPrimerFrame = Duration(milliseconds: 200);
 
   Timer? _temporizador;

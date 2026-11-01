@@ -15,6 +15,8 @@ import '../../rutas/widgets/estilos_rutas.dart';
 import '../../rutas/widgets/fondo_suave_seccion.dart';
 import '../../rutas/widgets/linea_encabezado_inca.dart';
 import '../dominio/logica_ubicacion_lugar.dart';
+import '../dominio/modelos/modelo_lugar.dart';
+import '../dominio/modelos/modelo_lugar_propio.dart';
 import '../dominio/modelos/modelo_territorio.dart';
 import '../dominio/resolver_provincia_lugar.dart';
 import '../proveedores/proveedor_lugares.dart';
@@ -23,9 +25,14 @@ import 'sheet_coordenadas_lugar.dart';
 
 /// Wizard limpio: identidad → ubicación → acceso → descripción.
 class PantallaRegistrarLugar extends ConsumerStatefulWidget {
-  const PantallaRegistrarLugar({super.key, this.provinciaInicial});
+  const PantallaRegistrarLugar({
+    super.key,
+    this.provinciaInicial,
+    this.lugarInicial,
+  });
 
   final String? provinciaInicial;
+  final ModeloLugar? lugarInicial;
 
   @override
   ConsumerState<PantallaRegistrarLugar> createState() =>
@@ -48,12 +55,34 @@ class _EstadoPantallaRegistrarLugar
   ModeloProvinciaDb? _provincia;
   ModeloDistritoDb? _distrito;
   bool _provinciaResuelta = false;
+  bool _distritoResuelto = false;
   final Set<int> _tematicaIds = {};
   final Set<int> _actividadIds = {};
 
   double? _latitud;
   double? _longitud;
   String? _origenUbicacion; // 'gps' | 'mapa' | 'coords'
+
+  bool get _editando => widget.lugarInicial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final inicial = widget.lugarInicial;
+    if (inicial == null) return;
+    _nombre.text = inicial.nombre;
+    _descripcion.text = inicial.descripcion;
+    _latitud = inicial.latitud;
+    _longitud = inicial.longitud;
+    _origenUbicacion = 'mapa';
+    for (final etiqueta in inicial.etiquetas) {
+      if (etiqueta.esTematica) {
+        _tematicaIds.add(etiqueta.id);
+      } else if (etiqueta.esActividad) {
+        _actividadIds.add(etiqueta.id);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -80,6 +109,25 @@ class _EstadoPantallaRegistrarLugar
     });
   }
 
+  void _asegurarDistritoResuelto(List<ModeloDistritoDb> distritos) {
+    if (_distritoResuelto || distritos.isEmpty) return;
+    final distritoId = widget.lugarInicial?.distritoId;
+    if (distritoId == null) return;
+    _distritoResuelto = true;
+    ModeloDistritoDb? hallado;
+    for (final distrito in distritos) {
+      if (distrito.id == distritoId) {
+        hallado = distrito;
+        break;
+      }
+    }
+    if (hallado == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _distrito != null) return;
+      setState(() => _distrito = hallado);
+    });
+  }
+
   Future<void> _siguiente() async {
     if (_publicando || _ubicando) return;
     if (_paso == 0) {
@@ -103,7 +151,10 @@ class _EstadoPantallaRegistrarLugar
       }
     }
     if (_paso == 2) {
-      final err = LogicaUbicacionLugar.mensajeErrorUbicacion(_latitud, _longitud);
+      final err = LogicaUbicacionLugar.mensajeErrorUbicacion(
+        _latitud,
+        _longitud,
+      );
       if (err != null) {
         _aviso(err);
         return;
@@ -119,7 +170,7 @@ class _EstadoPantallaRegistrarLugar
   String _mensajeError(Object e) {
     if (e is AuthException) {
       final m = e.message.trim();
-      return m.isEmpty ? 'No se pudo publicar. Revisa tu sesión.' : m;
+      return m.isEmpty ? 'No se pudo guardar. Revisa tu sesión.' : m;
     }
     if (e is StorageException) {
       return 'No se pudo subir la foto. Intenta de nuevo.';
@@ -127,7 +178,7 @@ class _EstadoPantallaRegistrarLugar
     if (e is PostgrestException) {
       final m = (e.message).toLowerCase();
       if (m.contains('row-level security') || m.contains('policy')) {
-        return 'No tienes permiso para publicar. Vuelve a iniciar sesión.';
+        return 'No tienes permiso para guardar. Vuelve a iniciar sesión.';
       }
       if (m.contains('foreign key') || m.contains('violates')) {
         return 'Datos incompletos. Revisa distrito y ubicación.';
@@ -136,9 +187,9 @@ class _EstadoPantallaRegistrarLugar
     }
     final s = e.toString().toLowerCase();
     if (s.contains('row-level security') || s.contains('rls')) {
-      return 'No tienes permiso para publicar. Vuelve a iniciar sesión.';
+      return 'No tienes permiso para guardar. Vuelve a iniciar sesión.';
     }
-    return 'No se pudo publicar el lugar. Intenta de nuevo.';
+    return 'No se pudo guardar el Lugar. Intenta de nuevo.';
   }
 
   Future<void> _usarUbicacionActual() async {
@@ -267,8 +318,7 @@ class _EstadoPantallaRegistrarLugar
   Future<bool> _confirmarSalirFormulario() async {
     return _dialogoSiNo(
       titulo: '¿Salir sin publicar?',
-      mensaje:
-          'Si sales ahora se pierde lo que escribiste en este formulario.',
+      mensaje: 'Si sales ahora se pierde lo que escribiste en este formulario.',
       accion: 'Salir',
     );
   }
@@ -284,9 +334,7 @@ class _EstadoPantallaRegistrarLugar
   }
 
   Future<void> _elegirEnMapa() async {
-    final inicial = _tieneUbicacion
-        ? LatLng(_latitud!, _longitud!)
-        : null;
+    final inicial = _tieneUbicacion ? LatLng(_latitud!, _longitud!) : null;
     final elegido = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (_) => PantallaElegirUbicacionLugar(
@@ -326,7 +374,9 @@ class _EstadoPantallaRegistrarLugar
     });
   }
 
-  Future<void> _finalizar() async {
+  Future<void> _finalizar({
+    EstadoEditorialLugar estadoInicial = EstadoEditorialLugar.publicado,
+  }) async {
     final provincia = _provincia;
     final distrito = _distrito;
     if (provincia == null) {
@@ -337,7 +387,10 @@ class _EstadoPantallaRegistrarLugar
       _aviso('Elige un distrito');
       return;
     }
-    final errUbi = LogicaUbicacionLugar.mensajeErrorUbicacion(_latitud, _longitud);
+    final errUbi = LogicaUbicacionLugar.mensajeErrorUbicacion(
+      _latitud,
+      _longitud,
+    );
     if (errUbi != null) {
       _aviso(errUbi);
       return;
@@ -379,34 +432,52 @@ class _EstadoPantallaRegistrarLugar
         );
       }
 
-      final lugar = await ds.crear(
-        nombre: _nombre.text.trim(),
-        descripcion: _descripcion.text.trim(),
-        distritoId: distrito.id,
-        categoriaIds: [
-          ..._tematicaIds,
-          ..._actividadIds,
-        ],
-        fotoPortadaUrl: fotoUrl,
-        latitud: _latitud!,
-        longitud: _longitud!,
-        altitud: null,
-      );
+      final categorias = [..._tematicaIds, ..._actividadIds];
+      final lugar = _editando
+          ? await ds.actualizar(
+              lugarId: widget.lugarInicial!.id,
+              nombre: _nombre.text.trim(),
+              descripcion: _descripcion.text.trim(),
+              distritoId: distrito.id,
+              categoriaIds: categorias,
+              fotoPortadaUrl: fotoUrl,
+              latitud: _latitud!,
+              longitud: _longitud!,
+              altitud: null,
+            )
+          : await ds.crear(
+              nombre: _nombre.text.trim(),
+              descripcion: _descripcion.text.trim(),
+              distritoId: distrito.id,
+              categoriaIds: categorias,
+              fotoPortadaUrl: fotoUrl,
+              latitud: _latitud!,
+              longitud: _longitud!,
+              altitud: null,
+              estadoInicial: estadoInicial,
+            );
 
       notificarLugaresCambiaron(ref);
-      ref.read(metricasDescubrimientoProvider.notifier).registrarDescubrimiento(
-            lugar.id,
-            fuente: 'registrar_lugar',
-          );
-      bumpMetricas(ref);
+      if (!_editando && estadoInicial == EstadoEditorialLugar.publicado) {
+        ref
+            .read(metricasDescubrimientoProvider.notifier)
+            .registrarDescubrimiento(lugar.id, fuente: 'registrar_lugar');
+        bumpMetricas(ref);
+      }
 
       if (!mounted) return;
+      final guardadoComoBorrador =
+          !_editando && estadoInicial == EstadoEditorialLugar.borrador;
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: PaletaRutas.carbon,
           title: Text(
-            'Lugar publicado',
+            _editando
+                ? 'Lugar actualizado'
+                : guardadoComoBorrador
+                ? 'Borrador guardado'
+                : 'Lugar publicado',
             style: TipografiaHaku.titulo(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -414,7 +485,11 @@ class _EstadoPantallaRegistrarLugar
             ),
           ),
           content: Text(
-            'Ya aparece en ${distrito.nombre} (${provincia.nombre}).',
+            _editando
+                ? 'Los cambios del Lugar se guardaron correctamente.'
+                : guardadoComoBorrador
+                ? 'Podrás revisarlo y publicarlo desde Mis lugares.'
+                : 'Ya aparece en ${distrito.nombre} (${provincia.nombre}).',
             style: TipografiaHaku.interfaz(
               height: 1.4,
               color: PaletaRutas.plomoClaro,
@@ -473,20 +548,19 @@ class _EstadoPantallaRegistrarLugar
   }
 
   TextStyle get _tituloPaso => TipografiaHaku.titulo(
-        fontSize: 26,
-        fontWeight: FontWeight.w800,
-        color: PaletaRutas.piedra,
-      );
+    fontSize: 26,
+    fontWeight: FontWeight.w800,
+    color: PaletaRutas.piedra,
+  );
 
   TextStyle get _ayudaPaso => TipografiaHaku.interfaz(
-        fontSize: 14,
-        height: 1.35,
-        color: PaletaRutas.plomoClaro,
-      );
+    fontSize: 14,
+    height: 1.35,
+    color: PaletaRutas.plomoClaro,
+  );
 
-  TextStyle get _textoPaso => TipografiaHaku.interfaz(color: PaletaRutas.piedra);
-
-
+  TextStyle get _textoPaso =>
+      TipografiaHaku.interfaz(color: PaletaRutas.piedra);
 
   Widget _botonUbicacion({
     required IconData icono,
@@ -546,6 +620,7 @@ class _EstadoPantallaRegistrarLugar
     final distritosAsync = _provincia == null
         ? const AsyncValue<List<ModeloDistritoDb>>.data([])
         : ref.watch(distritosPorProvinciaProvider(_provincia!.id));
+    distritosAsync.whenData(_asegurarDistritoResuelto);
     final categoriasAsync = ref.watch(categoriasLugarRemotasProvider);
 
     return PopScope(
@@ -562,97 +637,112 @@ class _EstadoPantallaRegistrarLugar
         if (salir) nav.pop();
       },
       child: Scaffold(
-      backgroundColor: PaletaRutas.ink,
-      appBar: AppBar(
         backgroundColor: PaletaRutas.ink,
-        foregroundColor: PaletaRutas.piedra,
-        elevation: 0,
-        leading: IconButton(
-          tooltip: _paso > 0 ? 'Paso anterior' : 'Salir',
-          onPressed: _onBackAppBar,
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
-        title: Text(
-          'Crear un lugar',
-          style: TipografiaHaku.titulo(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: PaletaRutas.piedra,
+        appBar: AppBar(
+          backgroundColor: PaletaRutas.ink,
+          foregroundColor: PaletaRutas.piedra,
+          elevation: 0,
+          leading: IconButton(
+            tooltip: _paso > 0 ? 'Paso anterior' : 'Salir',
+            onPressed: _onBackAppBar,
+            icon: const Icon(Icons.arrow_back_rounded),
           ),
-        ),
-      ),
-      body: FondoSuaveSeccion(
-        color: PaletaRutas.ink,
-        opacidadImagen: 0,
-        opacidadVelo: 0,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Paso ${_paso + 1} de $_pasos',
-                  style: TipografiaHaku.interfaz(
-                    fontSize: 12,
-                    color: PaletaRutas.plomoClaro,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: (_paso + 1) / _pasos,
-                  backgroundColor:
-                      PaletaRutas.plomoOscuro.withValues(alpha: 0.5),
-                  color: PaletaRutas.oro,
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 10),
-                const LineaEncabezadoInca(altura: 2),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: _contenidoPaso(
-                    provincias: provinciasAsync.asData?.value ?? const [],
-                    distritos: distritosAsync.asData?.value ?? const [],
-                    categorias: categoriasAsync.asData?.value ?? const [],
-                    cargandoGeo: provinciasAsync.isLoading,
-                    cargandoDistritos: distritosAsync.isLoading,
-                    cargandoCategorias: categoriasAsync.isLoading,
-                  ),
-                ),
-                if (_paso > 0) ...[
-                  TextButton(
-                    onPressed: _publicando
-                        ? null
-                        : () => setState(() => _paso--),
-                    child: Text(
-                      'Atrás',
-                      style: TipografiaHaku.interfaz(
-                        color: PaletaRutas.plomoClaro,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-                BotonPrimarioRuta(
-                  texto: _publicando
-                      ? 'Publicando…'
-                      : (_paso == _pasos - 1 ? 'Publicar' : 'Siguiente'),
-                  onPressed: (_publicando ||
-                          _ubicando ||
-                          (_paso == 0 && _distrito == null) ||
-                          (_paso == 1 &&
-                              (_tematicaIds.isEmpty ||
-                                  categoriasAsync.isLoading)))
-                      ? null
-                      : _siguiente,
-                ),
-              ],
+          title: Text(
+            _editando ? 'Editar Lugar' : 'Crear un Lugar',
+            style: TipografiaHaku.titulo(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: PaletaRutas.piedra,
             ),
           ),
         ),
-      ),
+        body: FondoSuaveSeccion(
+          color: PaletaRutas.ink,
+          opacidadImagen: 0,
+          opacidadVelo: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Paso ${_paso + 1} de $_pasos',
+                    style: TipografiaHaku.interfaz(
+                      fontSize: 12,
+                      color: PaletaRutas.plomoClaro,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(
+                    value: (_paso + 1) / _pasos,
+                    backgroundColor: PaletaRutas.plomoOscuro.withValues(
+                      alpha: 0.5,
+                    ),
+                    color: PaletaRutas.oro,
+                    minHeight: 6,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  const SizedBox(height: 10),
+                  const LineaEncabezadoInca(altura: 2),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: _contenidoPaso(
+                      provincias: provinciasAsync.asData?.value ?? const [],
+                      distritos: distritosAsync.asData?.value ?? const [],
+                      categorias: categoriasAsync.asData?.value ?? const [],
+                      cargandoGeo: provinciasAsync.isLoading,
+                      cargandoDistritos: distritosAsync.isLoading,
+                      cargandoCategorias: categoriasAsync.isLoading,
+                    ),
+                  ),
+                  if (_paso > 0) ...[
+                    TextButton(
+                      onPressed: _publicando
+                          ? null
+                          : () => setState(() => _paso--),
+                      child: Text(
+                        'Atrás',
+                        style: TipografiaHaku.interfaz(
+                          color: PaletaRutas.plomoClaro,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (_paso == _pasos - 1 && !_editando) ...[
+                    TextButton.icon(
+                      onPressed: _publicando
+                          ? null
+                          : () => _finalizar(
+                              estadoInicial: EstadoEditorialLugar.borrador,
+                            ),
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Guardar como borrador'),
+                    ),
+                  ],
+                  BotonPrimarioRuta(
+                    texto: _publicando
+                        ? 'Guardando…'
+                        : (_paso == _pasos - 1
+                              ? (_editando ? 'Guardar cambios' : 'Publicar')
+                              : 'Siguiente'),
+                    onPressed:
+                        (_publicando ||
+                            _ubicando ||
+                            (_paso == 0 && _distrito == null) ||
+                            (_paso == 1 &&
+                                (_tematicaIds.isEmpty ||
+                                    categoriasAsync.isLoading)))
+                        ? null
+                        : _siguiente,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -678,10 +768,7 @@ class _EstadoPantallaRegistrarLugar
           children: [
             Text('El lugar', style: _tituloPaso),
             const SizedBox(height: 8),
-            Text(
-              'Distrito, nombre y foto si quieres.',
-              style: _ayudaPaso,
-            ),
+            Text('Distrito, nombre y foto si quieres.', style: _ayudaPaso),
             const SizedBox(height: 18),
             if (cargandoGeo)
               const Padding(
@@ -719,10 +806,8 @@ class _EstadoPantallaRegistrarLugar
                 decoration: _campo('Provincia'),
                 items: provincias
                     .map(
-                      (p) => DropdownMenuItem(
-                        value: p.id,
-                        child: Text(p.nombre),
-                      ),
+                      (p) =>
+                          DropdownMenuItem(value: p.id, child: Text(p.nombre)),
                     )
                     .toList(),
                 onChanged: (id) {
@@ -808,13 +893,19 @@ class _EstadoPantallaRegistrarLugar
                       if (f != null) setState(() => _foto = f);
                     },
               icon: Icon(
-                _foto == null
+                _foto == null &&
+                        (widget.lugarInicial?.imagenUrl.trim().isEmpty ?? true)
                     ? Icons.add_a_photo_outlined
                     : Icons.check_circle_outline,
                 color: PaletaRutas.oro,
               ),
               label: Text(
-                _foto == null ? 'Agregar foto' : 'Foto lista',
+                _foto != null
+                    ? 'Nueva foto lista'
+                    : (widget.lugarInicial?.imagenUrl.trim().isNotEmpty ??
+                          false)
+                    ? 'Conservar foto actual o cambiarla'
+                    : 'Agregar foto',
                 style: TipografiaHaku.interfaz(fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
@@ -950,8 +1041,7 @@ class _EstadoPantallaRegistrarLugar
             _botonUbicacion(
               icono: Icons.pin_drop_outlined,
               titulo: 'Escribir coordenadas',
-              subtitulo:
-                  'Latitud y longitud exactas (avanzado; pocos lo usan)',
+              subtitulo: 'Latitud y longitud exactas (avanzado; pocos lo usan)',
               onTap: _ubicando ? null : _ingresarCoordenadas,
             ),
             if (_tieneUbicacion) ...[

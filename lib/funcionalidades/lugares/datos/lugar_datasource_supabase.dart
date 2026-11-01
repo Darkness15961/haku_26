@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../nucleo/supabase/cliente_supabase.dart';
 import '../dominio/modelos/modelo_lugar.dart';
+import '../dominio/modelos/modelo_lugar_propio.dart';
 
 /// Lugares activos desde `public.lugar` (distrito obligatorio; provincia vía join).
 class LugarDataSourceSupabase {
@@ -19,7 +20,9 @@ latitud,
 longitud,
 foto_portada,
 estado,
+estado_editorial,
 fecha_creacion,
+updated_at,
 usuario_id,
 distrito_id,
 distrito:distrito_id (
@@ -42,10 +45,14 @@ lugar_guardado_por_mi
         .from('lugar')
         .select(_selectFicha)
         .eq('estado', true)
+        .eq('estado_editorial', EstadoEditorialLugar.publicado.valor)
         .order('nombre', ascending: true);
 
     return (rows as List<dynamic>)
-        .map((e) => ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) =>
+              ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(e as Map)),
+        )
         .where((l) => l.id.isNotEmpty && l.nombre.isNotEmpty)
         .toList();
   }
@@ -61,11 +68,35 @@ lugar_guardado_por_mi
         .select(_selectFicha)
         .eq('usuario_id', uid)
         .eq('estado', true)
+        .eq('estado_editorial', EstadoEditorialLugar.publicado.valor)
         .order('fecha_creacion', ascending: false);
 
     return (rows as List<dynamic>)
-        .map((e) => ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) =>
+              ModeloLugar.desdeFilaRemota(Map<String, dynamic>.from(e as Map)),
+        )
         .where((l) => l.id.isNotEmpty && l.nombre.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<ModeloLugarPropio>> listarPropios() async {
+    if (!supabaseListo) return const [];
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return const [];
+
+    final rows = await clienteSupabase
+        .from('lugar')
+        .select(_selectFicha)
+        .eq('usuario_id', user.id)
+        .order('updated_at', ascending: false);
+
+    return (rows as List<dynamic>)
+        .whereType<Map>()
+        .map(
+          (row) => ModeloLugarPropio.desdeJson(Map<String, dynamic>.from(row)),
+        )
+        .where((propio) => propio.id.isNotEmpty)
         .toList();
   }
 
@@ -101,13 +132,12 @@ lugar_guardado_por_mi
   }) async {
     final path =
         '$userId/lugares/portada_${DateTime.now().millisecondsSinceEpoch}.$extension';
-    await clienteSupabase.storage.from(bucketMedia).uploadBinary(
+    await clienteSupabase.storage
+        .from(bucketMedia)
+        .uploadBinary(
           path,
           bytes,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: true,
-          ),
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
     return clienteSupabase.storage.from(bucketMedia).getPublicUrl(path);
   }
@@ -121,11 +151,7 @@ lugar_guardado_por_mi
 
     final rows = await clienteSupabase.rpc(
       'lugares_cerca',
-      params: {
-        'p_lat': latitud,
-        'p_lon': longitud,
-        'p_radio_m': radioM,
-      },
+      params: {'p_lat': latitud, 'p_lon': longitud, 'p_radio_m': radioM},
     );
 
     final distKmPorId = <String, double>{};
@@ -150,7 +176,7 @@ lugar_guardado_por_mi
     return out;
   }
 
-  /// Inserta lugar. Requiere [distritoId] (provincia se deriva del distrito).
+  /// Inserta el Lugar y sus categorías en una sola transacción remota.
   Future<ModeloLugar> crear({
     required String nombre,
     required String descripcion,
@@ -160,6 +186,57 @@ lugar_guardado_por_mi
     double latitud = -13.5319,
     double longitud = -71.9675,
     int? altitud,
+    EstadoEditorialLugar estadoInicial = EstadoEditorialLugar.publicado,
+  }) async {
+    return _guardarFicha(
+      nombre: nombre,
+      descripcion: descripcion,
+      distritoId: distritoId,
+      categoriaIds: categoriaIds,
+      fotoPortadaUrl: fotoPortadaUrl,
+      latitud: latitud,
+      longitud: longitud,
+      altitud: altitud,
+      estadoInicial: estadoInicial,
+    );
+  }
+
+  Future<ModeloLugar> actualizar({
+    required String lugarId,
+    required String nombre,
+    required String descripcion,
+    required int distritoId,
+    required List<int> categoriaIds,
+    String? fotoPortadaUrl,
+    required double latitud,
+    required double longitud,
+    int? altitud,
+  }) async {
+    return _guardarFicha(
+      lugarId: lugarId,
+      nombre: nombre,
+      descripcion: descripcion,
+      distritoId: distritoId,
+      categoriaIds: categoriaIds,
+      fotoPortadaUrl: fotoPortadaUrl,
+      latitud: latitud,
+      longitud: longitud,
+      altitud: altitud,
+      estadoInicial: EstadoEditorialLugar.borrador,
+    );
+  }
+
+  Future<ModeloLugar> _guardarFicha({
+    String? lugarId,
+    required String nombre,
+    required String descripcion,
+    required int distritoId,
+    required List<int> categoriaIds,
+    required String? fotoPortadaUrl,
+    required double latitud,
+    required double longitud,
+    required int? altitud,
+    required EstadoEditorialLugar estadoInicial,
   }) async {
     if (!supabaseListo) {
       throw const AuthException('No hay conexión con el servidor.');
@@ -171,57 +248,111 @@ lugar_guardado_por_mi
     if (distritoId <= 0) {
       throw const AuthException('Elige un distrito.');
     }
+    if (categoriaIds.isEmpty) {
+      throw const AuthException('Elige al menos una categoría.');
+    }
 
-    final insertado = await clienteSupabase
-        .from('lugar')
-        .insert({
-          'nombre': nombre.trim(),
-          'descripcion': descripcion.trim().isEmpty ? null : descripcion.trim(),
-          'distrito_id': distritoId,
-          'usuario_id': user.id,
-          'latitud': latitud,
-          'longitud': longitud,
-          'altitud': altitud,
-          'foto_portada': fotoPortadaUrl,
-          'estado': true,
-        })
-        .select('id')
-        .single();
+    final idNumerico = lugarId == null ? null : int.tryParse(lugarId.trim());
+    if (lugarId != null && idNumerico == null) {
+      throw const AuthException('Lugar inválido.');
+    }
 
-    final lugarId = insertado['id'];
-    final idNum = lugarId is int ? lugarId : int.parse('$lugarId');
+    final raw = await clienteSupabase.rpc(
+      'guardar_lugar_propio',
+      params: {
+        'p_nombre': nombre.trim(),
+        'p_descripcion': descripcion.trim(),
+        'p_distrito_id': distritoId,
+        'p_categoria_ids': categoriaIds.toSet().toList(),
+        'p_foto_portada': fotoPortadaUrl,
+        'p_latitud': latitud,
+        'p_longitud': longitud,
+        'p_altitud': altitud,
+        'p_estado_editorial': estadoInicial.valor,
+        'p_lugar_id': idNumerico,
+      },
+    );
 
-    if (categoriaIds.isNotEmpty) {
-      try {
-        final filasCat = categoriaIds
-            .toSet()
-            .map((cid) => {'lugar_id': idNum, 'categoria_id': cid})
-            .toList();
-        await clienteSupabase.from('lugar_categoria').insert(filasCat);
-      } catch (_) {
-        final revertida = await clienteSupabase
-            .from('lugar')
-            .update({'estado': false})
-            .eq('id', idNum)
-            .eq('usuario_id', user.id)
-            .select('id')
-            .maybeSingle();
-        if (revertida == null) {
-          throw const AuthException(
-            'El lugar quedó a medias y no se pudo desactivar. Reintentá.',
-          );
-        }
-        throw const AuthException(
-          'El lugar se creó pero fallaron las categorías. Quedó inactivo.',
-        );
-      }
+    final idNum = raw is num ? raw.toInt() : int.tryParse('$raw');
+    if (idNum == null) {
+      throw const AuthException('El Lugar se guardó, pero llegó sin ID.');
     }
 
     final creado = await porId('$idNum');
     if (creado == null) {
-      throw const AuthException('El lugar se creó pero no se pudo recargar.');
+      throw const AuthException('El Lugar se guardó pero no se pudo recargar.');
     }
     return creado;
+  }
+
+  Future<ModeloLugarPropio> publicarPropio(String lugarId) {
+    return _cambiarEstado(lugarId, EstadoEditorialLugar.publicado);
+  }
+
+  Future<ModeloLugarPropio> archivarPropio(String lugarId) {
+    return _cambiarEstado(lugarId, EstadoEditorialLugar.archivado);
+  }
+
+  Future<ModeloLugarPropio> restaurarPropio(String lugarId) {
+    return _cambiarEstado(lugarId, EstadoEditorialLugar.borrador);
+  }
+
+  Future<ModeloLugarPropio> _cambiarEstado(
+    String lugarId,
+    EstadoEditorialLugar estado,
+  ) async {
+    final idNum = _idPropioValido(lugarId);
+    await clienteSupabase.rpc(
+      'cambiar_estado_lugar_propio',
+      params: {'p_lugar_id': idNum, 'p_estado_editorial': estado.valor},
+    );
+
+    final actualizado = await _propioPorId(idNum);
+    if (actualizado == null) {
+      throw const AuthException(
+        'El estado cambió, pero no se pudo recargar el Lugar.',
+      );
+    }
+    return actualizado;
+  }
+
+  Future<void> eliminarPropio(String lugarId) async {
+    final idNum = _idPropioValido(lugarId);
+    final eliminado = await clienteSupabase
+        .from('lugar')
+        .delete()
+        .eq('id', idNum)
+        .eq('usuario_id', clienteSupabase.auth.currentUser!.id)
+        .neq('estado_editorial', EstadoEditorialLugar.publicado.valor)
+        .select('id')
+        .maybeSingle();
+    if (eliminado == null) {
+      throw const AuthException(
+        'Solo puedes eliminar tus Lugares borradores o desactivados.',
+      );
+    }
+  }
+
+  Future<ModeloLugarPropio?> _propioPorId(int id) async {
+    final user = clienteSupabase.auth.currentUser;
+    if (user == null) return null;
+    final row = await clienteSupabase
+        .from('lugar')
+        .select(_selectFicha)
+        .eq('id', id)
+        .eq('usuario_id', user.id)
+        .maybeSingle();
+    if (row == null) return null;
+    return ModeloLugarPropio.desdeJson(Map<String, dynamic>.from(row));
+  }
+
+  int _idPropioValido(String lugarId) {
+    if (!supabaseListo || clienteSupabase.auth.currentUser == null) {
+      throw const AuthException('Inicia sesión para administrar Lugares.');
+    }
+    final id = int.tryParse(lugarId.trim());
+    if (id == null) throw const AuthException('Lugar inválido.');
+    return id;
   }
 
   Future<void> guardarLugar(String lugarId) async {
@@ -272,6 +403,7 @@ lugar_guardado_por_mi
         .select('lugar:lugar_id!inner($_selectFicha)')
         .eq('usuario_id', user.id)
         .eq('lugar.estado', true)
+        .eq('lugar.estado_editorial', EstadoEditorialLugar.publicado.valor)
         .order('fecha_creacion', ascending: false);
 
     return (rows as List<dynamic>)

@@ -1,0 +1,15 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/branding/haku_app_icon.png"
+
+  # Android 8+ puede aplicar distintos recortes (círculo, cuadrado o squircle).
+  # El fondo cubre toda la máscara y el margen conserva el logo completo.
+  adaptive_icon_background: "#FDC100"
+  adaptive_icon_foreground: "assets/branding/haku_app_icon.png"
+  adaptive_icon_foreground_inset: 20
+  min_sdk_android: 21
+
+  # App Store no admite transparencia en el icono de 1024 px.
+  remove_alpha_ios: true
+  background_color_ios: "#FDC100"
