@@ -92,7 +92,6 @@ class AplicacionHaku extends StatelessWidget {
           ? PantallaCargaInicial(
               preparacion: preparacion,
               preparar: prepararBackend,
-              pantallaError: const _PantallaBackendNoDisponible(),
               siguientePantalla: const PantallaInicio(),
             )
           : const _PantallaBackendNoDisponible(),

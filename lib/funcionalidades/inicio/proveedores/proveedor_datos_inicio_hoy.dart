@@ -45,6 +45,9 @@ final datosInicioHoyProvider = FutureProvider<DatosInicioHoy>((ref) async {
 
   final rutasFuture = ref.watch(rutasPublicadasProvider.future);
   final lugaresFuture = ref.watch(lugaresRemotosProvider.future);
+  // Escucha ambos errores desde el inicio. Un fallo de lugares debe llegar
+  // a la UI aunque rutas siga pendiente, y viceversa.
+  await Future.wait<Object>([rutasFuture, lugaresFuture], eagerError: true);
   final rutas = await rutasFuture;
   final lugares = await lugaresFuture;
 

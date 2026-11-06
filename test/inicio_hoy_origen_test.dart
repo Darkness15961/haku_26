@@ -75,6 +75,32 @@ void main() {
     },
   );
 
+  test(
+    'un fallo de lugares no queda oculto mientras rutas sigue cargando',
+    () async {
+      final rutas = Completer<List<ModeloRuta>>();
+      final lugares = Completer<List<ModeloLugar>>();
+      final container = ProviderContainer(
+        overrides: [
+          modoEjecucionInicioProvider.overrideWithValue(
+            ModoEjecucionHaku.produccion,
+          ),
+          rutasPublicadasProvider.overrideWith((ref) => rutas.future),
+          lugaresRemotosProvider.overrideWith((ref) => lugares.future),
+        ],
+      );
+      addTearDown(container.dispose);
+      final resultado = container.read(datosInicioHoyProvider.future);
+      final comprobacion = expectLater(resultado, throwsA(isA<StateError>()));
+      lugares.completeError(StateError('lugares no disponible'));
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(datosInicioHoyProvider).hasError, isTrue);
+      // También se observa un error tardío de la otra consulta.
+      rutas.completeError(StateError('rutas no disponible'));
+      await comprobacion;
+    },
+  );
+
   testWidgets('produccion no muestra la portada fallback antigua', (
     tester,
   ) async {

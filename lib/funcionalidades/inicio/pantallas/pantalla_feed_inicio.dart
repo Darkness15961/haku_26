@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../nucleo/recursos/catalogo_imagenes_haku.dart';
 import '../../../nucleo/responsive/espacio_haku.dart';
 import '../../autenticacion/navegacion_auth.dart';
 import '../../../nucleo/widgets/badge_contador.dart';
@@ -89,6 +88,8 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
       titulo: l.nombre,
       subtitulo: l.descripcion,
       descripcion: l.descripcion,
+      // La foto pertenece al registro. El respaldo se resuelve en ImagenHaku,
+      // nunca sustituyendo fotos por catálogos temáticos al agrupar secciones.
       imagenUrl: l.imagenUrl,
       categoria: CategoriaRuta.recomendadas,
       provincia: l.provincia,
@@ -136,17 +137,6 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
             .map(
               (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
             )
-            .map((r) {
-              final lugarId = r.id.startsWith('lugar_')
-                  ? r.id.substring('lugar_'.length)
-                  : r.id;
-              return r.copyWith(
-                imagenUrl: CatalogoImagenesHaku.imagenDescubiertoComunidad(
-                  lugarId: lugarId,
-                  provincia: r.provincia,
-                ),
-              );
-            })
             .toList()
           ..sort((a, b) {
             final sa = a.cantidadResenas * a.calificacion;
@@ -259,18 +249,9 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                   l.categoria == CategoriaLugar.misterioso ||
                   l.categoria == CategoriaLugar.magico,
             )
-            .map((l) {
-              final r = _desdeLugar(
-                l,
-                exploradoresPorLugar,
-                calificacionPorLugar,
-              );
-              return r.copyWith(
-                imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(
-                  lugarId: l.id,
-                ),
-              );
-            })
+            .map(
+              (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
+            )
             .toList()
           ..sort((a, b) => b.calificacion.compareTo(a.calificacion));
     // Prioriza tours curiosos (Almudena, noche, wak’as…) al frente
@@ -309,29 +290,16 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
     ];
 
     var comida = <ModeloRuta>[
-      ...todasRutas.where((r) => r.hilo == HiloCultura.comida).map((r) {
-        return r.copyWith(
-          imagenUrl: CatalogoImagenesHaku.imagenRutaComida(r.id),
-        );
-      }),
+      ...todasRutas.where((r) => r.hilo == HiloCultura.comida),
       ...lugares
           .where(
             (l) =>
                 l.categoria == CategoriaLugar.gastronomia ||
                 l.categoria == CategoriaLugar.cultura,
           )
-          .map((l) {
-            final r = _desdeLugar(
-              l,
-              exploradoresPorLugar,
-              calificacionPorLugar,
-            );
-            return r.copyWith(
-              imagenUrl: l.categoria == CategoriaLugar.gastronomia
-                  ? CatalogoImagenesHaku.imagenFogones(lugarId: l.id)
-                  : r.imagenUrl,
-            );
-          }),
+          .map(
+            (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
+          ),
     ];
 
     var experiencias = <ModeloRuta>[
@@ -342,16 +310,9 @@ class _EstadoPantallaFeedInicio extends ConsumerState<PantallaFeedInicio> {
                 l.categoria == CategoriaLugar.magico ||
                 l.categoria == CategoriaLugar.fotografia,
           )
-          .map((l) {
-            final r = _desdeLugar(
-              l,
-              exploradoresPorLugar,
-              calificacionPorLugar,
-            );
-            return r.copyWith(
-              imagenUrl: CatalogoImagenesHaku.imagenCuscoMagico(lugarId: l.id),
-            );
-          }),
+          .map(
+            (l) => _desdeLugar(l, exploradoresPorLugar, calificacionPorLugar),
+          ),
     ];
 
     // —— Agrupación estricta por categoría ——

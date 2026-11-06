@@ -91,6 +91,14 @@ class _EstadoCargadorHaku extends State<CargadorHaku> {
                 repeat: !reducirMovimiento,
                 frameRate: FrameRate.composition,
                 renderCache: RenderCache.drawingCommands,
+                frameBuilder: (_, child, composition) => Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    child,
+                    if (composition == null)
+                      const CircularProgressIndicator(strokeWidth: 2.5),
+                  ],
+                ),
                 errorBuilder: (_, __, ___) => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 ),
